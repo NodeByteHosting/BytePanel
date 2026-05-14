@@ -1,0 +1,86 @@
+import type { ReactNode } from "react";
+
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/session";
+
+import { AppContainer } from "./components/app-container";
+import { AppSidebar } from "./components/app-sidebar";
+import { ImpersonationBanner } from "./components/impersonation-banner";
+
+const DashboardLayout = async ({ children }: { children: ReactNode }) => {
+  const user = await requireUser();
+
+  const role = (user as { role?: string }).role ?? "user";
+  const superAdmin = (user as { superAdmin?: boolean }).superAdmin ?? false;
+  const impersonatedBy =
+    (user as { impersonatedBy?: { email?: string; name?: string } | null })
+      .impersonatedBy ?? null;
+
+  // Owned servers
+  const ownedServers = await prisma.server.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      desiredState: true,
+      game: true,
+      id: true,
+      name: true,
+      observedState: true,
+    },
+    where: { deletedAt: null, userId: user.id },
+  });
+
+  // Member servers (where the user has been added as a sub-user)
+  const memberships = await prisma.serverMember.findMany({
+    include: {
+      server: {
+        select: {
+          deletedAt: true,
+          desiredState: true,
+          game: true,
+          id: true,
+          name: true,
+          observedState: true,
+        },
+      },
+    },
+    where: { userId: user.id },
+  });
+
+  const memberServers = memberships
+    .filter((m) => m.server.deletedAt === null)
+    .map((m) => m.server);
+
+  // Deduplicate (edge case: owner somehow also a member)
+  const ownedIds = new Set(ownedServers.map((s) => s.id));
+  const servers = [
+    ...ownedServers,
+    ...memberServers.filter((s) => !ownedIds.has(s.id)),
+  ];
+
+  return (
+    <SidebarProvider className="bg-sidebar">
+      <AppSidebar
+        servers={servers}
+        user={{
+          email: user.email,
+          hasImage: Boolean(user.image),
+          name: user.name ?? null,
+          role,
+          superAdmin,
+        }}
+      />
+      <AppContainer>
+        {impersonatedBy && (
+          <ImpersonationBanner
+            impersonatedEmail={user.email}
+            impersonatedName={user.name ?? null}
+          />
+        )}
+        {children}
+      </AppContainer>
+    </SidebarProvider>
+  );
+};
+
+export default DashboardLayout;

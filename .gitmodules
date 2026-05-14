@@ -1,0 +1,14 @@
+[submodule "games"]
+	path = games
+	url = https://github.com/NodeByteHosting/GSG.git
+	branch = main
+
+[submodule "agent"]
+	path = agent
+	url = https://github.com/NodeByteHosting/GSA.git
+	branch = main
+
+[submodule "lib/providers"]
+	path = lib/providers
+	url = https://github.com/NodeByteHosting/GSP.git
+	branch = main
