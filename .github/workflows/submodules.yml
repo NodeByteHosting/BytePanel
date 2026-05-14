@@ -1,0 +1,65 @@
+name: Submodule Checks
+
+on:
+  pull_request:
+    paths:
+      - .gitmodules
+      - agent/**
+      - games/**
+      - lib/providers/**
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - .gitmodules
+      - agent/**
+      - games/**
+      - lib/providers/**
+
+permissions:
+  contents: read
+
+jobs:
+  verify-submodules:
+    name: Verify Submodules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Validate submodule state
+        run: git submodule status --recursive
+
+  gsa-checks:
+    name: GSA checks from GSM
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('agent/package.json') != '' }}
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.13
+
+      - name: Install GSA dependencies
+        working-directory: agent
+        run: bun install --frozen-lockfile
+
+      - name: Run GSA lint
+        working-directory: agent
+        run: bun run lint
+
+      - name: Run GSA type check
+        working-directory: agent
+        run: bun run types
+
+      - name: Run GSA build
+        working-directory: agent
+        run: bun run build

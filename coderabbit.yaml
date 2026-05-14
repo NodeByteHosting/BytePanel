@@ -1,0 +1,66 @@
+language: en-US
+tone_instructions: "Chill, relaxed tone like casual conversation. Keep it approachable and friendly, avoiding formal or technical language."
+early_access: false
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: true
+    base_branches:
+      - "master"
+      - "main"
+      - "develop"
+  path_instructions:
+    - path: "app/api/webhooks/stripe/**"
+      instructions: "Pay close attention to webhook security: verify signature, handle idempotency, check for enum correctness with SubscriptionStatus and InvoiceStatus. Watch for API version mismatches (we're on v2026-04-22)."
+    - path: "app/api/auth/**"
+      instructions: "Security focus: review authentication flows, session management, and token handling."
+    - path: "prisma/migrations/**"
+      instructions: "Database migrations: check for data loss, concurrent execution safety, and rollback viability."
+    - path: "app/api/**/route.ts"
+      instructions: "API routes: verify request validation, error handling, and correct HTTP status codes. Check for Prisma enum usage."
+    - path: "lib/providers/**"
+      instructions: "Provider implementations: ensure proper error handling and API compliance (especially for Hetzner Cloud)."
+
+skip_files:
+  - "**/node_modules/**"
+  - "**/.next/**"
+  - "**/dist/**"
+  - "prisma/migrations/**"
+  - "lib/providers/hetzner/schema.ts"
+  - ".next/types/**"
+  - "**/*.d.ts"
+  - "package-lock.json"
+  - "bun.lockb"
+
+rules:
+  - type: "typescript"
+    comments:
+      - "Use exhaustive switch statements for enums (SubscriptionStatus, InvoiceStatus)"
+      - "Prefer type safety over type casting - avoid `as` when possible"
+      - "Ensure async functions have await or are removed"
+
+  - type: "react"
+    comments:
+      - "Watch for missing dependencies in useEffect hooks"
+      - "Ensure proper key props in lists"
+      - "Use server components by default in Next.js app router"
+      - "Label accessibility: always add htmlFor or aria-* attributes"
+
+  - type: "security"
+    comments:
+      - "No secrets in code (use env vars)"
+      - "Validate all user input before Prisma operations"
+      - "Check Stripe webhook signature verification"
+
+disable_checks:
+  - "eslint"
+
+chat:
+  auto_reply: true

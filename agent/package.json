@@ -1,0 +1,24 @@
+{
+  "name": "@nodebyte/agent",
+  "version": "0.1.0",
+  "description": "NodeByte GSA is a lightweight, secure agent for managing game servers. Built with Bun and TypeScript, it provides a simple interface for executing commands, monitoring server status, and handling file transfers, all while ensuring minimal resource usage and maximum security.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile ../dist/ghost-agent",
+    "types": "tsc --noEmit",
+    "lint": "ultracite check",
+    "check": "bun run lint && bun run types"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^3.1.0",
+    "ulid": "^3.0.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^6.0.3",
+    "ultracite": "^7.6.4"
+  }
+}

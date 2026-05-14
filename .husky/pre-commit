@@ -1,0 +1,31 @@
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
+
+bunx --bun prisma format
+bunx --bun prisma generate
+bun fix
+
+if [ -n "$STAGED" ]; then
+  echo "$STAGED" | xargs git add --
+fi
+
+bun run types
+
+OS_NAME=$(uname -s 2>/dev/null || echo "")
+BUN_VERSION=$(bun --version 2>/dev/null || echo "")
+
+case "$OS_NAME" in
+  MINGW*|MSYS*|CYGWIN*)
+    case "$BUN_VERSION" in
+      1.2.*)
+        echo "Skipping pre-commit tests on Windows with Bun $BUN_VERSION due known Bun runtime crash."
+        echo "CI still runs tests. Upgrade Bun to 1.3.13+ to re-enable local pre-commit tests."
+        ;;
+      *)
+        bun run test
+        ;;
+    esac
+    ;;
+  *)
+    bun run test
+    ;;
+esac

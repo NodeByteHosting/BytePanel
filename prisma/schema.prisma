@@ -1,0 +1,463 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SystemRole {
+  user
+  admin
+}
+
+enum ServerMemberRole {
+  viewer // read-only access: console, graphs, activity
+  member // + can start / stop the server
+  admin // + settings, backups, files management
+}
+
+model User {
+  id                String           @id
+  name              String
+  email             String           @unique
+  emailVerified     Boolean          @default(false)
+  image             String?
+  // System-level RBAC (Better Auth admin plugin)
+  role              String           @default("user") // "user" | "admin"
+  superAdmin        Boolean          @default(false) // NodeByte super-admin
+  banned            Boolean          @default(false)
+  banReason         String?
+  banExpires        DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  sessions          Session[]
+  accounts          Account[]
+  passkeys          Passkey[]
+  servers           Server[]
+  snapshotBuilds    SnapshotBuild[]
+  billingCustomer   BillingCustomer?
+  // Server sub-user relations
+  serverMemberships ServerMember[]   @relation("MemberUser")
+  sentInvites       ServerInvite[]   @relation("InviteBy")
+  membersInvited    ServerMember[]   @relation("MemberInviteBy")
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+// System-level golden image managed by NodeByte (not per-user).
+// Scoped by deployment environment to avoid cross-env contamination.
+model SystemSnapshot {
+  id              String   @id
+  environment     String   @unique
+  provider        String   @default("hetzner")
+  providerImageId String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("system_snapshots")
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verifications")
+}
+
+model Passkey {
+  id           String    @id
+  name         String?
+  publicKey    String
+  userId       String
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime? @default(now())
+  aaguid       String?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([credentialID])
+  @@map("passkeys")
+}
+
+enum DesiredState {
+  running
+  stopped
+  deleted
+}
+
+enum ObservedState {
+  pending
+  provisioning
+  running
+  unhealthy
+  lost
+  stopped
+  failed
+  deleted
+}
+
+model Server {
+  id               String            @id
+  userId           String
+  name             String
+  game             String
+  location         String
+  serverType       String
+  provider         String            @default("hetzner")
+  providerServerId String?           @unique
+  ipv4             String?
+  desiredState     DesiredState      @default(running)
+  observedState    ObservedState     @default(pending)
+  phase            String            @default("queued")
+  errorReason      String?
+  rconPassword     String
+  joinPassword     String?
+  settings         Json              @default("{}")
+  backupsEnabled   Boolean           @default(false)
+  lastSuspendedAt  DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  deletedAt        DateTime?
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent            Agent?
+  commands         Command[]
+  activityEvents   ActivityEvent[]
+  logChunks        LogChunk[]
+  enrollments      AgentEnrollment[]
+  subscription     Subscription?
+  members          ServerMember[]
+  invites          ServerInvite[]
+
+  @@index([userId])
+  @@index([desiredState, observedState])
+  @@map("servers")
+}
+
+// A user who has been invited to co-manage a server.
+model ServerMember {
+  id          String           @id
+  serverId    String
+  userId      String
+  role        ServerMemberRole @default(member)
+  invitedById String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  server      Server           @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  user        User             @relation("MemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy   User?            @relation("MemberInviteBy", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@unique([serverId, userId])
+  @@index([userId])
+  @@index([serverId])
+  @@map("server_members")
+}
+
+// Pending invite sent by email before the invitee accepts.
+model ServerInvite {
+  id          String           @id
+  serverId    String
+  email       String
+  role        ServerMemberRole @default(member)
+  token       String           @unique
+  invitedById String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  server      Server           @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  invitedBy   User             @relation("InviteBy", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([token])
+  @@map("server_invites")
+}
+
+model Agent {
+  id              String    @id
+  serverId        String    @unique
+  publicKey       String
+  sessionVersion  Int       @default(0)
+  lastHeartbeatAt DateTime?
+  lastCommandId   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  server          Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@map("agents")
+}
+
+model AgentEnrollment {
+  jti       String    @id
+  serverId  String
+  expiresAt DateTime
+  burnedAt  DateTime?
+  createdAt DateTime  @default(now())
+  server    Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId])
+  @@map("agent_enrollments")
+}
+
+model Command {
+  id          String    @id
+  serverId    String
+  type        String
+  payload     Json
+  status      String    @default("pending")
+  issuedAt    DateTime  @default(now())
+  deliveredAt DateTime?
+  ackedAt     DateTime?
+  error       String?
+  result      Json?
+  durationMs  Int?
+  server      Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId, status])
+  @@map("commands")
+}
+
+model ActivityEvent {
+  id         String   @id
+  serverId   String
+  seq        Int
+  phase      String
+  message    String
+  metadata   Json?
+  occurredAt DateTime @default(now())
+  source     String   @default("server") // "server" | "agent"
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, seq])
+  @@index([serverId, occurredAt])
+  @@map("activity_events")
+}
+
+model LogChunk {
+  id       String   @id
+  serverId String
+  seq      Int
+  stream   String
+  line     String
+  ts       DateTime @default(now())
+  server   Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, seq])
+  @@index([serverId, ts])
+  @@map("log_chunks")
+}
+
+enum SnapshotBuildStatus {
+  pending
+  compiling_agent
+  creating_vm
+  installing
+  snapshotting
+  ready
+  failed
+}
+
+model SnapshotBuild {
+  id                 String              @id
+  userId             String
+  status             SnapshotBuildStatus @default(pending)
+  agentBlobUrl       String?
+  agentSha           String?
+  provider           String              @default("hetzner")
+  providerBuilderId  String?
+  snapshotId         String?
+  previousSnapshotId String?
+  errorReason        String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  finishedAt         DateTime?
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("snapshot_builds")
+}
+
+model BillingCustomer {
+  id               String         @id
+  userId           String         @unique
+  stripeCustomerId String         @unique
+  email            String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptions    Subscription[]
+  invoices         Invoice[]
+
+  @@map("billing_customers")
+}
+
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  canceled
+  unpaid
+  incomplete
+  incomplete_expired
+  paused
+}
+
+model Subscription {
+  id                   String             @id
+  serverId             String             @unique
+  billingCustomerId    String
+  stripeSubscriptionId String             @unique
+  stripePriceId        String
+  stripeProductId      String
+  status               SubscriptionStatus @default(incomplete)
+  // NodeByte-facing plan metadata
+  planName             String // e.g. "CX21", "CPX31"
+  pricePerMonthCents   Int // NodeByte price (not Hetzner base)
+  currency             String             @default("GBP")
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  canceledAt           DateTime?
+  suspendedAt          DateTime? // set when server is suspended due to non-payment
+  // Promo / discount
+  promoCode            String? // human-readable promo code applied
+  discountAmountCents  Int? // flat GBP pence discount (if any)
+  trialEnd             DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  server               Server             @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  billingCustomer      BillingCustomer    @relation(fields: [billingCustomerId], references: [id])
+  invoices             Invoice[]
+  addons               ServerAddon[]
+
+  @@index([billingCustomerId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+enum InvoiceStatus {
+  draft
+  open
+  paid
+  uncollectible
+  void
+}
+
+model Invoice {
+  id                String          @id // = Stripe invoice ID
+  billingCustomerId String
+  subscriptionId    String?
+  stripeInvoiceId   String          @unique
+  amountDue         Int // GBP pence
+  amountPaid        Int // GBP pence
+  currency          String          @default("GBP")
+  status            InvoiceStatus
+  invoiceUrl        String? // Stripe-hosted invoice URL
+  invoicePdf        String? // PDF download link
+  description       String?
+  periodStart       DateTime?
+  periodEnd         DateTime?
+  paidAt            DateTime?
+  dueDate           DateTime?
+  createdAt         DateTime        @default(now())
+  billingCustomer   BillingCustomer @relation(fields: [billingCustomerId], references: [id])
+  subscription      Subscription?   @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([billingCustomerId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@map("invoices")
+}
+
+enum ServerAddonType {
+  snapshot
+  backup
+  database
+}
+
+model ServerAddon {
+  id                String          @id @default(cuid())
+  subscriptionId    String
+  serverId          String
+  type              ServerAddonType
+  quantity          Int             @default(0) // total slots ordered
+  freeAllowance     Int             @default(0) // slots included in base plan
+  pricePerUnitCents Int             @default(0) // GBP pence per extra unit/month
+  stripeItemId      String? // Stripe subscription item ID
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  subscription      Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, type])
+  @@index([subscriptionId])
+  @@map("server_addons")
+}
+
+// ─── Audit Log ──────────────────────────────────────────────────
+
+// General-purpose audit trail for all user and admin actions.
+// `actorId` is nullable so system-generated events (e.g. agent events) can
+// also be stored without a user reference.
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  // Human-readable snapshot of the actor's email at the time of the event
+  actorEmail String?
+  // Dot-namespaced action code, e.g. "user.ban", "server.create", "admin.impersonate"
+  action     String
+  // Optional reference to the affected resource
+  targetId   String?
+  targetType String? // "user" | "server" | "subscription" | ...
+  // Any extra context for the event (before/after values, reason, etc.)
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([action])
+  @@index([targetId, targetType])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
