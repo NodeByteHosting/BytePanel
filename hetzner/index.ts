@@ -12,7 +12,7 @@ import { createServerOps } from "./servers";
 export const HETZNER_BUILDER_PROFILE: BuilderProfile = {
   baseImage: "ubuntu-24.04",
   location: "nbg1",
-  serverType: "cx23",
+  serverType: "cpx21",
 };
 
 export const createHetznerProvider = (token: string): Provider => {
