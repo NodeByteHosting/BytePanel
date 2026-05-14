@@ -5,6 +5,7 @@ This guide covers the submodule strategy for NodeByte GSM.
 ## Submodule Architecture
 
 **Submodules (independent versioning):**
+
 - `agent/` — NodeByte Game Server Agent (GSA)
 - `games/` — Game server recipes (GSG)
 - `lib/providers/` — Provider implementations (GSP)
@@ -254,6 +255,7 @@ Submodules can absolutely be private repositories.
 For private submodules, each developer and CI environment must have read access to all submodule repos.
 
 Common approaches:
+
 - Use SSH URLs in `.gitmodules` (recommended for developer machines)
 - Use HTTPS with PAT/token in CI
 - Configure CI checkout to fetch submodules recursively with credentials

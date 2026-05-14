@@ -9,8 +9,8 @@ import "server-only";
 import { notFound } from "next/navigation";
 
 import { prisma } from "./db";
+import type { ServerRole } from "./server-roles";
 import {
-  type ServerRole,
   meetsMinServerRole,
   SERVER_ROLE_DESCRIPTIONS,
   SERVER_ROLE_LABELS,
