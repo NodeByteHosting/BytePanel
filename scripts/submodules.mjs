@@ -40,6 +40,48 @@ const run = (cmd, args, opts = {}) => {
 
 const git = (args, opts = {}) => run("git", args, opts);
 
+const resolveGitAuthToken = () =>
+  process.env.GIT_AUTH_TOKEN ??
+  process.env.VERCEL_SANDBOX_GIT_TOKEN ??
+  process.env.GITHUB_TOKEN;
+
+const configureGitAuth = (repoRoot, command) => {
+  const token = resolveGitAuthToken();
+  const needsRemoteAccess = command === "setup" || command === "update";
+
+  if (!token) {
+    if (needsRemoteAccess && (process.env.CI || process.env.VERCEL)) {
+      log.err(
+        "✗ Missing GitHub token for private submodules. Set GIT_AUTH_TOKEN (or VERCEL_SANDBOX_GIT_TOKEN / GITHUB_TOKEN) in build environment."
+      );
+      process.exit(1);
+    }
+    return [];
+  }
+
+  const encodedToken = encodeURIComponent(token);
+  const authArg =
+    `url.https://x-access-token:${encodedToken}@github.com/.insteadOf=` +
+    "https://github.com/";
+
+  log.info("🔐 GitHub token detected for submodule auth");
+
+  // Allow git submodule update to clone private GitHub repos non-interactively.
+  git(
+    [
+      "config",
+      "--global",
+      `url.https://x-access-token:${encodedToken}@github.com/.insteadOf`,
+      "https://github.com/",
+    ],
+    { cwd: repoRoot }
+  );
+
+  // Also inject rewrite per-command so containerized builds don't depend on
+  // global git config persistence between build phases.
+  return ["-c", authArg];
+};
+
 const getRepoRoot = () => {
   const r = git(["rev-parse", "--show-toplevel"], { capture: true });
   if (r.code !== 0 || !r.stdout) {
@@ -203,12 +245,14 @@ const validate = (repoRoot, submodules) => {
   return 0;
 };
 
-const setup = (repoRoot, submodules) => {
+const setup = (repoRoot, submodules, authArgs) => {
   log.info("🔧 Syncing submodule remotes...");
-  git(["submodule", "sync", "--recursive"], { cwd: repoRoot });
+  git([...authArgs, "submodule", "sync", "--recursive"], { cwd: repoRoot });
 
   log.info("🔧 Initializing and updating submodules...");
-  git(["submodule", "update", "--init", "--recursive"], { cwd: repoRoot });
+  git([...authArgs, "submodule", "update", "--init", "--recursive"], {
+    cwd: repoRoot,
+  });
 
   return validate(repoRoot, submodules);
 };
@@ -218,14 +262,17 @@ const status = (repoRoot) => {
   return 0;
 };
 
-const update = (repoRoot) => {
+const update = (repoRoot, authArgs) => {
   log.info("🔧 Syncing submodule remotes...");
-  git(["submodule", "sync", "--recursive"], { cwd: repoRoot });
+  git([...authArgs, "submodule", "sync", "--recursive"], { cwd: repoRoot });
 
   log.info("🔧 Updating submodules to latest configured branches...");
-  git(["submodule", "update", "--init", "--recursive", "--remote"], {
-    cwd: repoRoot,
-  });
+  git(
+    [...authArgs, "submodule", "update", "--init", "--recursive", "--remote"],
+    {
+      cwd: repoRoot,
+    }
+  );
 
   git(["submodule", "status", "--recursive"], { cwd: repoRoot });
   return 0;
@@ -299,11 +346,13 @@ const main = () => {
   const repoRoot = getRepoRoot();
   const submodules = getSubmodulePaths(repoRoot);
 
+  const authArgs = configureGitAuth(repoRoot, command);
+
   const handlers = {
     push: () => push(repoRoot, submodules),
-    setup: () => setup(repoRoot, submodules),
+    setup: () => setup(repoRoot, submodules, authArgs),
     status: () => status(repoRoot),
-    update: () => update(repoRoot),
+    update: () => update(repoRoot, authArgs),
     validate: () => validate(repoRoot, submodules),
   };
 
