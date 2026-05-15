@@ -5,12 +5,13 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
+    "fmt": "deno fmt",
+    "fmt:check": "deno fmt --check",
+    "lint": "deno lint",
     "types": "tsc --noEmit",
-    "lint": "ultracite check",
-    "check": "npm run lint && npm run types"
+    "ci": "npm run fmt:check && npm run lint && npm run types"
   },
   "devDependencies": {
-    "typescript": "^6.0.3",
-    "ultracite": "^7.6.4"
+    "typescript": "^6.0.3"
   }
 }
