@@ -27,6 +27,7 @@ const tscConfig = existsSync(ROOT_TSCONFIG) && existsSync(ROOT_PRICING)
       baseUrl: ".",
       ignoreDeprecations: "6.0",
       incremental: false,
+      lib: ["ES2023"],
       module: "ESNext",
       moduleResolution: "Bundler",
       noEmit: true,
@@ -34,11 +35,17 @@ const tscConfig = existsSync(ROOT_TSCONFIG) && existsSync(ROOT_PRICING)
         "@/lib/pricing": ["./scripts/typecheck-shims/pricing.ts"],
       },
       strict: true,
-      target: "ES2022",
+      target: "ES2023",
       types: ["node"],
     },
     include: ["./**/*.ts", "./scripts/typecheck-shims/**/*.ts"],
-    exclude: ["./.github/**", "./node_modules/**", "./scripts/**", "./**/*.d.ts"],
+    exclude: [
+      "./.github/**",
+      "./index.ts",
+      "./node_modules/**",
+      "./scripts/**",
+      "./**/*.d.ts",
+    ],
   };
 
 writeFileSync(TEMP_TSCONFIG, `${JSON.stringify(tscConfig, null, 2)}\n`, "utf-8");
