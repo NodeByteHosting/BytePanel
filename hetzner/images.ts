@@ -30,14 +30,12 @@ const toImageStatus = (status: string): ProviderImageStatus => {
   return "unavailable";
 };
 
-const toImageType = (type: string): ProviderImageType =>
-  type === "backup" ? "backup" : "snapshot";
+const toImageType = (type: string): ProviderImageType => type === "backup" ? "backup" : "snapshot";
 
 export const mapHetznerImage = (image: HetznerImage): ProviderImage => ({
   boundToServerId: image.bound_to === null ? null : String(image.bound_to),
   createdAt: image.created,
-  createdFromServerId:
-    image.created_from === null ? null : String(image.created_from.id),
+  createdFromServerId: image.created_from === null ? null : String(image.created_from.id),
   description: image.description,
   diskSizeGb: image.disk_size,
   id: String(image.id),
@@ -53,7 +51,7 @@ const parseImageId = (imageId: ImageResourceId): number => {
     throw new ProviderApiError(
       400,
       "invalid_image_id",
-      `Invalid image id: ${imageId}`
+      `Invalid image id: ${imageId}`,
     );
   }
   return parsed;
@@ -62,7 +60,7 @@ const parseImageId = (imageId: ImageResourceId): number => {
 export const createImageOps = (client: HetznerClient) => ({
   createSnapshot: async (
     serverId: ServerResourceId,
-    opts: { description?: string }
+    opts: { description?: string },
   ): Promise<ImageResourceId> => {
     const { data, error, response } = await client.POST(
       "/servers/{id}/actions/create_image",
@@ -72,7 +70,7 @@ export const createImageOps = (client: HetznerClient) => ({
           type: "snapshot",
         },
         params: { path: { id: Number(serverId) } },
-      }
+      },
     );
     if (!response.ok) {
       throwIfHetznerError(error, response);
@@ -116,7 +114,7 @@ export const createImageOps = (client: HetznerClient) => ({
   },
 
   listImagesForServer: async (
-    serverId: ServerResourceId
+    serverId: ServerResourceId,
   ): Promise<ProviderImage[]> => {
     const numericServerId = Number(serverId);
     const { data, error, response } = await client.GET("/images", {
@@ -135,14 +133,14 @@ export const createImageOps = (client: HetznerClient) => ({
       .filter(
         (img) =>
           img.bound_to === numericServerId ||
-          (img.type === "snapshot" && img.created_from?.id === numericServerId)
+          (img.type === "snapshot" && img.created_from?.id === numericServerId),
       )
       .map((img) => mapHetznerImage(img as HetznerImage));
   },
 
   rebuildFromImage: async (
     serverId: ServerResourceId,
-    imageId: ImageResourceId
+    imageId: ImageResourceId,
   ): Promise<void> => {
     const numericImageId = parseImageId(imageId);
     const { error, response } = await client.POST(
@@ -150,7 +148,7 @@ export const createImageOps = (client: HetznerClient) => ({
       {
         body: { image: String(numericImageId) },
         params: { path: { id: Number(serverId) } },
-      }
+      },
     );
     if (!response.ok) {
       throwIfHetznerError(error, response);

@@ -14326,378 +14326,440 @@ export interface operations {
               /** @description List of services that belong to this Load Balancer. */
               services: (
                 | ({
+                  /**
+                   * @description Protocol of the Load Balancer.
+                   * @enum {string}
+                   */
+                  protocol: "tcp" | "http" | "https";
+                  /**
+                   * @description Port the Load Balancer listens on.
+                   * @example 443
+                   */
+                  listen_port: number;
+                  /**
+                   * @description Port the Load Balancer will balance to.
+                   * @example 80
+                   */
+                  destination_port: number;
+                  /**
+                   * @description Is Proxyprotocol enabled or not.
+                   * @example false
+                   */
+                  proxyprotocol: boolean;
+                  /**
+                   * LoadBalancerServiceHealthCheck
+                   * @description Service health check.
+                   */
+                  health_check: {
                     /**
-                     * @description Protocol of the Load Balancer.
-                     * @enum {string}
-                     */
-                    protocol: "tcp" | "http" | "https";
-                    /**
-                     * @description Port the Load Balancer listens on.
-                     * @example 443
-                     */
-                    listen_port: number;
-                    /**
-                     * @description Port the Load Balancer will balance to.
-                     * @example 80
-                     */
-                    destination_port: number;
-                    /**
-                     * @description Is Proxyprotocol enabled or not.
-                     * @example false
-                     */
-                    proxyprotocol: boolean;
-                    /**
-                     * LoadBalancerServiceHealthCheck
-                     * @description Service health check.
-                     */
-                    health_check: {
-                      /**
-                       * @description Type of the health check.
-                       * @example http
-                       * @enum {string}
-                       */
-                      protocol: "tcp" | "http";
-                      /**
-                       * @description Port the health check will be performed on.
-                       * @example 4711
-                       */
-                      port: number;
-                      /**
-                       * @description Time interval in seconds health checks are performed.
-                       * @example 15
-                       */
-                      interval: number;
-                      /**
-                       * @description Time in seconds after an attempt is considered a timeout.
-                       * @example 10
-                       */
-                      timeout: number;
-                      /**
-                       * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                       * @example 3
-                       */
-                      retries: number;
-                      /** @description Additional configuration for protocol http. */
-                      http?: {
-                        /**
-                         * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                         * @example example.com
-                         */
-                        domain: string | null;
-                        /**
-                         * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                         * @example /
-                         */
-                        path: string;
-                        /**
-                         * @description String that must be contained in HTTP response in order to pass the health check.
-                         * @example {"status": "ok"}
-                         */
-                        response?: string;
-                        /**
-                         * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                         * @default [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         * @example [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         */
-                        status_codes: string[];
-                        /**
-                         * @description Use HTTPS for health check.
-                         * @example false
-                         */
-                        tls?: boolean;
-                      };
-                    };
-                  } & {
-                    /**
-                     * @example tcp
-                     * @enum {string}
-                     */
-                    protocol?: "tcp";
-                  })
-                | ({
-                    /**
-                     * @description Protocol of the Load Balancer.
-                     * @enum {string}
-                     */
-                    protocol: "tcp" | "http" | "https";
-                    /**
-                     * @description Port the Load Balancer listens on.
-                     * @example 443
-                     */
-                    listen_port: number;
-                    /**
-                     * @description Port the Load Balancer will balance to.
-                     * @example 80
-                     */
-                    destination_port: number;
-                    /**
-                     * @description Is Proxyprotocol enabled or not.
-                     * @example false
-                     */
-                    proxyprotocol: boolean;
-                    /**
-                     * LoadBalancerServiceHealthCheck
-                     * @description Service health check.
-                     */
-                    health_check: {
-                      /**
-                       * @description Type of the health check.
-                       * @example http
-                       * @enum {string}
-                       */
-                      protocol: "tcp" | "http";
-                      /**
-                       * @description Port the health check will be performed on.
-                       * @example 4711
-                       */
-                      port: number;
-                      /**
-                       * @description Time interval in seconds health checks are performed.
-                       * @example 15
-                       */
-                      interval: number;
-                      /**
-                       * @description Time in seconds after an attempt is considered a timeout.
-                       * @example 10
-                       */
-                      timeout: number;
-                      /**
-                       * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                       * @example 3
-                       */
-                      retries: number;
-                      /** @description Additional configuration for protocol http. */
-                      http?: {
-                        /**
-                         * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                         * @example example.com
-                         */
-                        domain: string | null;
-                        /**
-                         * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                         * @example /
-                         */
-                        path: string;
-                        /**
-                         * @description String that must be contained in HTTP response in order to pass the health check.
-                         * @example {"status": "ok"}
-                         */
-                        response?: string;
-                        /**
-                         * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                         * @default [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         * @example [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         */
-                        status_codes: string[];
-                        /**
-                         * @description Use HTTPS for health check.
-                         * @example false
-                         */
-                        tls?: boolean;
-                      };
-                    };
-                  } & {
-                    /**
+                     * @description Type of the health check.
                      * @example http
                      * @enum {string}
                      */
-                    protocol?: "http";
+                    protocol: "tcp" | "http";
                     /**
-                     * LoadBalancerServiceHTTPConfig
-                     * @description Configuration option for protocol http.
+                     * @description Port the health check will be performed on.
+                     * @example 4711
                      */
-                    http: {
-                      /**
-                       * @description Name of the cookie used for sticky sessions.
-                       * @default HCLBSTICKY
-                       * @example HCLBSTICKY
-                       */
-                      cookie_name: string;
-                      /**
-                       * @description Lifetime of the cookie used for sticky sessions (in seconds).
-                       * @default 300
-                       * @example 300
-                       */
-                      cookie_lifetime: number;
-                      /**
-                       * @description Idle timeout in seconds for the client and server side.
-                       * @default 50
-                       * @example 50
-                       */
-                      timeout_idle: number;
-                      /**
-                       * @description Use sticky sessions.
-                       * @default false
-                       * @example true
-                       */
-                      sticky_sessions: boolean;
-                    };
-                  })
-                | ({
+                    port: number;
                     /**
-                     * @description Protocol of the Load Balancer.
-                     * @enum {string}
+                     * @description Time interval in seconds health checks are performed.
+                     * @example 15
                      */
-                    protocol: "tcp" | "http" | "https";
+                    interval: number;
                     /**
-                     * @description Port the Load Balancer listens on.
-                     * @example 443
+                     * @description Time in seconds after an attempt is considered a timeout.
+                     * @example 10
                      */
-                    listen_port: number;
+                    timeout: number;
                     /**
-                     * @description Port the Load Balancer will balance to.
-                     * @example 80
+                     * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                     * @example 3
                      */
-                    destination_port: number;
-                    /**
-                     * @description Is Proxyprotocol enabled or not.
-                     * @example false
-                     */
-                    proxyprotocol: boolean;
-                    /**
-                     * LoadBalancerServiceHealthCheck
-                     * @description Service health check.
-                     */
-                    health_check: {
+                    retries: number;
+                    /** @description Additional configuration for protocol http. */
+                    http?: {
                       /**
-                       * @description Type of the health check.
-                       * @example http
-                       * @enum {string}
+                       * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                       * @example example.com
                        */
-                      protocol: "tcp" | "http";
+                      domain: string | null;
                       /**
-                       * @description Port the health check will be performed on.
-                       * @example 4711
+                       * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                       * @example /
                        */
-                      port: number;
+                      path: string;
                       /**
-                       * @description Time interval in seconds health checks are performed.
-                       * @example 15
+                       * @description String that must be contained in HTTP response in order to pass the health check.
+                       * @example {"status": "ok"}
                        */
-                      interval: number;
+                      response?: string;
                       /**
-                       * @description Time in seconds after an attempt is considered a timeout.
-                       * @example 10
-                       */
-                      timeout: number;
-                      /**
-                       * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                       * @example 3
-                       */
-                      retries: number;
-                      /** @description Additional configuration for protocol http. */
-                      http?: {
-                        /**
-                         * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                         * @example example.com
-                         */
-                        domain: string | null;
-                        /**
-                         * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                         * @example /
-                         */
-                        path: string;
-                        /**
-                         * @description String that must be contained in HTTP response in order to pass the health check.
-                         * @example {"status": "ok"}
-                         */
-                        response?: string;
-                        /**
-                         * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                         * @default [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         * @example [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         */
-                        status_codes: string[];
-                        /**
-                         * @description Use HTTPS for health check.
-                         * @example false
-                         */
-                        tls?: boolean;
-                      };
-                    };
-                  } & {
-                    /**
-                     * @example https
-                     * @enum {string}
-                     */
-                    protocol?: "https";
-                    /**
-                     * LoadBalancerServiceHTTPSConfig
-                     * @description Configuration option for protocol https.
-                     */
-                    http: {
-                      /**
-                       * @description Name of the cookie used for sticky sessions.
-                       * @default HCLBSTICKY
-                       * @example HCLBSTICKY
-                       */
-                      cookie_name: string;
-                      /**
-                       * @description Lifetime of the cookie used for sticky sessions (in seconds).
-                       * @default 300
-                       * @example 300
-                       */
-                      cookie_lifetime: number;
-                      /**
-                       * @description Idle timeout in seconds for the client and server side.
-                       * @default 50
-                       * @example 50
-                       */
-                      timeout_idle: number;
-                      /**
-                       * @description IDs of the Certificates to use for TLS/SSL termination by the Load Balancer; empty for TLS/SSL passthrough.
+                       * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                       * @default [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
                        * @example [
-                       *       897
+                       *       "2??",
+                       *       "3??"
                        *     ]
                        */
-                      certificates: number[];
+                      status_codes: string[];
                       /**
-                       * @description Redirect HTTP requests to HTTPS.
-                       * @default false
-                       * @example true
+                       * @description Use HTTPS for health check.
+                       * @example false
                        */
-                      redirect_http: boolean;
-                      /**
-                       * @description Use sticky sessions.
-                       * @default false
-                       * @example true
-                       */
-                      sticky_sessions: boolean;
+                      tls?: boolean;
                     };
-                  })
+                  };
+                } & {
+                  /**
+                   * @example tcp
+                   * @enum {string}
+                   */
+                  protocol?: "tcp";
+                })
+                | ({
+                  /**
+                   * @description Protocol of the Load Balancer.
+                   * @enum {string}
+                   */
+                  protocol: "tcp" | "http" | "https";
+                  /**
+                   * @description Port the Load Balancer listens on.
+                   * @example 443
+                   */
+                  listen_port: number;
+                  /**
+                   * @description Port the Load Balancer will balance to.
+                   * @example 80
+                   */
+                  destination_port: number;
+                  /**
+                   * @description Is Proxyprotocol enabled or not.
+                   * @example false
+                   */
+                  proxyprotocol: boolean;
+                  /**
+                   * LoadBalancerServiceHealthCheck
+                   * @description Service health check.
+                   */
+                  health_check: {
+                    /**
+                     * @description Type of the health check.
+                     * @example http
+                     * @enum {string}
+                     */
+                    protocol: "tcp" | "http";
+                    /**
+                     * @description Port the health check will be performed on.
+                     * @example 4711
+                     */
+                    port: number;
+                    /**
+                     * @description Time interval in seconds health checks are performed.
+                     * @example 15
+                     */
+                    interval: number;
+                    /**
+                     * @description Time in seconds after an attempt is considered a timeout.
+                     * @example 10
+                     */
+                    timeout: number;
+                    /**
+                     * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                     * @example 3
+                     */
+                    retries: number;
+                    /** @description Additional configuration for protocol http. */
+                    http?: {
+                      /**
+                       * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                       * @example example.com
+                       */
+                      domain: string | null;
+                      /**
+                       * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                       * @example /
+                       */
+                      path: string;
+                      /**
+                       * @description String that must be contained in HTTP response in order to pass the health check.
+                       * @example {"status": "ok"}
+                       */
+                      response?: string;
+                      /**
+                       * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                       * @default [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       * @example [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       */
+                      status_codes: string[];
+                      /**
+                       * @description Use HTTPS for health check.
+                       * @example false
+                       */
+                      tls?: boolean;
+                    };
+                  };
+                } & {
+                  /**
+                   * @example http
+                   * @enum {string}
+                   */
+                  protocol?: "http";
+                  /**
+                   * LoadBalancerServiceHTTPConfig
+                   * @description Configuration option for protocol http.
+                   */
+                  http: {
+                    /**
+                     * @description Name of the cookie used for sticky sessions.
+                     * @default HCLBSTICKY
+                     * @example HCLBSTICKY
+                     */
+                    cookie_name: string;
+                    /**
+                     * @description Lifetime of the cookie used for sticky sessions (in seconds).
+                     * @default 300
+                     * @example 300
+                     */
+                    cookie_lifetime: number;
+                    /**
+                     * @description Idle timeout in seconds for the client and server side.
+                     * @default 50
+                     * @example 50
+                     */
+                    timeout_idle: number;
+                    /**
+                     * @description Use sticky sessions.
+                     * @default false
+                     * @example true
+                     */
+                    sticky_sessions: boolean;
+                  };
+                })
+                | ({
+                  /**
+                   * @description Protocol of the Load Balancer.
+                   * @enum {string}
+                   */
+                  protocol: "tcp" | "http" | "https";
+                  /**
+                   * @description Port the Load Balancer listens on.
+                   * @example 443
+                   */
+                  listen_port: number;
+                  /**
+                   * @description Port the Load Balancer will balance to.
+                   * @example 80
+                   */
+                  destination_port: number;
+                  /**
+                   * @description Is Proxyprotocol enabled or not.
+                   * @example false
+                   */
+                  proxyprotocol: boolean;
+                  /**
+                   * LoadBalancerServiceHealthCheck
+                   * @description Service health check.
+                   */
+                  health_check: {
+                    /**
+                     * @description Type of the health check.
+                     * @example http
+                     * @enum {string}
+                     */
+                    protocol: "tcp" | "http";
+                    /**
+                     * @description Port the health check will be performed on.
+                     * @example 4711
+                     */
+                    port: number;
+                    /**
+                     * @description Time interval in seconds health checks are performed.
+                     * @example 15
+                     */
+                    interval: number;
+                    /**
+                     * @description Time in seconds after an attempt is considered a timeout.
+                     * @example 10
+                     */
+                    timeout: number;
+                    /**
+                     * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                     * @example 3
+                     */
+                    retries: number;
+                    /** @description Additional configuration for protocol http. */
+                    http?: {
+                      /**
+                       * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                       * @example example.com
+                       */
+                      domain: string | null;
+                      /**
+                       * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                       * @example /
+                       */
+                      path: string;
+                      /**
+                       * @description String that must be contained in HTTP response in order to pass the health check.
+                       * @example {"status": "ok"}
+                       */
+                      response?: string;
+                      /**
+                       * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                       * @default [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       * @example [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       */
+                      status_codes: string[];
+                      /**
+                       * @description Use HTTPS for health check.
+                       * @example false
+                       */
+                      tls?: boolean;
+                    };
+                  };
+                } & {
+                  /**
+                   * @example https
+                   * @enum {string}
+                   */
+                  protocol?: "https";
+                  /**
+                   * LoadBalancerServiceHTTPSConfig
+                   * @description Configuration option for protocol https.
+                   */
+                  http: {
+                    /**
+                     * @description Name of the cookie used for sticky sessions.
+                     * @default HCLBSTICKY
+                     * @example HCLBSTICKY
+                     */
+                    cookie_name: string;
+                    /**
+                     * @description Lifetime of the cookie used for sticky sessions (in seconds).
+                     * @default 300
+                     * @example 300
+                     */
+                    cookie_lifetime: number;
+                    /**
+                     * @description Idle timeout in seconds for the client and server side.
+                     * @default 50
+                     * @example 50
+                     */
+                    timeout_idle: number;
+                    /**
+                     * @description IDs of the Certificates to use for TLS/SSL termination by the Load Balancer; empty for TLS/SSL passthrough.
+                     * @example [
+                     *       897
+                     *     ]
+                     */
+                    certificates: number[];
+                    /**
+                     * @description Redirect HTTP requests to HTTPS.
+                     * @default false
+                     * @example true
+                     */
+                    redirect_http: boolean;
+                    /**
+                     * @description Use sticky sessions.
+                     * @default false
+                     * @example true
+                     */
+                    sticky_sessions: boolean;
+                  };
+                })
               )[];
               /** @description List of targets that belong to this Load Balancer. */
               targets: (
                 | ({
+                  /**
+                   * @description Type of the resource.
+                   * @enum {string}
+                   */
+                  type: "server" | "label_selector" | "ip";
+                } & {
+                  /**
+                   * @example server
+                   * @enum {string}
+                   */
+                  type?: "server";
+                  /**
+                   * LoadBalancerTargetServer
+                   * @description Server where the traffic should be routed to. Only present for target type "server".
+                   */
+                  server: {
                     /**
-                     * @description Type of the resource.
+                     * Format: int64
+                     * @description ID of the Server.
+                     * @example 80
+                     */
+                    id: number;
+                  };
+                  /**
+                   * LoadBalancerTargetHealthStatus
+                   * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
+                   */
+                  health_status: {
+                    /** @example 443 */
+                    listen_port: number;
+                    /**
+                     * @example healthy
                      * @enum {string}
                      */
-                    type: "server" | "label_selector" | "ip";
-                  } & {
+                    status: "healthy" | "unhealthy" | "unknown";
+                  }[];
+                  /**
+                   * LoadBalancerTargetUsePrivateIP
+                   * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
+                   * @default false
+                   */
+                  use_private_ip: boolean;
+                })
+                | ({
+                  /**
+                   * @description Type of the resource.
+                   * @enum {string}
+                   */
+                  type: "server" | "label_selector" | "ip";
+                } & {
+                  /**
+                   * @example label_selector
+                   * @enum {string}
+                   */
+                  type?: "label_selector";
+                  /**
+                   * LoadBalancerTargetLabelSelector
+                   * @description Label selector used to determine targets. Only present for target type "label_selector".
+                   */
+                  label_selector: {
                     /**
+                     * @description Label selector.
+                     * @example env=prod
+                     */
+                    selector: string;
+                  };
+                  /** @description List of resolved label selector target Servers. */
+                  targets: {
+                    /**
+                     * @description Type of the resource. Here always "server".
                      * @example server
-                     * @enum {string}
                      */
-                    type?: "server";
+                    type: string;
                     /**
                      * LoadBalancerTargetServer
                      * @description Server where the traffic should be routed to. Only present for target type "server".
@@ -14729,113 +14791,51 @@ export interface operations {
                      * @default false
                      */
                     use_private_ip: boolean;
-                  })
+                  }[];
+                  /**
+                   * LoadBalancerTargetUsePrivateIP
+                   * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
+                   * @default false
+                   */
+                  use_private_ip: boolean;
+                })
                 | ({
+                  /**
+                   * @description Type of the resource.
+                   * @enum {string}
+                   */
+                  type: "server" | "label_selector" | "ip";
+                } & {
+                  /**
+                   * @example ip
+                   * @enum {string}
+                   */
+                  type?: "ip";
+                  /**
+                   * LoadBalancerTargetIP
+                   * @description IP target where the traffic should be routed to. It is only possible to use the (Public or vSwitch) IPs of Hetzner Online Root Servers belonging to the project owner. IPs belonging to other users are blocked. Additionally IPs belonging to services provided by Hetzner Cloud (Servers, Load Balancers, ...) are blocked as well. Only present for target type `ip`.
+                   */
+                  ip: {
                     /**
-                     * @description Type of the resource.
+                     * @description IP of a server that belongs to the same customer (public IPv4/IPv6) or private IP in a subnet type vswitch.
+                     * @example 203.0.113.1
+                     */
+                    ip: string;
+                  };
+                  /**
+                   * LoadBalancerTargetHealthStatus
+                   * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
+                   */
+                  health_status: {
+                    /** @example 443 */
+                    listen_port: number;
+                    /**
+                     * @example healthy
                      * @enum {string}
                      */
-                    type: "server" | "label_selector" | "ip";
-                  } & {
-                    /**
-                     * @example label_selector
-                     * @enum {string}
-                     */
-                    type?: "label_selector";
-                    /**
-                     * LoadBalancerTargetLabelSelector
-                     * @description Label selector used to determine targets. Only present for target type "label_selector".
-                     */
-                    label_selector: {
-                      /**
-                       * @description Label selector.
-                       * @example env=prod
-                       */
-                      selector: string;
-                    };
-                    /** @description List of resolved label selector target Servers. */
-                    targets: {
-                      /**
-                       * @description Type of the resource. Here always "server".
-                       * @example server
-                       */
-                      type: string;
-                      /**
-                       * LoadBalancerTargetServer
-                       * @description Server where the traffic should be routed to. Only present for target type "server".
-                       */
-                      server: {
-                        /**
-                         * Format: int64
-                         * @description ID of the Server.
-                         * @example 80
-                         */
-                        id: number;
-                      };
-                      /**
-                       * LoadBalancerTargetHealthStatus
-                       * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
-                       */
-                      health_status: {
-                        /** @example 443 */
-                        listen_port: number;
-                        /**
-                         * @example healthy
-                         * @enum {string}
-                         */
-                        status: "healthy" | "unhealthy" | "unknown";
-                      }[];
-                      /**
-                       * LoadBalancerTargetUsePrivateIP
-                       * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
-                       * @default false
-                       */
-                      use_private_ip: boolean;
-                    }[];
-                    /**
-                     * LoadBalancerTargetUsePrivateIP
-                     * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
-                     * @default false
-                     */
-                    use_private_ip: boolean;
-                  })
-                | ({
-                    /**
-                     * @description Type of the resource.
-                     * @enum {string}
-                     */
-                    type: "server" | "label_selector" | "ip";
-                  } & {
-                    /**
-                     * @example ip
-                     * @enum {string}
-                     */
-                    type?: "ip";
-                    /**
-                     * LoadBalancerTargetIP
-                     * @description IP target where the traffic should be routed to. It is only possible to use the (Public or vSwitch) IPs of Hetzner Online Root Servers belonging to the project owner. IPs belonging to other users are blocked. Additionally IPs belonging to services provided by Hetzner Cloud (Servers, Load Balancers, ...) are blocked as well. Only present for target type `ip`.
-                     */
-                    ip: {
-                      /**
-                       * @description IP of a server that belongs to the same customer (public IPv4/IPv6) or private IP in a subnet type vswitch.
-                       * @example 203.0.113.1
-                       */
-                      ip: string;
-                    };
-                    /**
-                     * LoadBalancerTargetHealthStatus
-                     * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
-                     */
-                    health_status: {
-                      /** @example 443 */
-                      listen_port: number;
-                      /**
-                       * @example healthy
-                       * @enum {string}
-                       */
-                      status: "healthy" | "unhealthy" | "unknown";
-                    }[];
-                  })
+                    status: "healthy" | "unhealthy" | "unknown";
+                  }[];
+                })
               )[];
               /** @description Algorithm of the Load Balancer. */
               algorithm: {
@@ -14978,363 +14978,363 @@ export interface operations {
           /** @description Array of services. */
           services?: (
             | ({
+              /**
+               * @description Protocol of the Load Balancer.
+               * @enum {string}
+               */
+              protocol: "tcp" | "http" | "https";
+              /**
+               * @description Port the Load Balancer listens on.
+               * @example 443
+               */
+              listen_port: number;
+              /**
+               * @description Port the Load Balancer will balance to.
+               * @example 80
+               */
+              destination_port: number;
+              /**
+               * @description Is Proxyprotocol enabled or not.
+               * @example false
+               */
+              proxyprotocol: boolean;
+              /**
+               * LoadBalancerServiceHealthCheck
+               * @description Service health check.
+               */
+              health_check: {
                 /**
-                 * @description Protocol of the Load Balancer.
-                 * @enum {string}
-                 */
-                protocol: "tcp" | "http" | "https";
-                /**
-                 * @description Port the Load Balancer listens on.
-                 * @example 443
-                 */
-                listen_port: number;
-                /**
-                 * @description Port the Load Balancer will balance to.
-                 * @example 80
-                 */
-                destination_port: number;
-                /**
-                 * @description Is Proxyprotocol enabled or not.
-                 * @example false
-                 */
-                proxyprotocol: boolean;
-                /**
-                 * LoadBalancerServiceHealthCheck
-                 * @description Service health check.
-                 */
-                health_check: {
-                  /**
-                   * @description Type of the health check.
-                   * @example http
-                   * @enum {string}
-                   */
-                  protocol: "tcp" | "http";
-                  /**
-                   * @description Port the health check will be performed on.
-                   * @example 4711
-                   */
-                  port: number;
-                  /**
-                   * @description Time interval in seconds health checks are performed.
-                   * @example 15
-                   */
-                  interval: number;
-                  /**
-                   * @description Time in seconds after an attempt is considered a timeout.
-                   * @example 10
-                   */
-                  timeout: number;
-                  /**
-                   * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                   * @example 3
-                   */
-                  retries: number;
-                  /** @description Additional configuration for protocol http. */
-                  http?: {
-                    /**
-                     * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                     * @example example.com
-                     */
-                    domain: string | null;
-                    /**
-                     * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                     * @example /
-                     */
-                    path: string;
-                    /**
-                     * @description String that must be contained in HTTP response in order to pass the health check.
-                     * @example {"status": "ok"}
-                     */
-                    response?: string;
-                    /**
-                     * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                     * @default [
-                     *       "2??",
-                     *       "3??"
-                     *     ]
-                     * @example [
-                     *       "2??",
-                     *       "3??"
-                     *     ]
-                     */
-                    status_codes?: string[];
-                    /**
-                     * @description Use HTTPS for health check.
-                     * @example false
-                     */
-                    tls?: boolean;
-                  };
-                };
-              } & {
-                /**
-                 * @example tcp
-                 * @enum {string}
-                 */
-                protocol?: "tcp";
-              })
-            | ({
-                /**
-                 * @description Protocol of the Load Balancer.
-                 * @enum {string}
-                 */
-                protocol: "tcp" | "http" | "https";
-                /**
-                 * @description Port the Load Balancer listens on.
-                 * @example 443
-                 */
-                listen_port: number;
-                /**
-                 * @description Port the Load Balancer will balance to.
-                 * @example 80
-                 */
-                destination_port: number;
-                /**
-                 * @description Is Proxyprotocol enabled or not.
-                 * @example false
-                 */
-                proxyprotocol: boolean;
-                /**
-                 * LoadBalancerServiceHealthCheck
-                 * @description Service health check.
-                 */
-                health_check: {
-                  /**
-                   * @description Type of the health check.
-                   * @example http
-                   * @enum {string}
-                   */
-                  protocol: "tcp" | "http";
-                  /**
-                   * @description Port the health check will be performed on.
-                   * @example 4711
-                   */
-                  port: number;
-                  /**
-                   * @description Time interval in seconds health checks are performed.
-                   * @example 15
-                   */
-                  interval: number;
-                  /**
-                   * @description Time in seconds after an attempt is considered a timeout.
-                   * @example 10
-                   */
-                  timeout: number;
-                  /**
-                   * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                   * @example 3
-                   */
-                  retries: number;
-                  /** @description Additional configuration for protocol http. */
-                  http?: {
-                    /**
-                     * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                     * @example example.com
-                     */
-                    domain: string | null;
-                    /**
-                     * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                     * @example /
-                     */
-                    path: string;
-                    /**
-                     * @description String that must be contained in HTTP response in order to pass the health check.
-                     * @example {"status": "ok"}
-                     */
-                    response?: string;
-                    /**
-                     * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                     * @default [
-                     *       "2??",
-                     *       "3??"
-                     *     ]
-                     * @example [
-                     *       "2??",
-                     *       "3??"
-                     *     ]
-                     */
-                    status_codes?: string[];
-                    /**
-                     * @description Use HTTPS for health check.
-                     * @example false
-                     */
-                    tls?: boolean;
-                  };
-                };
-              } & {
-                /**
+                 * @description Type of the health check.
                  * @example http
                  * @enum {string}
                  */
-                protocol?: "http";
+                protocol: "tcp" | "http";
                 /**
-                 * LoadBalancerServiceHTTPConfig
-                 * @description Configuration option for protocol http.
+                 * @description Port the health check will be performed on.
+                 * @example 4711
                  */
-                http: {
-                  /**
-                   * @description Name of the cookie used for sticky sessions.
-                   * @default HCLBSTICKY
-                   * @example HCLBSTICKY
-                   */
-                  cookie_name: string;
-                  /**
-                   * @description Lifetime of the cookie used for sticky sessions (in seconds).
-                   * @default 300
-                   * @example 300
-                   */
-                  cookie_lifetime: number;
-                  /**
-                   * @description Idle timeout in seconds for the client and server side.
-                   * @default 50
-                   * @example 50
-                   */
-                  timeout_idle: number;
-                  /**
-                   * @description Use sticky sessions.
-                   * @default false
-                   * @example true
-                   */
-                  sticky_sessions: boolean;
-                };
-              })
-            | ({
+                port: number;
                 /**
-                 * @description Protocol of the Load Balancer.
-                 * @enum {string}
+                 * @description Time interval in seconds health checks are performed.
+                 * @example 15
                  */
-                protocol: "tcp" | "http" | "https";
+                interval: number;
                 /**
-                 * @description Port the Load Balancer listens on.
-                 * @example 443
+                 * @description Time in seconds after an attempt is considered a timeout.
+                 * @example 10
                  */
-                listen_port: number;
+                timeout: number;
                 /**
-                 * @description Port the Load Balancer will balance to.
-                 * @example 80
+                 * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                 * @example 3
                  */
-                destination_port: number;
-                /**
-                 * @description Is Proxyprotocol enabled or not.
-                 * @example false
-                 */
-                proxyprotocol: boolean;
-                /**
-                 * LoadBalancerServiceHealthCheck
-                 * @description Service health check.
-                 */
-                health_check: {
+                retries: number;
+                /** @description Additional configuration for protocol http. */
+                http?: {
                   /**
-                   * @description Type of the health check.
-                   * @example http
-                   * @enum {string}
+                   * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                   * @example example.com
                    */
-                  protocol: "tcp" | "http";
+                  domain: string | null;
                   /**
-                   * @description Port the health check will be performed on.
-                   * @example 4711
+                   * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                   * @example /
                    */
-                  port: number;
+                  path: string;
                   /**
-                   * @description Time interval in seconds health checks are performed.
-                   * @example 15
+                   * @description String that must be contained in HTTP response in order to pass the health check.
+                   * @example {"status": "ok"}
                    */
-                  interval: number;
+                  response?: string;
                   /**
-                   * @description Time in seconds after an attempt is considered a timeout.
-                   * @example 10
-                   */
-                  timeout: number;
-                  /**
-                   * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                   * @example 3
-                   */
-                  retries: number;
-                  /** @description Additional configuration for protocol http. */
-                  http?: {
-                    /**
-                     * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                     * @example example.com
-                     */
-                    domain: string | null;
-                    /**
-                     * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                     * @example /
-                     */
-                    path: string;
-                    /**
-                     * @description String that must be contained in HTTP response in order to pass the health check.
-                     * @example {"status": "ok"}
-                     */
-                    response?: string;
-                    /**
-                     * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                     * @default [
-                     *       "2??",
-                     *       "3??"
-                     *     ]
-                     * @example [
-                     *       "2??",
-                     *       "3??"
-                     *     ]
-                     */
-                    status_codes?: string[];
-                    /**
-                     * @description Use HTTPS for health check.
-                     * @example false
-                     */
-                    tls?: boolean;
-                  };
-                };
-              } & {
-                /**
-                 * @example https
-                 * @enum {string}
-                 */
-                protocol?: "https";
-                /**
-                 * LoadBalancerServiceHTTPSConfig
-                 * @description Configuration option for protocol https.
-                 */
-                http: {
-                  /**
-                   * @description Name of the cookie used for sticky sessions.
-                   * @default HCLBSTICKY
-                   * @example HCLBSTICKY
-                   */
-                  cookie_name: string;
-                  /**
-                   * @description Lifetime of the cookie used for sticky sessions (in seconds).
-                   * @default 300
-                   * @example 300
-                   */
-                  cookie_lifetime: number;
-                  /**
-                   * @description Idle timeout in seconds for the client and server side.
-                   * @default 50
-                   * @example 50
-                   */
-                  timeout_idle: number;
-                  /**
-                   * @description IDs of the Certificates to use for TLS/SSL termination by the Load Balancer; empty for TLS/SSL passthrough.
+                   * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                   * @default [
+                   *       "2??",
+                   *       "3??"
+                   *     ]
                    * @example [
-                   *       897
+                   *       "2??",
+                   *       "3??"
                    *     ]
                    */
-                  certificates: number[];
+                  status_codes?: string[];
                   /**
-                   * @description Redirect HTTP requests to HTTPS.
-                   * @default false
-                   * @example true
+                   * @description Use HTTPS for health check.
+                   * @example false
                    */
-                  redirect_http: boolean;
-                  /**
-                   * @description Use sticky sessions.
-                   * @default false
-                   * @example true
-                   */
-                  sticky_sessions: boolean;
+                  tls?: boolean;
                 };
-              })
+              };
+            } & {
+              /**
+               * @example tcp
+               * @enum {string}
+               */
+              protocol?: "tcp";
+            })
+            | ({
+              /**
+               * @description Protocol of the Load Balancer.
+               * @enum {string}
+               */
+              protocol: "tcp" | "http" | "https";
+              /**
+               * @description Port the Load Balancer listens on.
+               * @example 443
+               */
+              listen_port: number;
+              /**
+               * @description Port the Load Balancer will balance to.
+               * @example 80
+               */
+              destination_port: number;
+              /**
+               * @description Is Proxyprotocol enabled or not.
+               * @example false
+               */
+              proxyprotocol: boolean;
+              /**
+               * LoadBalancerServiceHealthCheck
+               * @description Service health check.
+               */
+              health_check: {
+                /**
+                 * @description Type of the health check.
+                 * @example http
+                 * @enum {string}
+                 */
+                protocol: "tcp" | "http";
+                /**
+                 * @description Port the health check will be performed on.
+                 * @example 4711
+                 */
+                port: number;
+                /**
+                 * @description Time interval in seconds health checks are performed.
+                 * @example 15
+                 */
+                interval: number;
+                /**
+                 * @description Time in seconds after an attempt is considered a timeout.
+                 * @example 10
+                 */
+                timeout: number;
+                /**
+                 * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                 * @example 3
+                 */
+                retries: number;
+                /** @description Additional configuration for protocol http. */
+                http?: {
+                  /**
+                   * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                   * @example example.com
+                   */
+                  domain: string | null;
+                  /**
+                   * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                   * @example /
+                   */
+                  path: string;
+                  /**
+                   * @description String that must be contained in HTTP response in order to pass the health check.
+                   * @example {"status": "ok"}
+                   */
+                  response?: string;
+                  /**
+                   * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                   * @default [
+                   *       "2??",
+                   *       "3??"
+                   *     ]
+                   * @example [
+                   *       "2??",
+                   *       "3??"
+                   *     ]
+                   */
+                  status_codes?: string[];
+                  /**
+                   * @description Use HTTPS for health check.
+                   * @example false
+                   */
+                  tls?: boolean;
+                };
+              };
+            } & {
+              /**
+               * @example http
+               * @enum {string}
+               */
+              protocol?: "http";
+              /**
+               * LoadBalancerServiceHTTPConfig
+               * @description Configuration option for protocol http.
+               */
+              http: {
+                /**
+                 * @description Name of the cookie used for sticky sessions.
+                 * @default HCLBSTICKY
+                 * @example HCLBSTICKY
+                 */
+                cookie_name: string;
+                /**
+                 * @description Lifetime of the cookie used for sticky sessions (in seconds).
+                 * @default 300
+                 * @example 300
+                 */
+                cookie_lifetime: number;
+                /**
+                 * @description Idle timeout in seconds for the client and server side.
+                 * @default 50
+                 * @example 50
+                 */
+                timeout_idle: number;
+                /**
+                 * @description Use sticky sessions.
+                 * @default false
+                 * @example true
+                 */
+                sticky_sessions: boolean;
+              };
+            })
+            | ({
+              /**
+               * @description Protocol of the Load Balancer.
+               * @enum {string}
+               */
+              protocol: "tcp" | "http" | "https";
+              /**
+               * @description Port the Load Balancer listens on.
+               * @example 443
+               */
+              listen_port: number;
+              /**
+               * @description Port the Load Balancer will balance to.
+               * @example 80
+               */
+              destination_port: number;
+              /**
+               * @description Is Proxyprotocol enabled or not.
+               * @example false
+               */
+              proxyprotocol: boolean;
+              /**
+               * LoadBalancerServiceHealthCheck
+               * @description Service health check.
+               */
+              health_check: {
+                /**
+                 * @description Type of the health check.
+                 * @example http
+                 * @enum {string}
+                 */
+                protocol: "tcp" | "http";
+                /**
+                 * @description Port the health check will be performed on.
+                 * @example 4711
+                 */
+                port: number;
+                /**
+                 * @description Time interval in seconds health checks are performed.
+                 * @example 15
+                 */
+                interval: number;
+                /**
+                 * @description Time in seconds after an attempt is considered a timeout.
+                 * @example 10
+                 */
+                timeout: number;
+                /**
+                 * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                 * @example 3
+                 */
+                retries: number;
+                /** @description Additional configuration for protocol http. */
+                http?: {
+                  /**
+                   * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                   * @example example.com
+                   */
+                  domain: string | null;
+                  /**
+                   * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                   * @example /
+                   */
+                  path: string;
+                  /**
+                   * @description String that must be contained in HTTP response in order to pass the health check.
+                   * @example {"status": "ok"}
+                   */
+                  response?: string;
+                  /**
+                   * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                   * @default [
+                   *       "2??",
+                   *       "3??"
+                   *     ]
+                   * @example [
+                   *       "2??",
+                   *       "3??"
+                   *     ]
+                   */
+                  status_codes?: string[];
+                  /**
+                   * @description Use HTTPS for health check.
+                   * @example false
+                   */
+                  tls?: boolean;
+                };
+              };
+            } & {
+              /**
+               * @example https
+               * @enum {string}
+               */
+              protocol?: "https";
+              /**
+               * LoadBalancerServiceHTTPSConfig
+               * @description Configuration option for protocol https.
+               */
+              http: {
+                /**
+                 * @description Name of the cookie used for sticky sessions.
+                 * @default HCLBSTICKY
+                 * @example HCLBSTICKY
+                 */
+                cookie_name: string;
+                /**
+                 * @description Lifetime of the cookie used for sticky sessions (in seconds).
+                 * @default 300
+                 * @example 300
+                 */
+                cookie_lifetime: number;
+                /**
+                 * @description Idle timeout in seconds for the client and server side.
+                 * @default 50
+                 * @example 50
+                 */
+                timeout_idle: number;
+                /**
+                 * @description IDs of the Certificates to use for TLS/SSL termination by the Load Balancer; empty for TLS/SSL passthrough.
+                 * @example [
+                 *       897
+                 *     ]
+                 */
+                certificates: number[];
+                /**
+                 * @description Redirect HTTP requests to HTTPS.
+                 * @default false
+                 * @example true
+                 */
+                redirect_http: boolean;
+                /**
+                 * @description Use sticky sessions.
+                 * @default false
+                 * @example true
+                 */
+                sticky_sessions: boolean;
+              };
+            })
           )[];
           /** @description Array of targets. */
           targets?: ({
@@ -15665,378 +15665,440 @@ export interface operations {
               /** @description List of services that belong to this Load Balancer. */
               services: (
                 | ({
+                  /**
+                   * @description Protocol of the Load Balancer.
+                   * @enum {string}
+                   */
+                  protocol: "tcp" | "http" | "https";
+                  /**
+                   * @description Port the Load Balancer listens on.
+                   * @example 443
+                   */
+                  listen_port: number;
+                  /**
+                   * @description Port the Load Balancer will balance to.
+                   * @example 80
+                   */
+                  destination_port: number;
+                  /**
+                   * @description Is Proxyprotocol enabled or not.
+                   * @example false
+                   */
+                  proxyprotocol: boolean;
+                  /**
+                   * LoadBalancerServiceHealthCheck
+                   * @description Service health check.
+                   */
+                  health_check: {
                     /**
-                     * @description Protocol of the Load Balancer.
-                     * @enum {string}
-                     */
-                    protocol: "tcp" | "http" | "https";
-                    /**
-                     * @description Port the Load Balancer listens on.
-                     * @example 443
-                     */
-                    listen_port: number;
-                    /**
-                     * @description Port the Load Balancer will balance to.
-                     * @example 80
-                     */
-                    destination_port: number;
-                    /**
-                     * @description Is Proxyprotocol enabled or not.
-                     * @example false
-                     */
-                    proxyprotocol: boolean;
-                    /**
-                     * LoadBalancerServiceHealthCheck
-                     * @description Service health check.
-                     */
-                    health_check: {
-                      /**
-                       * @description Type of the health check.
-                       * @example http
-                       * @enum {string}
-                       */
-                      protocol: "tcp" | "http";
-                      /**
-                       * @description Port the health check will be performed on.
-                       * @example 4711
-                       */
-                      port: number;
-                      /**
-                       * @description Time interval in seconds health checks are performed.
-                       * @example 15
-                       */
-                      interval: number;
-                      /**
-                       * @description Time in seconds after an attempt is considered a timeout.
-                       * @example 10
-                       */
-                      timeout: number;
-                      /**
-                       * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                       * @example 3
-                       */
-                      retries: number;
-                      /** @description Additional configuration for protocol http. */
-                      http?: {
-                        /**
-                         * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                         * @example example.com
-                         */
-                        domain: string | null;
-                        /**
-                         * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                         * @example /
-                         */
-                        path: string;
-                        /**
-                         * @description String that must be contained in HTTP response in order to pass the health check.
-                         * @example {"status": "ok"}
-                         */
-                        response?: string;
-                        /**
-                         * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                         * @default [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         * @example [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         */
-                        status_codes: string[];
-                        /**
-                         * @description Use HTTPS for health check.
-                         * @example false
-                         */
-                        tls?: boolean;
-                      };
-                    };
-                  } & {
-                    /**
-                     * @example tcp
-                     * @enum {string}
-                     */
-                    protocol?: "tcp";
-                  })
-                | ({
-                    /**
-                     * @description Protocol of the Load Balancer.
-                     * @enum {string}
-                     */
-                    protocol: "tcp" | "http" | "https";
-                    /**
-                     * @description Port the Load Balancer listens on.
-                     * @example 443
-                     */
-                    listen_port: number;
-                    /**
-                     * @description Port the Load Balancer will balance to.
-                     * @example 80
-                     */
-                    destination_port: number;
-                    /**
-                     * @description Is Proxyprotocol enabled or not.
-                     * @example false
-                     */
-                    proxyprotocol: boolean;
-                    /**
-                     * LoadBalancerServiceHealthCheck
-                     * @description Service health check.
-                     */
-                    health_check: {
-                      /**
-                       * @description Type of the health check.
-                       * @example http
-                       * @enum {string}
-                       */
-                      protocol: "tcp" | "http";
-                      /**
-                       * @description Port the health check will be performed on.
-                       * @example 4711
-                       */
-                      port: number;
-                      /**
-                       * @description Time interval in seconds health checks are performed.
-                       * @example 15
-                       */
-                      interval: number;
-                      /**
-                       * @description Time in seconds after an attempt is considered a timeout.
-                       * @example 10
-                       */
-                      timeout: number;
-                      /**
-                       * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                       * @example 3
-                       */
-                      retries: number;
-                      /** @description Additional configuration for protocol http. */
-                      http?: {
-                        /**
-                         * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                         * @example example.com
-                         */
-                        domain: string | null;
-                        /**
-                         * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                         * @example /
-                         */
-                        path: string;
-                        /**
-                         * @description String that must be contained in HTTP response in order to pass the health check.
-                         * @example {"status": "ok"}
-                         */
-                        response?: string;
-                        /**
-                         * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                         * @default [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         * @example [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         */
-                        status_codes: string[];
-                        /**
-                         * @description Use HTTPS for health check.
-                         * @example false
-                         */
-                        tls?: boolean;
-                      };
-                    };
-                  } & {
-                    /**
+                     * @description Type of the health check.
                      * @example http
                      * @enum {string}
                      */
-                    protocol?: "http";
+                    protocol: "tcp" | "http";
                     /**
-                     * LoadBalancerServiceHTTPConfig
-                     * @description Configuration option for protocol http.
+                     * @description Port the health check will be performed on.
+                     * @example 4711
                      */
-                    http: {
-                      /**
-                       * @description Name of the cookie used for sticky sessions.
-                       * @default HCLBSTICKY
-                       * @example HCLBSTICKY
-                       */
-                      cookie_name: string;
-                      /**
-                       * @description Lifetime of the cookie used for sticky sessions (in seconds).
-                       * @default 300
-                       * @example 300
-                       */
-                      cookie_lifetime: number;
-                      /**
-                       * @description Idle timeout in seconds for the client and server side.
-                       * @default 50
-                       * @example 50
-                       */
-                      timeout_idle: number;
-                      /**
-                       * @description Use sticky sessions.
-                       * @default false
-                       * @example true
-                       */
-                      sticky_sessions: boolean;
-                    };
-                  })
-                | ({
+                    port: number;
                     /**
-                     * @description Protocol of the Load Balancer.
-                     * @enum {string}
+                     * @description Time interval in seconds health checks are performed.
+                     * @example 15
                      */
-                    protocol: "tcp" | "http" | "https";
+                    interval: number;
                     /**
-                     * @description Port the Load Balancer listens on.
-                     * @example 443
+                     * @description Time in seconds after an attempt is considered a timeout.
+                     * @example 10
                      */
-                    listen_port: number;
+                    timeout: number;
                     /**
-                     * @description Port the Load Balancer will balance to.
-                     * @example 80
+                     * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                     * @example 3
                      */
-                    destination_port: number;
-                    /**
-                     * @description Is Proxyprotocol enabled or not.
-                     * @example false
-                     */
-                    proxyprotocol: boolean;
-                    /**
-                     * LoadBalancerServiceHealthCheck
-                     * @description Service health check.
-                     */
-                    health_check: {
+                    retries: number;
+                    /** @description Additional configuration for protocol http. */
+                    http?: {
                       /**
-                       * @description Type of the health check.
-                       * @example http
-                       * @enum {string}
+                       * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                       * @example example.com
                        */
-                      protocol: "tcp" | "http";
+                      domain: string | null;
                       /**
-                       * @description Port the health check will be performed on.
-                       * @example 4711
+                       * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                       * @example /
                        */
-                      port: number;
+                      path: string;
                       /**
-                       * @description Time interval in seconds health checks are performed.
-                       * @example 15
+                       * @description String that must be contained in HTTP response in order to pass the health check.
+                       * @example {"status": "ok"}
                        */
-                      interval: number;
+                      response?: string;
                       /**
-                       * @description Time in seconds after an attempt is considered a timeout.
-                       * @example 10
-                       */
-                      timeout: number;
-                      /**
-                       * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                       * @example 3
-                       */
-                      retries: number;
-                      /** @description Additional configuration for protocol http. */
-                      http?: {
-                        /**
-                         * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                         * @example example.com
-                         */
-                        domain: string | null;
-                        /**
-                         * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                         * @example /
-                         */
-                        path: string;
-                        /**
-                         * @description String that must be contained in HTTP response in order to pass the health check.
-                         * @example {"status": "ok"}
-                         */
-                        response?: string;
-                        /**
-                         * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                         * @default [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         * @example [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         */
-                        status_codes: string[];
-                        /**
-                         * @description Use HTTPS for health check.
-                         * @example false
-                         */
-                        tls?: boolean;
-                      };
-                    };
-                  } & {
-                    /**
-                     * @example https
-                     * @enum {string}
-                     */
-                    protocol?: "https";
-                    /**
-                     * LoadBalancerServiceHTTPSConfig
-                     * @description Configuration option for protocol https.
-                     */
-                    http: {
-                      /**
-                       * @description Name of the cookie used for sticky sessions.
-                       * @default HCLBSTICKY
-                       * @example HCLBSTICKY
-                       */
-                      cookie_name: string;
-                      /**
-                       * @description Lifetime of the cookie used for sticky sessions (in seconds).
-                       * @default 300
-                       * @example 300
-                       */
-                      cookie_lifetime: number;
-                      /**
-                       * @description Idle timeout in seconds for the client and server side.
-                       * @default 50
-                       * @example 50
-                       */
-                      timeout_idle: number;
-                      /**
-                       * @description IDs of the Certificates to use for TLS/SSL termination by the Load Balancer; empty for TLS/SSL passthrough.
+                       * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                       * @default [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
                        * @example [
-                       *       897
+                       *       "2??",
+                       *       "3??"
                        *     ]
                        */
-                      certificates: number[];
+                      status_codes: string[];
                       /**
-                       * @description Redirect HTTP requests to HTTPS.
-                       * @default false
-                       * @example true
+                       * @description Use HTTPS for health check.
+                       * @example false
                        */
-                      redirect_http: boolean;
-                      /**
-                       * @description Use sticky sessions.
-                       * @default false
-                       * @example true
-                       */
-                      sticky_sessions: boolean;
+                      tls?: boolean;
                     };
-                  })
+                  };
+                } & {
+                  /**
+                   * @example tcp
+                   * @enum {string}
+                   */
+                  protocol?: "tcp";
+                })
+                | ({
+                  /**
+                   * @description Protocol of the Load Balancer.
+                   * @enum {string}
+                   */
+                  protocol: "tcp" | "http" | "https";
+                  /**
+                   * @description Port the Load Balancer listens on.
+                   * @example 443
+                   */
+                  listen_port: number;
+                  /**
+                   * @description Port the Load Balancer will balance to.
+                   * @example 80
+                   */
+                  destination_port: number;
+                  /**
+                   * @description Is Proxyprotocol enabled or not.
+                   * @example false
+                   */
+                  proxyprotocol: boolean;
+                  /**
+                   * LoadBalancerServiceHealthCheck
+                   * @description Service health check.
+                   */
+                  health_check: {
+                    /**
+                     * @description Type of the health check.
+                     * @example http
+                     * @enum {string}
+                     */
+                    protocol: "tcp" | "http";
+                    /**
+                     * @description Port the health check will be performed on.
+                     * @example 4711
+                     */
+                    port: number;
+                    /**
+                     * @description Time interval in seconds health checks are performed.
+                     * @example 15
+                     */
+                    interval: number;
+                    /**
+                     * @description Time in seconds after an attempt is considered a timeout.
+                     * @example 10
+                     */
+                    timeout: number;
+                    /**
+                     * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                     * @example 3
+                     */
+                    retries: number;
+                    /** @description Additional configuration for protocol http. */
+                    http?: {
+                      /**
+                       * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                       * @example example.com
+                       */
+                      domain: string | null;
+                      /**
+                       * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                       * @example /
+                       */
+                      path: string;
+                      /**
+                       * @description String that must be contained in HTTP response in order to pass the health check.
+                       * @example {"status": "ok"}
+                       */
+                      response?: string;
+                      /**
+                       * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                       * @default [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       * @example [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       */
+                      status_codes: string[];
+                      /**
+                       * @description Use HTTPS for health check.
+                       * @example false
+                       */
+                      tls?: boolean;
+                    };
+                  };
+                } & {
+                  /**
+                   * @example http
+                   * @enum {string}
+                   */
+                  protocol?: "http";
+                  /**
+                   * LoadBalancerServiceHTTPConfig
+                   * @description Configuration option for protocol http.
+                   */
+                  http: {
+                    /**
+                     * @description Name of the cookie used for sticky sessions.
+                     * @default HCLBSTICKY
+                     * @example HCLBSTICKY
+                     */
+                    cookie_name: string;
+                    /**
+                     * @description Lifetime of the cookie used for sticky sessions (in seconds).
+                     * @default 300
+                     * @example 300
+                     */
+                    cookie_lifetime: number;
+                    /**
+                     * @description Idle timeout in seconds for the client and server side.
+                     * @default 50
+                     * @example 50
+                     */
+                    timeout_idle: number;
+                    /**
+                     * @description Use sticky sessions.
+                     * @default false
+                     * @example true
+                     */
+                    sticky_sessions: boolean;
+                  };
+                })
+                | ({
+                  /**
+                   * @description Protocol of the Load Balancer.
+                   * @enum {string}
+                   */
+                  protocol: "tcp" | "http" | "https";
+                  /**
+                   * @description Port the Load Balancer listens on.
+                   * @example 443
+                   */
+                  listen_port: number;
+                  /**
+                   * @description Port the Load Balancer will balance to.
+                   * @example 80
+                   */
+                  destination_port: number;
+                  /**
+                   * @description Is Proxyprotocol enabled or not.
+                   * @example false
+                   */
+                  proxyprotocol: boolean;
+                  /**
+                   * LoadBalancerServiceHealthCheck
+                   * @description Service health check.
+                   */
+                  health_check: {
+                    /**
+                     * @description Type of the health check.
+                     * @example http
+                     * @enum {string}
+                     */
+                    protocol: "tcp" | "http";
+                    /**
+                     * @description Port the health check will be performed on.
+                     * @example 4711
+                     */
+                    port: number;
+                    /**
+                     * @description Time interval in seconds health checks are performed.
+                     * @example 15
+                     */
+                    interval: number;
+                    /**
+                     * @description Time in seconds after an attempt is considered a timeout.
+                     * @example 10
+                     */
+                    timeout: number;
+                    /**
+                     * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                     * @example 3
+                     */
+                    retries: number;
+                    /** @description Additional configuration for protocol http. */
+                    http?: {
+                      /**
+                       * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                       * @example example.com
+                       */
+                      domain: string | null;
+                      /**
+                       * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                       * @example /
+                       */
+                      path: string;
+                      /**
+                       * @description String that must be contained in HTTP response in order to pass the health check.
+                       * @example {"status": "ok"}
+                       */
+                      response?: string;
+                      /**
+                       * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                       * @default [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       * @example [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       */
+                      status_codes: string[];
+                      /**
+                       * @description Use HTTPS for health check.
+                       * @example false
+                       */
+                      tls?: boolean;
+                    };
+                  };
+                } & {
+                  /**
+                   * @example https
+                   * @enum {string}
+                   */
+                  protocol?: "https";
+                  /**
+                   * LoadBalancerServiceHTTPSConfig
+                   * @description Configuration option for protocol https.
+                   */
+                  http: {
+                    /**
+                     * @description Name of the cookie used for sticky sessions.
+                     * @default HCLBSTICKY
+                     * @example HCLBSTICKY
+                     */
+                    cookie_name: string;
+                    /**
+                     * @description Lifetime of the cookie used for sticky sessions (in seconds).
+                     * @default 300
+                     * @example 300
+                     */
+                    cookie_lifetime: number;
+                    /**
+                     * @description Idle timeout in seconds for the client and server side.
+                     * @default 50
+                     * @example 50
+                     */
+                    timeout_idle: number;
+                    /**
+                     * @description IDs of the Certificates to use for TLS/SSL termination by the Load Balancer; empty for TLS/SSL passthrough.
+                     * @example [
+                     *       897
+                     *     ]
+                     */
+                    certificates: number[];
+                    /**
+                     * @description Redirect HTTP requests to HTTPS.
+                     * @default false
+                     * @example true
+                     */
+                    redirect_http: boolean;
+                    /**
+                     * @description Use sticky sessions.
+                     * @default false
+                     * @example true
+                     */
+                    sticky_sessions: boolean;
+                  };
+                })
               )[];
               /** @description List of targets that belong to this Load Balancer. */
               targets: (
                 | ({
+                  /**
+                   * @description Type of the resource.
+                   * @enum {string}
+                   */
+                  type: "server" | "label_selector" | "ip";
+                } & {
+                  /**
+                   * @example server
+                   * @enum {string}
+                   */
+                  type?: "server";
+                  /**
+                   * LoadBalancerTargetServer
+                   * @description Server where the traffic should be routed to. Only present for target type "server".
+                   */
+                  server: {
                     /**
-                     * @description Type of the resource.
+                     * Format: int64
+                     * @description ID of the Server.
+                     * @example 80
+                     */
+                    id: number;
+                  };
+                  /**
+                   * LoadBalancerTargetHealthStatus
+                   * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
+                   */
+                  health_status: {
+                    /** @example 443 */
+                    listen_port: number;
+                    /**
+                     * @example healthy
                      * @enum {string}
                      */
-                    type: "server" | "label_selector" | "ip";
-                  } & {
+                    status: "healthy" | "unhealthy" | "unknown";
+                  }[];
+                  /**
+                   * LoadBalancerTargetUsePrivateIP
+                   * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
+                   * @default false
+                   */
+                  use_private_ip: boolean;
+                })
+                | ({
+                  /**
+                   * @description Type of the resource.
+                   * @enum {string}
+                   */
+                  type: "server" | "label_selector" | "ip";
+                } & {
+                  /**
+                   * @example label_selector
+                   * @enum {string}
+                   */
+                  type?: "label_selector";
+                  /**
+                   * LoadBalancerTargetLabelSelector
+                   * @description Label selector used to determine targets. Only present for target type "label_selector".
+                   */
+                  label_selector: {
                     /**
+                     * @description Label selector.
+                     * @example env=prod
+                     */
+                    selector: string;
+                  };
+                  /** @description List of resolved label selector target Servers. */
+                  targets: {
+                    /**
+                     * @description Type of the resource. Here always "server".
                      * @example server
-                     * @enum {string}
                      */
-                    type?: "server";
+                    type: string;
                     /**
                      * LoadBalancerTargetServer
                      * @description Server where the traffic should be routed to. Only present for target type "server".
@@ -16068,113 +16130,51 @@ export interface operations {
                      * @default false
                      */
                     use_private_ip: boolean;
-                  })
+                  }[];
+                  /**
+                   * LoadBalancerTargetUsePrivateIP
+                   * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
+                   * @default false
+                   */
+                  use_private_ip: boolean;
+                })
                 | ({
+                  /**
+                   * @description Type of the resource.
+                   * @enum {string}
+                   */
+                  type: "server" | "label_selector" | "ip";
+                } & {
+                  /**
+                   * @example ip
+                   * @enum {string}
+                   */
+                  type?: "ip";
+                  /**
+                   * LoadBalancerTargetIP
+                   * @description IP target where the traffic should be routed to. It is only possible to use the (Public or vSwitch) IPs of Hetzner Online Root Servers belonging to the project owner. IPs belonging to other users are blocked. Additionally IPs belonging to services provided by Hetzner Cloud (Servers, Load Balancers, ...) are blocked as well. Only present for target type `ip`.
+                   */
+                  ip: {
                     /**
-                     * @description Type of the resource.
+                     * @description IP of a server that belongs to the same customer (public IPv4/IPv6) or private IP in a subnet type vswitch.
+                     * @example 203.0.113.1
+                     */
+                    ip: string;
+                  };
+                  /**
+                   * LoadBalancerTargetHealthStatus
+                   * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
+                   */
+                  health_status: {
+                    /** @example 443 */
+                    listen_port: number;
+                    /**
+                     * @example healthy
                      * @enum {string}
                      */
-                    type: "server" | "label_selector" | "ip";
-                  } & {
-                    /**
-                     * @example label_selector
-                     * @enum {string}
-                     */
-                    type?: "label_selector";
-                    /**
-                     * LoadBalancerTargetLabelSelector
-                     * @description Label selector used to determine targets. Only present for target type "label_selector".
-                     */
-                    label_selector: {
-                      /**
-                       * @description Label selector.
-                       * @example env=prod
-                       */
-                      selector: string;
-                    };
-                    /** @description List of resolved label selector target Servers. */
-                    targets: {
-                      /**
-                       * @description Type of the resource. Here always "server".
-                       * @example server
-                       */
-                      type: string;
-                      /**
-                       * LoadBalancerTargetServer
-                       * @description Server where the traffic should be routed to. Only present for target type "server".
-                       */
-                      server: {
-                        /**
-                         * Format: int64
-                         * @description ID of the Server.
-                         * @example 80
-                         */
-                        id: number;
-                      };
-                      /**
-                       * LoadBalancerTargetHealthStatus
-                       * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
-                       */
-                      health_status: {
-                        /** @example 443 */
-                        listen_port: number;
-                        /**
-                         * @example healthy
-                         * @enum {string}
-                         */
-                        status: "healthy" | "unhealthy" | "unknown";
-                      }[];
-                      /**
-                       * LoadBalancerTargetUsePrivateIP
-                       * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
-                       * @default false
-                       */
-                      use_private_ip: boolean;
-                    }[];
-                    /**
-                     * LoadBalancerTargetUsePrivateIP
-                     * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
-                     * @default false
-                     */
-                    use_private_ip: boolean;
-                  })
-                | ({
-                    /**
-                     * @description Type of the resource.
-                     * @enum {string}
-                     */
-                    type: "server" | "label_selector" | "ip";
-                  } & {
-                    /**
-                     * @example ip
-                     * @enum {string}
-                     */
-                    type?: "ip";
-                    /**
-                     * LoadBalancerTargetIP
-                     * @description IP target where the traffic should be routed to. It is only possible to use the (Public or vSwitch) IPs of Hetzner Online Root Servers belonging to the project owner. IPs belonging to other users are blocked. Additionally IPs belonging to services provided by Hetzner Cloud (Servers, Load Balancers, ...) are blocked as well. Only present for target type `ip`.
-                     */
-                    ip: {
-                      /**
-                       * @description IP of a server that belongs to the same customer (public IPv4/IPv6) or private IP in a subnet type vswitch.
-                       * @example 203.0.113.1
-                       */
-                      ip: string;
-                    };
-                    /**
-                     * LoadBalancerTargetHealthStatus
-                     * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
-                     */
-                    health_status: {
-                      /** @example 443 */
-                      listen_port: number;
-                      /**
-                       * @example healthy
-                       * @enum {string}
-                       */
-                      status: "healthy" | "unhealthy" | "unknown";
-                    }[];
-                  })
+                    status: "healthy" | "unhealthy" | "unknown";
+                  }[];
+                })
               )[];
               /** @description Algorithm of the Load Balancer. */
               algorithm: {
@@ -16872,378 +16872,440 @@ export interface operations {
               /** @description List of services that belong to this Load Balancer. */
               services: (
                 | ({
+                  /**
+                   * @description Protocol of the Load Balancer.
+                   * @enum {string}
+                   */
+                  protocol: "tcp" | "http" | "https";
+                  /**
+                   * @description Port the Load Balancer listens on.
+                   * @example 443
+                   */
+                  listen_port: number;
+                  /**
+                   * @description Port the Load Balancer will balance to.
+                   * @example 80
+                   */
+                  destination_port: number;
+                  /**
+                   * @description Is Proxyprotocol enabled or not.
+                   * @example false
+                   */
+                  proxyprotocol: boolean;
+                  /**
+                   * LoadBalancerServiceHealthCheck
+                   * @description Service health check.
+                   */
+                  health_check: {
                     /**
-                     * @description Protocol of the Load Balancer.
-                     * @enum {string}
-                     */
-                    protocol: "tcp" | "http" | "https";
-                    /**
-                     * @description Port the Load Balancer listens on.
-                     * @example 443
-                     */
-                    listen_port: number;
-                    /**
-                     * @description Port the Load Balancer will balance to.
-                     * @example 80
-                     */
-                    destination_port: number;
-                    /**
-                     * @description Is Proxyprotocol enabled or not.
-                     * @example false
-                     */
-                    proxyprotocol: boolean;
-                    /**
-                     * LoadBalancerServiceHealthCheck
-                     * @description Service health check.
-                     */
-                    health_check: {
-                      /**
-                       * @description Type of the health check.
-                       * @example http
-                       * @enum {string}
-                       */
-                      protocol: "tcp" | "http";
-                      /**
-                       * @description Port the health check will be performed on.
-                       * @example 4711
-                       */
-                      port: number;
-                      /**
-                       * @description Time interval in seconds health checks are performed.
-                       * @example 15
-                       */
-                      interval: number;
-                      /**
-                       * @description Time in seconds after an attempt is considered a timeout.
-                       * @example 10
-                       */
-                      timeout: number;
-                      /**
-                       * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                       * @example 3
-                       */
-                      retries: number;
-                      /** @description Additional configuration for protocol http. */
-                      http?: {
-                        /**
-                         * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                         * @example example.com
-                         */
-                        domain: string | null;
-                        /**
-                         * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                         * @example /
-                         */
-                        path: string;
-                        /**
-                         * @description String that must be contained in HTTP response in order to pass the health check.
-                         * @example {"status": "ok"}
-                         */
-                        response?: string;
-                        /**
-                         * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                         * @default [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         * @example [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         */
-                        status_codes: string[];
-                        /**
-                         * @description Use HTTPS for health check.
-                         * @example false
-                         */
-                        tls?: boolean;
-                      };
-                    };
-                  } & {
-                    /**
-                     * @example tcp
-                     * @enum {string}
-                     */
-                    protocol?: "tcp";
-                  })
-                | ({
-                    /**
-                     * @description Protocol of the Load Balancer.
-                     * @enum {string}
-                     */
-                    protocol: "tcp" | "http" | "https";
-                    /**
-                     * @description Port the Load Balancer listens on.
-                     * @example 443
-                     */
-                    listen_port: number;
-                    /**
-                     * @description Port the Load Balancer will balance to.
-                     * @example 80
-                     */
-                    destination_port: number;
-                    /**
-                     * @description Is Proxyprotocol enabled or not.
-                     * @example false
-                     */
-                    proxyprotocol: boolean;
-                    /**
-                     * LoadBalancerServiceHealthCheck
-                     * @description Service health check.
-                     */
-                    health_check: {
-                      /**
-                       * @description Type of the health check.
-                       * @example http
-                       * @enum {string}
-                       */
-                      protocol: "tcp" | "http";
-                      /**
-                       * @description Port the health check will be performed on.
-                       * @example 4711
-                       */
-                      port: number;
-                      /**
-                       * @description Time interval in seconds health checks are performed.
-                       * @example 15
-                       */
-                      interval: number;
-                      /**
-                       * @description Time in seconds after an attempt is considered a timeout.
-                       * @example 10
-                       */
-                      timeout: number;
-                      /**
-                       * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                       * @example 3
-                       */
-                      retries: number;
-                      /** @description Additional configuration for protocol http. */
-                      http?: {
-                        /**
-                         * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                         * @example example.com
-                         */
-                        domain: string | null;
-                        /**
-                         * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                         * @example /
-                         */
-                        path: string;
-                        /**
-                         * @description String that must be contained in HTTP response in order to pass the health check.
-                         * @example {"status": "ok"}
-                         */
-                        response?: string;
-                        /**
-                         * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                         * @default [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         * @example [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         */
-                        status_codes: string[];
-                        /**
-                         * @description Use HTTPS for health check.
-                         * @example false
-                         */
-                        tls?: boolean;
-                      };
-                    };
-                  } & {
-                    /**
+                     * @description Type of the health check.
                      * @example http
                      * @enum {string}
                      */
-                    protocol?: "http";
+                    protocol: "tcp" | "http";
                     /**
-                     * LoadBalancerServiceHTTPConfig
-                     * @description Configuration option for protocol http.
+                     * @description Port the health check will be performed on.
+                     * @example 4711
                      */
-                    http: {
-                      /**
-                       * @description Name of the cookie used for sticky sessions.
-                       * @default HCLBSTICKY
-                       * @example HCLBSTICKY
-                       */
-                      cookie_name: string;
-                      /**
-                       * @description Lifetime of the cookie used for sticky sessions (in seconds).
-                       * @default 300
-                       * @example 300
-                       */
-                      cookie_lifetime: number;
-                      /**
-                       * @description Idle timeout in seconds for the client and server side.
-                       * @default 50
-                       * @example 50
-                       */
-                      timeout_idle: number;
-                      /**
-                       * @description Use sticky sessions.
-                       * @default false
-                       * @example true
-                       */
-                      sticky_sessions: boolean;
-                    };
-                  })
-                | ({
+                    port: number;
                     /**
-                     * @description Protocol of the Load Balancer.
-                     * @enum {string}
+                     * @description Time interval in seconds health checks are performed.
+                     * @example 15
                      */
-                    protocol: "tcp" | "http" | "https";
+                    interval: number;
                     /**
-                     * @description Port the Load Balancer listens on.
-                     * @example 443
+                     * @description Time in seconds after an attempt is considered a timeout.
+                     * @example 10
                      */
-                    listen_port: number;
+                    timeout: number;
                     /**
-                     * @description Port the Load Balancer will balance to.
-                     * @example 80
+                     * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                     * @example 3
                      */
-                    destination_port: number;
-                    /**
-                     * @description Is Proxyprotocol enabled or not.
-                     * @example false
-                     */
-                    proxyprotocol: boolean;
-                    /**
-                     * LoadBalancerServiceHealthCheck
-                     * @description Service health check.
-                     */
-                    health_check: {
+                    retries: number;
+                    /** @description Additional configuration for protocol http. */
+                    http?: {
                       /**
-                       * @description Type of the health check.
-                       * @example http
-                       * @enum {string}
+                       * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                       * @example example.com
                        */
-                      protocol: "tcp" | "http";
+                      domain: string | null;
                       /**
-                       * @description Port the health check will be performed on.
-                       * @example 4711
+                       * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                       * @example /
                        */
-                      port: number;
+                      path: string;
                       /**
-                       * @description Time interval in seconds health checks are performed.
-                       * @example 15
+                       * @description String that must be contained in HTTP response in order to pass the health check.
+                       * @example {"status": "ok"}
                        */
-                      interval: number;
+                      response?: string;
                       /**
-                       * @description Time in seconds after an attempt is considered a timeout.
-                       * @example 10
-                       */
-                      timeout: number;
-                      /**
-                       * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                       * @example 3
-                       */
-                      retries: number;
-                      /** @description Additional configuration for protocol http. */
-                      http?: {
-                        /**
-                         * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                         * @example example.com
-                         */
-                        domain: string | null;
-                        /**
-                         * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                         * @example /
-                         */
-                        path: string;
-                        /**
-                         * @description String that must be contained in HTTP response in order to pass the health check.
-                         * @example {"status": "ok"}
-                         */
-                        response?: string;
-                        /**
-                         * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                         * @default [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         * @example [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         */
-                        status_codes: string[];
-                        /**
-                         * @description Use HTTPS for health check.
-                         * @example false
-                         */
-                        tls?: boolean;
-                      };
-                    };
-                  } & {
-                    /**
-                     * @example https
-                     * @enum {string}
-                     */
-                    protocol?: "https";
-                    /**
-                     * LoadBalancerServiceHTTPSConfig
-                     * @description Configuration option for protocol https.
-                     */
-                    http: {
-                      /**
-                       * @description Name of the cookie used for sticky sessions.
-                       * @default HCLBSTICKY
-                       * @example HCLBSTICKY
-                       */
-                      cookie_name: string;
-                      /**
-                       * @description Lifetime of the cookie used for sticky sessions (in seconds).
-                       * @default 300
-                       * @example 300
-                       */
-                      cookie_lifetime: number;
-                      /**
-                       * @description Idle timeout in seconds for the client and server side.
-                       * @default 50
-                       * @example 50
-                       */
-                      timeout_idle: number;
-                      /**
-                       * @description IDs of the Certificates to use for TLS/SSL termination by the Load Balancer; empty for TLS/SSL passthrough.
+                       * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                       * @default [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
                        * @example [
-                       *       897
+                       *       "2??",
+                       *       "3??"
                        *     ]
                        */
-                      certificates: number[];
+                      status_codes: string[];
                       /**
-                       * @description Redirect HTTP requests to HTTPS.
-                       * @default false
-                       * @example true
+                       * @description Use HTTPS for health check.
+                       * @example false
                        */
-                      redirect_http: boolean;
-                      /**
-                       * @description Use sticky sessions.
-                       * @default false
-                       * @example true
-                       */
-                      sticky_sessions: boolean;
+                      tls?: boolean;
                     };
-                  })
+                  };
+                } & {
+                  /**
+                   * @example tcp
+                   * @enum {string}
+                   */
+                  protocol?: "tcp";
+                })
+                | ({
+                  /**
+                   * @description Protocol of the Load Balancer.
+                   * @enum {string}
+                   */
+                  protocol: "tcp" | "http" | "https";
+                  /**
+                   * @description Port the Load Balancer listens on.
+                   * @example 443
+                   */
+                  listen_port: number;
+                  /**
+                   * @description Port the Load Balancer will balance to.
+                   * @example 80
+                   */
+                  destination_port: number;
+                  /**
+                   * @description Is Proxyprotocol enabled or not.
+                   * @example false
+                   */
+                  proxyprotocol: boolean;
+                  /**
+                   * LoadBalancerServiceHealthCheck
+                   * @description Service health check.
+                   */
+                  health_check: {
+                    /**
+                     * @description Type of the health check.
+                     * @example http
+                     * @enum {string}
+                     */
+                    protocol: "tcp" | "http";
+                    /**
+                     * @description Port the health check will be performed on.
+                     * @example 4711
+                     */
+                    port: number;
+                    /**
+                     * @description Time interval in seconds health checks are performed.
+                     * @example 15
+                     */
+                    interval: number;
+                    /**
+                     * @description Time in seconds after an attempt is considered a timeout.
+                     * @example 10
+                     */
+                    timeout: number;
+                    /**
+                     * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                     * @example 3
+                     */
+                    retries: number;
+                    /** @description Additional configuration for protocol http. */
+                    http?: {
+                      /**
+                       * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                       * @example example.com
+                       */
+                      domain: string | null;
+                      /**
+                       * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                       * @example /
+                       */
+                      path: string;
+                      /**
+                       * @description String that must be contained in HTTP response in order to pass the health check.
+                       * @example {"status": "ok"}
+                       */
+                      response?: string;
+                      /**
+                       * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                       * @default [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       * @example [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       */
+                      status_codes: string[];
+                      /**
+                       * @description Use HTTPS for health check.
+                       * @example false
+                       */
+                      tls?: boolean;
+                    };
+                  };
+                } & {
+                  /**
+                   * @example http
+                   * @enum {string}
+                   */
+                  protocol?: "http";
+                  /**
+                   * LoadBalancerServiceHTTPConfig
+                   * @description Configuration option for protocol http.
+                   */
+                  http: {
+                    /**
+                     * @description Name of the cookie used for sticky sessions.
+                     * @default HCLBSTICKY
+                     * @example HCLBSTICKY
+                     */
+                    cookie_name: string;
+                    /**
+                     * @description Lifetime of the cookie used for sticky sessions (in seconds).
+                     * @default 300
+                     * @example 300
+                     */
+                    cookie_lifetime: number;
+                    /**
+                     * @description Idle timeout in seconds for the client and server side.
+                     * @default 50
+                     * @example 50
+                     */
+                    timeout_idle: number;
+                    /**
+                     * @description Use sticky sessions.
+                     * @default false
+                     * @example true
+                     */
+                    sticky_sessions: boolean;
+                  };
+                })
+                | ({
+                  /**
+                   * @description Protocol of the Load Balancer.
+                   * @enum {string}
+                   */
+                  protocol: "tcp" | "http" | "https";
+                  /**
+                   * @description Port the Load Balancer listens on.
+                   * @example 443
+                   */
+                  listen_port: number;
+                  /**
+                   * @description Port the Load Balancer will balance to.
+                   * @example 80
+                   */
+                  destination_port: number;
+                  /**
+                   * @description Is Proxyprotocol enabled or not.
+                   * @example false
+                   */
+                  proxyprotocol: boolean;
+                  /**
+                   * LoadBalancerServiceHealthCheck
+                   * @description Service health check.
+                   */
+                  health_check: {
+                    /**
+                     * @description Type of the health check.
+                     * @example http
+                     * @enum {string}
+                     */
+                    protocol: "tcp" | "http";
+                    /**
+                     * @description Port the health check will be performed on.
+                     * @example 4711
+                     */
+                    port: number;
+                    /**
+                     * @description Time interval in seconds health checks are performed.
+                     * @example 15
+                     */
+                    interval: number;
+                    /**
+                     * @description Time in seconds after an attempt is considered a timeout.
+                     * @example 10
+                     */
+                    timeout: number;
+                    /**
+                     * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                     * @example 3
+                     */
+                    retries: number;
+                    /** @description Additional configuration for protocol http. */
+                    http?: {
+                      /**
+                       * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                       * @example example.com
+                       */
+                      domain: string | null;
+                      /**
+                       * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                       * @example /
+                       */
+                      path: string;
+                      /**
+                       * @description String that must be contained in HTTP response in order to pass the health check.
+                       * @example {"status": "ok"}
+                       */
+                      response?: string;
+                      /**
+                       * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                       * @default [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       * @example [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       */
+                      status_codes: string[];
+                      /**
+                       * @description Use HTTPS for health check.
+                       * @example false
+                       */
+                      tls?: boolean;
+                    };
+                  };
+                } & {
+                  /**
+                   * @example https
+                   * @enum {string}
+                   */
+                  protocol?: "https";
+                  /**
+                   * LoadBalancerServiceHTTPSConfig
+                   * @description Configuration option for protocol https.
+                   */
+                  http: {
+                    /**
+                     * @description Name of the cookie used for sticky sessions.
+                     * @default HCLBSTICKY
+                     * @example HCLBSTICKY
+                     */
+                    cookie_name: string;
+                    /**
+                     * @description Lifetime of the cookie used for sticky sessions (in seconds).
+                     * @default 300
+                     * @example 300
+                     */
+                    cookie_lifetime: number;
+                    /**
+                     * @description Idle timeout in seconds for the client and server side.
+                     * @default 50
+                     * @example 50
+                     */
+                    timeout_idle: number;
+                    /**
+                     * @description IDs of the Certificates to use for TLS/SSL termination by the Load Balancer; empty for TLS/SSL passthrough.
+                     * @example [
+                     *       897
+                     *     ]
+                     */
+                    certificates: number[];
+                    /**
+                     * @description Redirect HTTP requests to HTTPS.
+                     * @default false
+                     * @example true
+                     */
+                    redirect_http: boolean;
+                    /**
+                     * @description Use sticky sessions.
+                     * @default false
+                     * @example true
+                     */
+                    sticky_sessions: boolean;
+                  };
+                })
               )[];
               /** @description List of targets that belong to this Load Balancer. */
               targets: (
                 | ({
+                  /**
+                   * @description Type of the resource.
+                   * @enum {string}
+                   */
+                  type: "server" | "label_selector" | "ip";
+                } & {
+                  /**
+                   * @example server
+                   * @enum {string}
+                   */
+                  type?: "server";
+                  /**
+                   * LoadBalancerTargetServer
+                   * @description Server where the traffic should be routed to. Only present for target type "server".
+                   */
+                  server: {
                     /**
-                     * @description Type of the resource.
+                     * Format: int64
+                     * @description ID of the Server.
+                     * @example 80
+                     */
+                    id: number;
+                  };
+                  /**
+                   * LoadBalancerTargetHealthStatus
+                   * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
+                   */
+                  health_status: {
+                    /** @example 443 */
+                    listen_port: number;
+                    /**
+                     * @example healthy
                      * @enum {string}
                      */
-                    type: "server" | "label_selector" | "ip";
-                  } & {
+                    status: "healthy" | "unhealthy" | "unknown";
+                  }[];
+                  /**
+                   * LoadBalancerTargetUsePrivateIP
+                   * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
+                   * @default false
+                   */
+                  use_private_ip: boolean;
+                })
+                | ({
+                  /**
+                   * @description Type of the resource.
+                   * @enum {string}
+                   */
+                  type: "server" | "label_selector" | "ip";
+                } & {
+                  /**
+                   * @example label_selector
+                   * @enum {string}
+                   */
+                  type?: "label_selector";
+                  /**
+                   * LoadBalancerTargetLabelSelector
+                   * @description Label selector used to determine targets. Only present for target type "label_selector".
+                   */
+                  label_selector: {
                     /**
+                     * @description Label selector.
+                     * @example env=prod
+                     */
+                    selector: string;
+                  };
+                  /** @description List of resolved label selector target Servers. */
+                  targets: {
+                    /**
+                     * @description Type of the resource. Here always "server".
                      * @example server
-                     * @enum {string}
                      */
-                    type?: "server";
+                    type: string;
                     /**
                      * LoadBalancerTargetServer
                      * @description Server where the traffic should be routed to. Only present for target type "server".
@@ -17275,113 +17337,51 @@ export interface operations {
                      * @default false
                      */
                     use_private_ip: boolean;
-                  })
+                  }[];
+                  /**
+                   * LoadBalancerTargetUsePrivateIP
+                   * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
+                   * @default false
+                   */
+                  use_private_ip: boolean;
+                })
                 | ({
+                  /**
+                   * @description Type of the resource.
+                   * @enum {string}
+                   */
+                  type: "server" | "label_selector" | "ip";
+                } & {
+                  /**
+                   * @example ip
+                   * @enum {string}
+                   */
+                  type?: "ip";
+                  /**
+                   * LoadBalancerTargetIP
+                   * @description IP target where the traffic should be routed to. It is only possible to use the (Public or vSwitch) IPs of Hetzner Online Root Servers belonging to the project owner. IPs belonging to other users are blocked. Additionally IPs belonging to services provided by Hetzner Cloud (Servers, Load Balancers, ...) are blocked as well. Only present for target type `ip`.
+                   */
+                  ip: {
                     /**
-                     * @description Type of the resource.
+                     * @description IP of a server that belongs to the same customer (public IPv4/IPv6) or private IP in a subnet type vswitch.
+                     * @example 203.0.113.1
+                     */
+                    ip: string;
+                  };
+                  /**
+                   * LoadBalancerTargetHealthStatus
+                   * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
+                   */
+                  health_status: {
+                    /** @example 443 */
+                    listen_port: number;
+                    /**
+                     * @example healthy
                      * @enum {string}
                      */
-                    type: "server" | "label_selector" | "ip";
-                  } & {
-                    /**
-                     * @example label_selector
-                     * @enum {string}
-                     */
-                    type?: "label_selector";
-                    /**
-                     * LoadBalancerTargetLabelSelector
-                     * @description Label selector used to determine targets. Only present for target type "label_selector".
-                     */
-                    label_selector: {
-                      /**
-                       * @description Label selector.
-                       * @example env=prod
-                       */
-                      selector: string;
-                    };
-                    /** @description List of resolved label selector target Servers. */
-                    targets: {
-                      /**
-                       * @description Type of the resource. Here always "server".
-                       * @example server
-                       */
-                      type: string;
-                      /**
-                       * LoadBalancerTargetServer
-                       * @description Server where the traffic should be routed to. Only present for target type "server".
-                       */
-                      server: {
-                        /**
-                         * Format: int64
-                         * @description ID of the Server.
-                         * @example 80
-                         */
-                        id: number;
-                      };
-                      /**
-                       * LoadBalancerTargetHealthStatus
-                       * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
-                       */
-                      health_status: {
-                        /** @example 443 */
-                        listen_port: number;
-                        /**
-                         * @example healthy
-                         * @enum {string}
-                         */
-                        status: "healthy" | "unhealthy" | "unknown";
-                      }[];
-                      /**
-                       * LoadBalancerTargetUsePrivateIP
-                       * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
-                       * @default false
-                       */
-                      use_private_ip: boolean;
-                    }[];
-                    /**
-                     * LoadBalancerTargetUsePrivateIP
-                     * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
-                     * @default false
-                     */
-                    use_private_ip: boolean;
-                  })
-                | ({
-                    /**
-                     * @description Type of the resource.
-                     * @enum {string}
-                     */
-                    type: "server" | "label_selector" | "ip";
-                  } & {
-                    /**
-                     * @example ip
-                     * @enum {string}
-                     */
-                    type?: "ip";
-                    /**
-                     * LoadBalancerTargetIP
-                     * @description IP target where the traffic should be routed to. It is only possible to use the (Public or vSwitch) IPs of Hetzner Online Root Servers belonging to the project owner. IPs belonging to other users are blocked. Additionally IPs belonging to services provided by Hetzner Cloud (Servers, Load Balancers, ...) are blocked as well. Only present for target type `ip`.
-                     */
-                    ip: {
-                      /**
-                       * @description IP of a server that belongs to the same customer (public IPv4/IPv6) or private IP in a subnet type vswitch.
-                       * @example 203.0.113.1
-                       */
-                      ip: string;
-                    };
-                    /**
-                     * LoadBalancerTargetHealthStatus
-                     * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
-                     */
-                    health_status: {
-                      /** @example 443 */
-                      listen_port: number;
-                      /**
-                       * @example healthy
-                       * @enum {string}
-                       */
-                      status: "healthy" | "unhealthy" | "unknown";
-                    }[];
-                  })
+                    status: "healthy" | "unhealthy" | "unknown";
+                  }[];
+                })
               )[];
               /** @description Algorithm of the Load Balancer. */
               algorithm: {
@@ -17726,378 +17726,440 @@ export interface operations {
               /** @description List of services that belong to this Load Balancer. */
               services: (
                 | ({
+                  /**
+                   * @description Protocol of the Load Balancer.
+                   * @enum {string}
+                   */
+                  protocol: "tcp" | "http" | "https";
+                  /**
+                   * @description Port the Load Balancer listens on.
+                   * @example 443
+                   */
+                  listen_port: number;
+                  /**
+                   * @description Port the Load Balancer will balance to.
+                   * @example 80
+                   */
+                  destination_port: number;
+                  /**
+                   * @description Is Proxyprotocol enabled or not.
+                   * @example false
+                   */
+                  proxyprotocol: boolean;
+                  /**
+                   * LoadBalancerServiceHealthCheck
+                   * @description Service health check.
+                   */
+                  health_check: {
                     /**
-                     * @description Protocol of the Load Balancer.
-                     * @enum {string}
-                     */
-                    protocol: "tcp" | "http" | "https";
-                    /**
-                     * @description Port the Load Balancer listens on.
-                     * @example 443
-                     */
-                    listen_port: number;
-                    /**
-                     * @description Port the Load Balancer will balance to.
-                     * @example 80
-                     */
-                    destination_port: number;
-                    /**
-                     * @description Is Proxyprotocol enabled or not.
-                     * @example false
-                     */
-                    proxyprotocol: boolean;
-                    /**
-                     * LoadBalancerServiceHealthCheck
-                     * @description Service health check.
-                     */
-                    health_check: {
-                      /**
-                       * @description Type of the health check.
-                       * @example http
-                       * @enum {string}
-                       */
-                      protocol: "tcp" | "http";
-                      /**
-                       * @description Port the health check will be performed on.
-                       * @example 4711
-                       */
-                      port: number;
-                      /**
-                       * @description Time interval in seconds health checks are performed.
-                       * @example 15
-                       */
-                      interval: number;
-                      /**
-                       * @description Time in seconds after an attempt is considered a timeout.
-                       * @example 10
-                       */
-                      timeout: number;
-                      /**
-                       * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                       * @example 3
-                       */
-                      retries: number;
-                      /** @description Additional configuration for protocol http. */
-                      http?: {
-                        /**
-                         * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                         * @example example.com
-                         */
-                        domain: string | null;
-                        /**
-                         * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                         * @example /
-                         */
-                        path: string;
-                        /**
-                         * @description String that must be contained in HTTP response in order to pass the health check.
-                         * @example {"status": "ok"}
-                         */
-                        response?: string;
-                        /**
-                         * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                         * @default [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         * @example [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         */
-                        status_codes: string[];
-                        /**
-                         * @description Use HTTPS for health check.
-                         * @example false
-                         */
-                        tls?: boolean;
-                      };
-                    };
-                  } & {
-                    /**
-                     * @example tcp
-                     * @enum {string}
-                     */
-                    protocol?: "tcp";
-                  })
-                | ({
-                    /**
-                     * @description Protocol of the Load Balancer.
-                     * @enum {string}
-                     */
-                    protocol: "tcp" | "http" | "https";
-                    /**
-                     * @description Port the Load Balancer listens on.
-                     * @example 443
-                     */
-                    listen_port: number;
-                    /**
-                     * @description Port the Load Balancer will balance to.
-                     * @example 80
-                     */
-                    destination_port: number;
-                    /**
-                     * @description Is Proxyprotocol enabled or not.
-                     * @example false
-                     */
-                    proxyprotocol: boolean;
-                    /**
-                     * LoadBalancerServiceHealthCheck
-                     * @description Service health check.
-                     */
-                    health_check: {
-                      /**
-                       * @description Type of the health check.
-                       * @example http
-                       * @enum {string}
-                       */
-                      protocol: "tcp" | "http";
-                      /**
-                       * @description Port the health check will be performed on.
-                       * @example 4711
-                       */
-                      port: number;
-                      /**
-                       * @description Time interval in seconds health checks are performed.
-                       * @example 15
-                       */
-                      interval: number;
-                      /**
-                       * @description Time in seconds after an attempt is considered a timeout.
-                       * @example 10
-                       */
-                      timeout: number;
-                      /**
-                       * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                       * @example 3
-                       */
-                      retries: number;
-                      /** @description Additional configuration for protocol http. */
-                      http?: {
-                        /**
-                         * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                         * @example example.com
-                         */
-                        domain: string | null;
-                        /**
-                         * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                         * @example /
-                         */
-                        path: string;
-                        /**
-                         * @description String that must be contained in HTTP response in order to pass the health check.
-                         * @example {"status": "ok"}
-                         */
-                        response?: string;
-                        /**
-                         * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                         * @default [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         * @example [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         */
-                        status_codes: string[];
-                        /**
-                         * @description Use HTTPS for health check.
-                         * @example false
-                         */
-                        tls?: boolean;
-                      };
-                    };
-                  } & {
-                    /**
+                     * @description Type of the health check.
                      * @example http
                      * @enum {string}
                      */
-                    protocol?: "http";
+                    protocol: "tcp" | "http";
                     /**
-                     * LoadBalancerServiceHTTPConfig
-                     * @description Configuration option for protocol http.
+                     * @description Port the health check will be performed on.
+                     * @example 4711
                      */
-                    http: {
-                      /**
-                       * @description Name of the cookie used for sticky sessions.
-                       * @default HCLBSTICKY
-                       * @example HCLBSTICKY
-                       */
-                      cookie_name: string;
-                      /**
-                       * @description Lifetime of the cookie used for sticky sessions (in seconds).
-                       * @default 300
-                       * @example 300
-                       */
-                      cookie_lifetime: number;
-                      /**
-                       * @description Idle timeout in seconds for the client and server side.
-                       * @default 50
-                       * @example 50
-                       */
-                      timeout_idle: number;
-                      /**
-                       * @description Use sticky sessions.
-                       * @default false
-                       * @example true
-                       */
-                      sticky_sessions: boolean;
-                    };
-                  })
-                | ({
+                    port: number;
                     /**
-                     * @description Protocol of the Load Balancer.
-                     * @enum {string}
+                     * @description Time interval in seconds health checks are performed.
+                     * @example 15
                      */
-                    protocol: "tcp" | "http" | "https";
+                    interval: number;
                     /**
-                     * @description Port the Load Balancer listens on.
-                     * @example 443
+                     * @description Time in seconds after an attempt is considered a timeout.
+                     * @example 10
                      */
-                    listen_port: number;
+                    timeout: number;
                     /**
-                     * @description Port the Load Balancer will balance to.
-                     * @example 80
+                     * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                     * @example 3
                      */
-                    destination_port: number;
-                    /**
-                     * @description Is Proxyprotocol enabled or not.
-                     * @example false
-                     */
-                    proxyprotocol: boolean;
-                    /**
-                     * LoadBalancerServiceHealthCheck
-                     * @description Service health check.
-                     */
-                    health_check: {
+                    retries: number;
+                    /** @description Additional configuration for protocol http. */
+                    http?: {
                       /**
-                       * @description Type of the health check.
-                       * @example http
-                       * @enum {string}
+                       * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                       * @example example.com
                        */
-                      protocol: "tcp" | "http";
+                      domain: string | null;
                       /**
-                       * @description Port the health check will be performed on.
-                       * @example 4711
+                       * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                       * @example /
                        */
-                      port: number;
+                      path: string;
                       /**
-                       * @description Time interval in seconds health checks are performed.
-                       * @example 15
+                       * @description String that must be contained in HTTP response in order to pass the health check.
+                       * @example {"status": "ok"}
                        */
-                      interval: number;
+                      response?: string;
                       /**
-                       * @description Time in seconds after an attempt is considered a timeout.
-                       * @example 10
-                       */
-                      timeout: number;
-                      /**
-                       * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
-                       * @example 3
-                       */
-                      retries: number;
-                      /** @description Additional configuration for protocol http. */
-                      http?: {
-                        /**
-                         * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
-                         * @example example.com
-                         */
-                        domain: string | null;
-                        /**
-                         * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
-                         * @example /
-                         */
-                        path: string;
-                        /**
-                         * @description String that must be contained in HTTP response in order to pass the health check.
-                         * @example {"status": "ok"}
-                         */
-                        response?: string;
-                        /**
-                         * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
-                         * @default [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         * @example [
-                         *       "2??",
-                         *       "3??"
-                         *     ]
-                         */
-                        status_codes: string[];
-                        /**
-                         * @description Use HTTPS for health check.
-                         * @example false
-                         */
-                        tls?: boolean;
-                      };
-                    };
-                  } & {
-                    /**
-                     * @example https
-                     * @enum {string}
-                     */
-                    protocol?: "https";
-                    /**
-                     * LoadBalancerServiceHTTPSConfig
-                     * @description Configuration option for protocol https.
-                     */
-                    http: {
-                      /**
-                       * @description Name of the cookie used for sticky sessions.
-                       * @default HCLBSTICKY
-                       * @example HCLBSTICKY
-                       */
-                      cookie_name: string;
-                      /**
-                       * @description Lifetime of the cookie used for sticky sessions (in seconds).
-                       * @default 300
-                       * @example 300
-                       */
-                      cookie_lifetime: number;
-                      /**
-                       * @description Idle timeout in seconds for the client and server side.
-                       * @default 50
-                       * @example 50
-                       */
-                      timeout_idle: number;
-                      /**
-                       * @description IDs of the Certificates to use for TLS/SSL termination by the Load Balancer; empty for TLS/SSL passthrough.
+                       * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                       * @default [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
                        * @example [
-                       *       897
+                       *       "2??",
+                       *       "3??"
                        *     ]
                        */
-                      certificates: number[];
+                      status_codes: string[];
                       /**
-                       * @description Redirect HTTP requests to HTTPS.
-                       * @default false
-                       * @example true
+                       * @description Use HTTPS for health check.
+                       * @example false
                        */
-                      redirect_http: boolean;
-                      /**
-                       * @description Use sticky sessions.
-                       * @default false
-                       * @example true
-                       */
-                      sticky_sessions: boolean;
+                      tls?: boolean;
                     };
-                  })
+                  };
+                } & {
+                  /**
+                   * @example tcp
+                   * @enum {string}
+                   */
+                  protocol?: "tcp";
+                })
+                | ({
+                  /**
+                   * @description Protocol of the Load Balancer.
+                   * @enum {string}
+                   */
+                  protocol: "tcp" | "http" | "https";
+                  /**
+                   * @description Port the Load Balancer listens on.
+                   * @example 443
+                   */
+                  listen_port: number;
+                  /**
+                   * @description Port the Load Balancer will balance to.
+                   * @example 80
+                   */
+                  destination_port: number;
+                  /**
+                   * @description Is Proxyprotocol enabled or not.
+                   * @example false
+                   */
+                  proxyprotocol: boolean;
+                  /**
+                   * LoadBalancerServiceHealthCheck
+                   * @description Service health check.
+                   */
+                  health_check: {
+                    /**
+                     * @description Type of the health check.
+                     * @example http
+                     * @enum {string}
+                     */
+                    protocol: "tcp" | "http";
+                    /**
+                     * @description Port the health check will be performed on.
+                     * @example 4711
+                     */
+                    port: number;
+                    /**
+                     * @description Time interval in seconds health checks are performed.
+                     * @example 15
+                     */
+                    interval: number;
+                    /**
+                     * @description Time in seconds after an attempt is considered a timeout.
+                     * @example 10
+                     */
+                    timeout: number;
+                    /**
+                     * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                     * @example 3
+                     */
+                    retries: number;
+                    /** @description Additional configuration for protocol http. */
+                    http?: {
+                      /**
+                       * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                       * @example example.com
+                       */
+                      domain: string | null;
+                      /**
+                       * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                       * @example /
+                       */
+                      path: string;
+                      /**
+                       * @description String that must be contained in HTTP response in order to pass the health check.
+                       * @example {"status": "ok"}
+                       */
+                      response?: string;
+                      /**
+                       * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                       * @default [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       * @example [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       */
+                      status_codes: string[];
+                      /**
+                       * @description Use HTTPS for health check.
+                       * @example false
+                       */
+                      tls?: boolean;
+                    };
+                  };
+                } & {
+                  /**
+                   * @example http
+                   * @enum {string}
+                   */
+                  protocol?: "http";
+                  /**
+                   * LoadBalancerServiceHTTPConfig
+                   * @description Configuration option for protocol http.
+                   */
+                  http: {
+                    /**
+                     * @description Name of the cookie used for sticky sessions.
+                     * @default HCLBSTICKY
+                     * @example HCLBSTICKY
+                     */
+                    cookie_name: string;
+                    /**
+                     * @description Lifetime of the cookie used for sticky sessions (in seconds).
+                     * @default 300
+                     * @example 300
+                     */
+                    cookie_lifetime: number;
+                    /**
+                     * @description Idle timeout in seconds for the client and server side.
+                     * @default 50
+                     * @example 50
+                     */
+                    timeout_idle: number;
+                    /**
+                     * @description Use sticky sessions.
+                     * @default false
+                     * @example true
+                     */
+                    sticky_sessions: boolean;
+                  };
+                })
+                | ({
+                  /**
+                   * @description Protocol of the Load Balancer.
+                   * @enum {string}
+                   */
+                  protocol: "tcp" | "http" | "https";
+                  /**
+                   * @description Port the Load Balancer listens on.
+                   * @example 443
+                   */
+                  listen_port: number;
+                  /**
+                   * @description Port the Load Balancer will balance to.
+                   * @example 80
+                   */
+                  destination_port: number;
+                  /**
+                   * @description Is Proxyprotocol enabled or not.
+                   * @example false
+                   */
+                  proxyprotocol: boolean;
+                  /**
+                   * LoadBalancerServiceHealthCheck
+                   * @description Service health check.
+                   */
+                  health_check: {
+                    /**
+                     * @description Type of the health check.
+                     * @example http
+                     * @enum {string}
+                     */
+                    protocol: "tcp" | "http";
+                    /**
+                     * @description Port the health check will be performed on.
+                     * @example 4711
+                     */
+                    port: number;
+                    /**
+                     * @description Time interval in seconds health checks are performed.
+                     * @example 15
+                     */
+                    interval: number;
+                    /**
+                     * @description Time in seconds after an attempt is considered a timeout.
+                     * @example 10
+                     */
+                    timeout: number;
+                    /**
+                     * @description Unsuccessful retries needed until a target is considered unhealthy; an unhealthy target needs the same number of successful retries to become healthy again.
+                     * @example 3
+                     */
+                    retries: number;
+                    /** @description Additional configuration for protocol http. */
+                    http?: {
+                      /**
+                       * @description Host header to send in the HTTP request. May not contain spaces, percent or backslash symbols. Can be null, in that case no host header is sent.
+                       * @example example.com
+                       */
+                      domain: string | null;
+                      /**
+                       * @description HTTP path to use for health checks. May not contain literal spaces, use percent-encoding instead.
+                       * @example /
+                       */
+                      path: string;
+                      /**
+                       * @description String that must be contained in HTTP response in order to pass the health check.
+                       * @example {"status": "ok"}
+                       */
+                      response?: string;
+                      /**
+                       * @description List of returned HTTP status codes in order to pass the health check. Supports the wildcards `?` for exactly one character and `*` for multiple ones.
+                       * @default [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       * @example [
+                       *       "2??",
+                       *       "3??"
+                       *     ]
+                       */
+                      status_codes: string[];
+                      /**
+                       * @description Use HTTPS for health check.
+                       * @example false
+                       */
+                      tls?: boolean;
+                    };
+                  };
+                } & {
+                  /**
+                   * @example https
+                   * @enum {string}
+                   */
+                  protocol?: "https";
+                  /**
+                   * LoadBalancerServiceHTTPSConfig
+                   * @description Configuration option for protocol https.
+                   */
+                  http: {
+                    /**
+                     * @description Name of the cookie used for sticky sessions.
+                     * @default HCLBSTICKY
+                     * @example HCLBSTICKY
+                     */
+                    cookie_name: string;
+                    /**
+                     * @description Lifetime of the cookie used for sticky sessions (in seconds).
+                     * @default 300
+                     * @example 300
+                     */
+                    cookie_lifetime: number;
+                    /**
+                     * @description Idle timeout in seconds for the client and server side.
+                     * @default 50
+                     * @example 50
+                     */
+                    timeout_idle: number;
+                    /**
+                     * @description IDs of the Certificates to use for TLS/SSL termination by the Load Balancer; empty for TLS/SSL passthrough.
+                     * @example [
+                     *       897
+                     *     ]
+                     */
+                    certificates: number[];
+                    /**
+                     * @description Redirect HTTP requests to HTTPS.
+                     * @default false
+                     * @example true
+                     */
+                    redirect_http: boolean;
+                    /**
+                     * @description Use sticky sessions.
+                     * @default false
+                     * @example true
+                     */
+                    sticky_sessions: boolean;
+                  };
+                })
               )[];
               /** @description List of targets that belong to this Load Balancer. */
               targets: (
                 | ({
+                  /**
+                   * @description Type of the resource.
+                   * @enum {string}
+                   */
+                  type: "server" | "label_selector" | "ip";
+                } & {
+                  /**
+                   * @example server
+                   * @enum {string}
+                   */
+                  type?: "server";
+                  /**
+                   * LoadBalancerTargetServer
+                   * @description Server where the traffic should be routed to. Only present for target type "server".
+                   */
+                  server: {
                     /**
-                     * @description Type of the resource.
+                     * Format: int64
+                     * @description ID of the Server.
+                     * @example 80
+                     */
+                    id: number;
+                  };
+                  /**
+                   * LoadBalancerTargetHealthStatus
+                   * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
+                   */
+                  health_status: {
+                    /** @example 443 */
+                    listen_port: number;
+                    /**
+                     * @example healthy
                      * @enum {string}
                      */
-                    type: "server" | "label_selector" | "ip";
-                  } & {
+                    status: "healthy" | "unhealthy" | "unknown";
+                  }[];
+                  /**
+                   * LoadBalancerTargetUsePrivateIP
+                   * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
+                   * @default false
+                   */
+                  use_private_ip: boolean;
+                })
+                | ({
+                  /**
+                   * @description Type of the resource.
+                   * @enum {string}
+                   */
+                  type: "server" | "label_selector" | "ip";
+                } & {
+                  /**
+                   * @example label_selector
+                   * @enum {string}
+                   */
+                  type?: "label_selector";
+                  /**
+                   * LoadBalancerTargetLabelSelector
+                   * @description Label selector used to determine targets. Only present for target type "label_selector".
+                   */
+                  label_selector: {
                     /**
+                     * @description Label selector.
+                     * @example env=prod
+                     */
+                    selector: string;
+                  };
+                  /** @description List of resolved label selector target Servers. */
+                  targets: {
+                    /**
+                     * @description Type of the resource. Here always "server".
                      * @example server
-                     * @enum {string}
                      */
-                    type?: "server";
+                    type: string;
                     /**
                      * LoadBalancerTargetServer
                      * @description Server where the traffic should be routed to. Only present for target type "server".
@@ -18129,113 +18191,51 @@ export interface operations {
                      * @default false
                      */
                     use_private_ip: boolean;
-                  })
+                  }[];
+                  /**
+                   * LoadBalancerTargetUsePrivateIP
+                   * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
+                   * @default false
+                   */
+                  use_private_ip: boolean;
+                })
                 | ({
+                  /**
+                   * @description Type of the resource.
+                   * @enum {string}
+                   */
+                  type: "server" | "label_selector" | "ip";
+                } & {
+                  /**
+                   * @example ip
+                   * @enum {string}
+                   */
+                  type?: "ip";
+                  /**
+                   * LoadBalancerTargetIP
+                   * @description IP target where the traffic should be routed to. It is only possible to use the (Public or vSwitch) IPs of Hetzner Online Root Servers belonging to the project owner. IPs belonging to other users are blocked. Additionally IPs belonging to services provided by Hetzner Cloud (Servers, Load Balancers, ...) are blocked as well. Only present for target type `ip`.
+                   */
+                  ip: {
                     /**
-                     * @description Type of the resource.
+                     * @description IP of a server that belongs to the same customer (public IPv4/IPv6) or private IP in a subnet type vswitch.
+                     * @example 203.0.113.1
+                     */
+                    ip: string;
+                  };
+                  /**
+                   * LoadBalancerTargetHealthStatus
+                   * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
+                   */
+                  health_status: {
+                    /** @example 443 */
+                    listen_port: number;
+                    /**
+                     * @example healthy
                      * @enum {string}
                      */
-                    type: "server" | "label_selector" | "ip";
-                  } & {
-                    /**
-                     * @example label_selector
-                     * @enum {string}
-                     */
-                    type?: "label_selector";
-                    /**
-                     * LoadBalancerTargetLabelSelector
-                     * @description Label selector used to determine targets. Only present for target type "label_selector".
-                     */
-                    label_selector: {
-                      /**
-                       * @description Label selector.
-                       * @example env=prod
-                       */
-                      selector: string;
-                    };
-                    /** @description List of resolved label selector target Servers. */
-                    targets: {
-                      /**
-                       * @description Type of the resource. Here always "server".
-                       * @example server
-                       */
-                      type: string;
-                      /**
-                       * LoadBalancerTargetServer
-                       * @description Server where the traffic should be routed to. Only present for target type "server".
-                       */
-                      server: {
-                        /**
-                         * Format: int64
-                         * @description ID of the Server.
-                         * @example 80
-                         */
-                        id: number;
-                      };
-                      /**
-                       * LoadBalancerTargetHealthStatus
-                       * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
-                       */
-                      health_status: {
-                        /** @example 443 */
-                        listen_port: number;
-                        /**
-                         * @example healthy
-                         * @enum {string}
-                         */
-                        status: "healthy" | "unhealthy" | "unknown";
-                      }[];
-                      /**
-                       * LoadBalancerTargetUsePrivateIP
-                       * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
-                       * @default false
-                       */
-                      use_private_ip: boolean;
-                    }[];
-                    /**
-                     * LoadBalancerTargetUsePrivateIP
-                     * @description Use the private network IP instead of the public IP. Only present for target types "server" and "label_selector".
-                     * @default false
-                     */
-                    use_private_ip: boolean;
-                  })
-                | ({
-                    /**
-                     * @description Type of the resource.
-                     * @enum {string}
-                     */
-                    type: "server" | "label_selector" | "ip";
-                  } & {
-                    /**
-                     * @example ip
-                     * @enum {string}
-                     */
-                    type?: "ip";
-                    /**
-                     * LoadBalancerTargetIP
-                     * @description IP target where the traffic should be routed to. It is only possible to use the (Public or vSwitch) IPs of Hetzner Online Root Servers belonging to the project owner. IPs belonging to other users are blocked. Additionally IPs belonging to services provided by Hetzner Cloud (Servers, Load Balancers, ...) are blocked as well. Only present for target type `ip`.
-                     */
-                    ip: {
-                      /**
-                       * @description IP of a server that belongs to the same customer (public IPv4/IPv6) or private IP in a subnet type vswitch.
-                       * @example 203.0.113.1
-                       */
-                      ip: string;
-                    };
-                    /**
-                     * LoadBalancerTargetHealthStatus
-                     * @description List of health statuses of the services on this target. Only present for target types "server" and "ip".
-                     */
-                    health_status: {
-                      /** @example 443 */
-                      listen_port: number;
-                      /**
-                       * @example healthy
-                       * @enum {string}
-                       */
-                      status: "healthy" | "unhealthy" | "unknown";
-                    }[];
-                  })
+                    status: "healthy" | "unhealthy" | "unknown";
+                  }[];
+                })
               )[];
               /** @description Algorithm of the Load Balancer. */
               algorithm: {
@@ -20780,9 +20780,9 @@ export interface operations {
                *     }
                */
               time_series: Record<string, {
-                  /** @description Metrics Timestamps with values. */
-                  values: (number | string)[][];
-                }>;
+                /** @description Metrics Timestamps with values. */
+                values: (number | string)[][];
+              }>;
             };
           };
         };
@@ -28032,17 +28032,17 @@ export interface operations {
                   /** @description Reverse DNS PTR entries for the IPv6 addresses of this Server. */
                   dns_ptr:
                     | {
-                        /**
-                         * @description Single IPv6 address of this Server for which the reverse DNS entry has been set up.
-                         * @example 2001:db8::1
-                         */
-                        ip: string;
-                        /**
-                         * @description DNS pointer for the specific IP address.
-                         * @example server.example.com
-                         */
-                        dns_ptr: string;
-                      }[]
+                      /**
+                       * @description Single IPv6 address of this Server for which the reverse DNS entry has been set up.
+                       * @example 2001:db8::1
+                       */
+                      ip: string;
+                      /**
+                       * @description DNS pointer for the specific IP address.
+                       * @example server.example.com
+                       */
+                      dns_ptr: string;
+                    }[]
                     | null;
                 } | null;
                 /**
@@ -29084,17 +29084,17 @@ export interface operations {
                   /** @description Reverse DNS PTR entries for the IPv6 addresses of this Server. */
                   dns_ptr:
                     | {
-                        /**
-                         * @description Single IPv6 address of this Server for which the reverse DNS entry has been set up.
-                         * @example 2001:db8::1
-                         */
-                        ip: string;
-                        /**
-                         * @description DNS pointer for the specific IP address.
-                         * @example server.example.com
-                         */
-                        dns_ptr: string;
-                      }[]
+                      /**
+                       * @description Single IPv6 address of this Server for which the reverse DNS entry has been set up.
+                       * @example 2001:db8::1
+                       */
+                      ip: string;
+                      /**
+                       * @description DNS pointer for the specific IP address.
+                       * @example server.example.com
+                       */
+                      dns_ptr: string;
+                    }[]
                     | null;
                 } | null;
                 /**
@@ -30406,17 +30406,17 @@ export interface operations {
                   /** @description Reverse DNS PTR entries for the IPv6 addresses of this Server. */
                   dns_ptr:
                     | {
-                        /**
-                         * @description Single IPv6 address of this Server for which the reverse DNS entry has been set up.
-                         * @example 2001:db8::1
-                         */
-                        ip: string;
-                        /**
-                         * @description DNS pointer for the specific IP address.
-                         * @example server.example.com
-                         */
-                        dns_ptr: string;
-                      }[]
+                      /**
+                       * @description Single IPv6 address of this Server for which the reverse DNS entry has been set up.
+                       * @example 2001:db8::1
+                       */
+                      ip: string;
+                      /**
+                       * @description DNS pointer for the specific IP address.
+                       * @example server.example.com
+                       */
+                      dns_ptr: string;
+                    }[]
                     | null;
                 } | null;
                 /**
@@ -31307,17 +31307,17 @@ export interface operations {
                   /** @description Reverse DNS PTR entries for the IPv6 addresses of this Server. */
                   dns_ptr:
                     | {
-                        /**
-                         * @description Single IPv6 address of this Server for which the reverse DNS entry has been set up.
-                         * @example 2001:db8::1
-                         */
-                        ip: string;
-                        /**
-                         * @description DNS pointer for the specific IP address.
-                         * @example server.example.com
-                         */
-                        dns_ptr: string;
-                      }[]
+                      /**
+                       * @description Single IPv6 address of this Server for which the reverse DNS entry has been set up.
+                       * @example 2001:db8::1
+                       */
+                      ip: string;
+                      /**
+                       * @description DNS pointer for the specific IP address.
+                       * @example server.example.com
+                       */
+                      dns_ptr: string;
+                    }[]
                     | null;
                 } | null;
                 /**
@@ -35633,9 +35633,9 @@ export interface operations {
                *     }
                */
               time_series: Record<string, {
-                  /** @description Metrics Timestamps with values. */
-                  values: (number | string)[][];
-                }>;
+                /** @description Metrics Timestamps with values. */
+                values: (number | string)[][];
+              }>;
             };
           };
         };
@@ -38402,315 +38402,315 @@ export interface operations {
           "application/json": {
             zones: (
               | ({
+                /**
+                 * Format: int64
+                 * @description ID of the [Zone](#tag/zones).
+                 * @example 42
+                 */
+                id: number;
+                /**
+                 * @description Name of the [Zone](#tag/zones).
+                 *
+                 *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
+                 *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
+                 *
+                 *     The name must be in lower case and must not end with a dot.
+                 *     [Internationalized domain
+                 *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
+                 *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
+                 *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
+                 * @example example.com
+                 */
+                name: string;
+                /**
+                 * Format: date-time
+                 * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
+                 * @example 2016-01-30T23:55:00Z
+                 */
+                created: string;
+                /**
+                 * @description Primary nameservers of the [Zone](#tag/zones).
+                 *
+                 *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                 * @example [
+                 *       {
+                 *         "address": "198.51.100.1",
+                 *         "port": 53
+                 *       },
+                 *       {
+                 *         "address": "203.0.113.1",
+                 *         "port": 53
+                 *       }
+                 *     ]
+                 */
+                primary_nameservers?: {
                   /**
-                   * Format: int64
-                   * @description ID of the [Zone](#tag/zones).
-                   * @example 42
+                   * @description Public IPv4 or IPv6 address of the primary nameserver.
+                   * @example 198.51.100.1
                    */
-                  id: number;
+                  address: string;
                   /**
-                   * @description Name of the [Zone](#tag/zones).
-                   *
-                   *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
-                   *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
-                   *
-                   *     The name must be in lower case and must not end with a dot.
-                   *     [Internationalized domain
-                   *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
-                   *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
-                   *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
-                   * @example example.com
+                   * @description Port of the primary nameserver.
+                   * @default 53
+                   * @example 5353
                    */
-                  name: string;
+                  port: number;
                   /**
-                   * Format: date-time
-                   * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
-                   * @example 2016-01-30T23:55:00Z
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
+                   *     for the zone transfer. Must be base64 encoded.
                    */
-                  created: string;
+                  tsig_key?: string;
                   /**
-                   * @description Primary nameservers of the [Zone](#tag/zones).
-                   *
-                   *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
+                   *     used to generate the TSIG key.
+                   * @enum {string}
+                   */
+                  tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
+                }[];
+                /**
+                 * @description User-defined labels (`key/value` pairs) for the Resource.
+                 *     For more information, see "[Labels](#description/labels)".
+                 * @example {
+                 *       "environment": "prod",
+                 *       "example.com/my": "label",
+                 *       "just-a-key": ""
+                 *     }
+                 */
+                labels: Record<string, string>;
+                /** @description Protection configuration for the Resource. */
+                protection: {
+                  /**
+                   * @description Prevent the Resource from being deleted.
+                   * @example false
+                   */
+                  delete: boolean;
+                };
+                /**
+                 * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                 *
+                 *     Must be in between 60s and 2147483647s.
+                 *
+                 *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
+                 * @default 3600
+                 * @example 10800
+                 */
+                ttl: number;
+                /**
+                 * @description Status of the [Zone](#tag/zones).
+                 * @enum {string}
+                 */
+                status: "ok" | "updating" | "error";
+                /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
+                record_count: number;
+                authoritative_nameservers: {
+                  /**
+                   * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
                    * @example [
-                   *       {
-                   *         "address": "198.51.100.1",
-                   *         "port": 53
-                   *       },
-                   *       {
-                   *         "address": "203.0.113.1",
-                   *         "port": 53
-                   *       }
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
                    *     ]
                    */
-                  primary_nameservers?: {
-                    /**
-                     * @description Public IPv4 or IPv6 address of the primary nameserver.
-                     * @example 198.51.100.1
-                     */
-                    address: string;
-                    /**
-                     * @description Port of the primary nameserver.
-                     * @default 53
-                     * @example 5353
-                     */
-                    port: number;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
-                     *     for the zone transfer. Must be base64 encoded.
-                     */
-                    tsig_key?: string;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
-                     *     used to generate the TSIG key.
-                     * @enum {string}
-                     */
-                    tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
-                  }[];
+                  assigned: string[];
                   /**
-                   * @description User-defined labels (`key/value` pairs) for the Resource.
-                   *     For more information, see "[Labels](#description/labels)".
-                   * @example {
-                   *       "environment": "prod",
-                   *       "example.com/my": "label",
-                   *       "just-a-key": ""
-                   *     }
-                   */
-                  labels: Record<string, string>;
-                  /** @description Protection configuration for the Resource. */
-                  protection: {
-                    /**
-                     * @description Prevent the Resource from being deleted.
-                     * @example false
-                     */
-                    delete: boolean;
-                  };
-                  /**
-                   * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                   * @description Authoritative nameservers currently delegated to by the parent DNS zone.
                    *
-                   *     Must be in between 60s and 2147483647s.
-                   *
-                   *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
-                   * @default 3600
-                   * @example 10800
+                   *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
+                   * @example [
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
+                   *     ]
                    */
-                  ttl: number;
+                  delegated: string[];
                   /**
-                   * @description Status of the [Zone](#tag/zones).
+                   * Format: date-time
+                   * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
+                   * @example 2016-01-30T23:55:00Z
+                   */
+                  delegation_last_check: string | null;
+                  /**
+                   * @description Status of the delegation.
                    * @enum {string}
                    */
-                  status: "ok" | "updating" | "error";
-                  /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
-                  record_count: number;
-                  authoritative_nameservers: {
-                    /**
-                     * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    assigned: string[];
-                    /**
-                     * @description Authoritative nameservers currently delegated to by the parent DNS zone.
-                     *
-                     *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    delegated: string[];
-                    /**
-                     * Format: date-time
-                     * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
-                     * @example 2016-01-30T23:55:00Z
-                     */
-                    delegation_last_check: string | null;
-                    /**
-                     * @description Status of the delegation.
-                     * @enum {string}
-                     */
-                    delegation_status?:
-                      | "valid"
-                      | "partially-valid"
-                      | "invalid"
-                      | "lame"
-                      | "unregistered"
-                      | "unknown";
-                  };
-                  /**
-                   * @description Registrar of the domain.
-                   * @enum {string}
-                   */
-                  registrar: "hetzner" | "other" | "unknown";
-                } & {
-                  /**
-                   * @description Mode of the [Zone](#tag/zones).
-                   *
-                   *     For more information, see [Zone Modes](#tag/zones/zone-modes).
-                   * @example primary
-                   * @enum {string}
-                   */
-                  mode: "primary";
-                })
+                  delegation_status?:
+                    | "valid"
+                    | "partially-valid"
+                    | "invalid"
+                    | "lame"
+                    | "unregistered"
+                    | "unknown";
+                };
+                /**
+                 * @description Registrar of the domain.
+                 * @enum {string}
+                 */
+                registrar: "hetzner" | "other" | "unknown";
+              } & {
+                /**
+                 * @description Mode of the [Zone](#tag/zones).
+                 *
+                 *     For more information, see [Zone Modes](#tag/zones/zone-modes).
+                 * @example primary
+                 * @enum {string}
+                 */
+                mode: "primary";
+              })
               | ({
+                /**
+                 * Format: int64
+                 * @description ID of the [Zone](#tag/zones).
+                 * @example 42
+                 */
+                id: number;
+                /**
+                 * @description Name of the [Zone](#tag/zones).
+                 *
+                 *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
+                 *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
+                 *
+                 *     The name must be in lower case and must not end with a dot.
+                 *     [Internationalized domain
+                 *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
+                 *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
+                 *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
+                 * @example example.com
+                 */
+                name: string;
+                /**
+                 * Format: date-time
+                 * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
+                 * @example 2016-01-30T23:55:00Z
+                 */
+                created: string;
+                /**
+                 * @description Primary nameservers of the [Zone](#tag/zones).
+                 *
+                 *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                 * @example [
+                 *       {
+                 *         "address": "198.51.100.1",
+                 *         "port": 53
+                 *       },
+                 *       {
+                 *         "address": "203.0.113.1",
+                 *         "port": 53
+                 *       }
+                 *     ]
+                 */
+                primary_nameservers?: {
                   /**
-                   * Format: int64
-                   * @description ID of the [Zone](#tag/zones).
-                   * @example 42
+                   * @description Public IPv4 or IPv6 address of the primary nameserver.
+                   * @example 198.51.100.1
                    */
-                  id: number;
+                  address: string;
                   /**
-                   * @description Name of the [Zone](#tag/zones).
-                   *
-                   *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
-                   *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
-                   *
-                   *     The name must be in lower case and must not end with a dot.
-                   *     [Internationalized domain
-                   *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
-                   *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
-                   *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
-                   * @example example.com
+                   * @description Port of the primary nameserver.
+                   * @default 53
+                   * @example 5353
                    */
-                  name: string;
+                  port: number;
                   /**
-                   * Format: date-time
-                   * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
-                   * @example 2016-01-30T23:55:00Z
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
+                   *     for the zone transfer. Must be base64 encoded.
                    */
-                  created: string;
+                  tsig_key?: string;
                   /**
-                   * @description Primary nameservers of the [Zone](#tag/zones).
-                   *
-                   *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
+                   *     used to generate the TSIG key.
+                   * @enum {string}
+                   */
+                  tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
+                }[];
+                /**
+                 * @description User-defined labels (`key/value` pairs) for the Resource.
+                 *     For more information, see "[Labels](#description/labels)".
+                 * @example {
+                 *       "environment": "prod",
+                 *       "example.com/my": "label",
+                 *       "just-a-key": ""
+                 *     }
+                 */
+                labels: Record<string, string>;
+                /** @description Protection configuration for the Resource. */
+                protection: {
+                  /**
+                   * @description Prevent the Resource from being deleted.
+                   * @example false
+                   */
+                  delete: boolean;
+                };
+                /**
+                 * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                 *
+                 *     Must be in between 60s and 2147483647s.
+                 *
+                 *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
+                 * @default 3600
+                 * @example 10800
+                 */
+                ttl: number;
+                /**
+                 * @description Status of the [Zone](#tag/zones).
+                 * @enum {string}
+                 */
+                status: "ok" | "updating" | "error";
+                /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
+                record_count: number;
+                authoritative_nameservers: {
+                  /**
+                   * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
                    * @example [
-                   *       {
-                   *         "address": "198.51.100.1",
-                   *         "port": 53
-                   *       },
-                   *       {
-                   *         "address": "203.0.113.1",
-                   *         "port": 53
-                   *       }
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
                    *     ]
                    */
-                  primary_nameservers?: {
-                    /**
-                     * @description Public IPv4 or IPv6 address of the primary nameserver.
-                     * @example 198.51.100.1
-                     */
-                    address: string;
-                    /**
-                     * @description Port of the primary nameserver.
-                     * @default 53
-                     * @example 5353
-                     */
-                    port: number;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
-                     *     for the zone transfer. Must be base64 encoded.
-                     */
-                    tsig_key?: string;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
-                     *     used to generate the TSIG key.
-                     * @enum {string}
-                     */
-                    tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
-                  }[];
+                  assigned: string[];
                   /**
-                   * @description User-defined labels (`key/value` pairs) for the Resource.
-                   *     For more information, see "[Labels](#description/labels)".
-                   * @example {
-                   *       "environment": "prod",
-                   *       "example.com/my": "label",
-                   *       "just-a-key": ""
-                   *     }
-                   */
-                  labels: Record<string, string>;
-                  /** @description Protection configuration for the Resource. */
-                  protection: {
-                    /**
-                     * @description Prevent the Resource from being deleted.
-                     * @example false
-                     */
-                    delete: boolean;
-                  };
-                  /**
-                   * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                   * @description Authoritative nameservers currently delegated to by the parent DNS zone.
                    *
-                   *     Must be in between 60s and 2147483647s.
-                   *
-                   *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
-                   * @default 3600
-                   * @example 10800
+                   *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
+                   * @example [
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
+                   *     ]
                    */
-                  ttl: number;
+                  delegated: string[];
                   /**
-                   * @description Status of the [Zone](#tag/zones).
+                   * Format: date-time
+                   * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
+                   * @example 2016-01-30T23:55:00Z
+                   */
+                  delegation_last_check: string | null;
+                  /**
+                   * @description Status of the delegation.
                    * @enum {string}
                    */
-                  status: "ok" | "updating" | "error";
-                  /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
-                  record_count: number;
-                  authoritative_nameservers: {
-                    /**
-                     * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    assigned: string[];
-                    /**
-                     * @description Authoritative nameservers currently delegated to by the parent DNS zone.
-                     *
-                     *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    delegated: string[];
-                    /**
-                     * Format: date-time
-                     * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
-                     * @example 2016-01-30T23:55:00Z
-                     */
-                    delegation_last_check: string | null;
-                    /**
-                     * @description Status of the delegation.
-                     * @enum {string}
-                     */
-                    delegation_status?:
-                      | "valid"
-                      | "partially-valid"
-                      | "invalid"
-                      | "lame"
-                      | "unregistered"
-                      | "unknown";
-                  };
-                  /**
-                   * @description Registrar of the domain.
-                   * @enum {string}
-                   */
-                  registrar: "hetzner" | "other" | "unknown";
-                } & {
-                  /**
-                   * @description Mode of the [Zone](#tag/zones).
-                   *
-                   *     For more information, see [Zone Modes](#tag/zones/zone-modes).
-                   * @example secondary
-                   * @enum {string}
-                   */
-                  mode: "secondary";
-                })
+                  delegation_status?:
+                    | "valid"
+                    | "partially-valid"
+                    | "invalid"
+                    | "lame"
+                    | "unregistered"
+                    | "unknown";
+                };
+                /**
+                 * @description Registrar of the domain.
+                 * @enum {string}
+                 */
+                registrar: "hetzner" | "other" | "unknown";
+              } & {
+                /**
+                 * @description Mode of the [Zone](#tag/zones).
+                 *
+                 *     For more information, see [Zone Modes](#tag/zones/zone-modes).
+                 * @example secondary
+                 * @enum {string}
+                 */
+                mode: "secondary";
+              })
             )[];
             /** ListMeta */
             meta: {
@@ -38995,315 +38995,315 @@ export interface operations {
             /** Zone */
             zone:
               | ({
+                /**
+                 * Format: int64
+                 * @description ID of the [Zone](#tag/zones).
+                 * @example 42
+                 */
+                id: number;
+                /**
+                 * @description Name of the [Zone](#tag/zones).
+                 *
+                 *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
+                 *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
+                 *
+                 *     The name must be in lower case and must not end with a dot.
+                 *     [Internationalized domain
+                 *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
+                 *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
+                 *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
+                 * @example example.com
+                 */
+                name: string;
+                /**
+                 * Format: date-time
+                 * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
+                 * @example 2016-01-30T23:55:00Z
+                 */
+                created: string;
+                /**
+                 * @description Primary nameservers of the [Zone](#tag/zones).
+                 *
+                 *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                 * @example [
+                 *       {
+                 *         "address": "198.51.100.1",
+                 *         "port": 53
+                 *       },
+                 *       {
+                 *         "address": "203.0.113.1",
+                 *         "port": 53
+                 *       }
+                 *     ]
+                 */
+                primary_nameservers?: {
                   /**
-                   * Format: int64
-                   * @description ID of the [Zone](#tag/zones).
-                   * @example 42
+                   * @description Public IPv4 or IPv6 address of the primary nameserver.
+                   * @example 198.51.100.1
                    */
-                  id: number;
+                  address: string;
                   /**
-                   * @description Name of the [Zone](#tag/zones).
-                   *
-                   *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
-                   *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
-                   *
-                   *     The name must be in lower case and must not end with a dot.
-                   *     [Internationalized domain
-                   *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
-                   *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
-                   *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
-                   * @example example.com
+                   * @description Port of the primary nameserver.
+                   * @default 53
+                   * @example 5353
                    */
-                  name: string;
+                  port: number;
                   /**
-                   * Format: date-time
-                   * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
-                   * @example 2016-01-30T23:55:00Z
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
+                   *     for the zone transfer. Must be base64 encoded.
                    */
-                  created: string;
+                  tsig_key?: string;
                   /**
-                   * @description Primary nameservers of the [Zone](#tag/zones).
-                   *
-                   *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
+                   *     used to generate the TSIG key.
+                   * @enum {string}
+                   */
+                  tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
+                }[];
+                /**
+                 * @description User-defined labels (`key/value` pairs) for the Resource.
+                 *     For more information, see "[Labels](#description/labels)".
+                 * @example {
+                 *       "environment": "prod",
+                 *       "example.com/my": "label",
+                 *       "just-a-key": ""
+                 *     }
+                 */
+                labels: Record<string, string>;
+                /** @description Protection configuration for the Resource. */
+                protection: {
+                  /**
+                   * @description Prevent the Resource from being deleted.
+                   * @example false
+                   */
+                  delete: boolean;
+                };
+                /**
+                 * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                 *
+                 *     Must be in between 60s and 2147483647s.
+                 *
+                 *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
+                 * @default 3600
+                 * @example 10800
+                 */
+                ttl: number;
+                /**
+                 * @description Status of the [Zone](#tag/zones).
+                 * @enum {string}
+                 */
+                status: "ok" | "updating" | "error";
+                /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
+                record_count: number;
+                authoritative_nameservers: {
+                  /**
+                   * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
                    * @example [
-                   *       {
-                   *         "address": "198.51.100.1",
-                   *         "port": 53
-                   *       },
-                   *       {
-                   *         "address": "203.0.113.1",
-                   *         "port": 53
-                   *       }
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
                    *     ]
                    */
-                  primary_nameservers?: {
-                    /**
-                     * @description Public IPv4 or IPv6 address of the primary nameserver.
-                     * @example 198.51.100.1
-                     */
-                    address: string;
-                    /**
-                     * @description Port of the primary nameserver.
-                     * @default 53
-                     * @example 5353
-                     */
-                    port: number;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
-                     *     for the zone transfer. Must be base64 encoded.
-                     */
-                    tsig_key?: string;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
-                     *     used to generate the TSIG key.
-                     * @enum {string}
-                     */
-                    tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
-                  }[];
+                  assigned: string[];
                   /**
-                   * @description User-defined labels (`key/value` pairs) for the Resource.
-                   *     For more information, see "[Labels](#description/labels)".
-                   * @example {
-                   *       "environment": "prod",
-                   *       "example.com/my": "label",
-                   *       "just-a-key": ""
-                   *     }
-                   */
-                  labels: Record<string, string>;
-                  /** @description Protection configuration for the Resource. */
-                  protection: {
-                    /**
-                     * @description Prevent the Resource from being deleted.
-                     * @example false
-                     */
-                    delete: boolean;
-                  };
-                  /**
-                   * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                   * @description Authoritative nameservers currently delegated to by the parent DNS zone.
                    *
-                   *     Must be in between 60s and 2147483647s.
-                   *
-                   *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
-                   * @default 3600
-                   * @example 10800
+                   *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
+                   * @example [
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
+                   *     ]
                    */
-                  ttl: number;
+                  delegated: string[];
                   /**
-                   * @description Status of the [Zone](#tag/zones).
+                   * Format: date-time
+                   * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
+                   * @example 2016-01-30T23:55:00Z
+                   */
+                  delegation_last_check: string | null;
+                  /**
+                   * @description Status of the delegation.
                    * @enum {string}
                    */
-                  status: "ok" | "updating" | "error";
-                  /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
-                  record_count: number;
-                  authoritative_nameservers: {
-                    /**
-                     * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    assigned: string[];
-                    /**
-                     * @description Authoritative nameservers currently delegated to by the parent DNS zone.
-                     *
-                     *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    delegated: string[];
-                    /**
-                     * Format: date-time
-                     * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
-                     * @example 2016-01-30T23:55:00Z
-                     */
-                    delegation_last_check: string | null;
-                    /**
-                     * @description Status of the delegation.
-                     * @enum {string}
-                     */
-                    delegation_status?:
-                      | "valid"
-                      | "partially-valid"
-                      | "invalid"
-                      | "lame"
-                      | "unregistered"
-                      | "unknown";
-                  };
-                  /**
-                   * @description Registrar of the domain.
-                   * @enum {string}
-                   */
-                  registrar: "hetzner" | "other" | "unknown";
-                } & {
-                  /**
-                   * @description Mode of the [Zone](#tag/zones).
-                   *
-                   *     For more information, see [Zone Modes](#tag/zones/zone-modes).
-                   * @example primary
-                   * @enum {string}
-                   */
-                  mode: "primary";
-                })
+                  delegation_status?:
+                    | "valid"
+                    | "partially-valid"
+                    | "invalid"
+                    | "lame"
+                    | "unregistered"
+                    | "unknown";
+                };
+                /**
+                 * @description Registrar of the domain.
+                 * @enum {string}
+                 */
+                registrar: "hetzner" | "other" | "unknown";
+              } & {
+                /**
+                 * @description Mode of the [Zone](#tag/zones).
+                 *
+                 *     For more information, see [Zone Modes](#tag/zones/zone-modes).
+                 * @example primary
+                 * @enum {string}
+                 */
+                mode: "primary";
+              })
               | ({
+                /**
+                 * Format: int64
+                 * @description ID of the [Zone](#tag/zones).
+                 * @example 42
+                 */
+                id: number;
+                /**
+                 * @description Name of the [Zone](#tag/zones).
+                 *
+                 *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
+                 *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
+                 *
+                 *     The name must be in lower case and must not end with a dot.
+                 *     [Internationalized domain
+                 *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
+                 *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
+                 *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
+                 * @example example.com
+                 */
+                name: string;
+                /**
+                 * Format: date-time
+                 * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
+                 * @example 2016-01-30T23:55:00Z
+                 */
+                created: string;
+                /**
+                 * @description Primary nameservers of the [Zone](#tag/zones).
+                 *
+                 *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                 * @example [
+                 *       {
+                 *         "address": "198.51.100.1",
+                 *         "port": 53
+                 *       },
+                 *       {
+                 *         "address": "203.0.113.1",
+                 *         "port": 53
+                 *       }
+                 *     ]
+                 */
+                primary_nameservers?: {
                   /**
-                   * Format: int64
-                   * @description ID of the [Zone](#tag/zones).
-                   * @example 42
+                   * @description Public IPv4 or IPv6 address of the primary nameserver.
+                   * @example 198.51.100.1
                    */
-                  id: number;
+                  address: string;
                   /**
-                   * @description Name of the [Zone](#tag/zones).
-                   *
-                   *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
-                   *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
-                   *
-                   *     The name must be in lower case and must not end with a dot.
-                   *     [Internationalized domain
-                   *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
-                   *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
-                   *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
-                   * @example example.com
+                   * @description Port of the primary nameserver.
+                   * @default 53
+                   * @example 5353
                    */
-                  name: string;
+                  port: number;
                   /**
-                   * Format: date-time
-                   * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
-                   * @example 2016-01-30T23:55:00Z
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
+                   *     for the zone transfer. Must be base64 encoded.
                    */
-                  created: string;
+                  tsig_key?: string;
                   /**
-                   * @description Primary nameservers of the [Zone](#tag/zones).
-                   *
-                   *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
+                   *     used to generate the TSIG key.
+                   * @enum {string}
+                   */
+                  tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
+                }[];
+                /**
+                 * @description User-defined labels (`key/value` pairs) for the Resource.
+                 *     For more information, see "[Labels](#description/labels)".
+                 * @example {
+                 *       "environment": "prod",
+                 *       "example.com/my": "label",
+                 *       "just-a-key": ""
+                 *     }
+                 */
+                labels: Record<string, string>;
+                /** @description Protection configuration for the Resource. */
+                protection: {
+                  /**
+                   * @description Prevent the Resource from being deleted.
+                   * @example false
+                   */
+                  delete: boolean;
+                };
+                /**
+                 * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                 *
+                 *     Must be in between 60s and 2147483647s.
+                 *
+                 *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
+                 * @default 3600
+                 * @example 10800
+                 */
+                ttl: number;
+                /**
+                 * @description Status of the [Zone](#tag/zones).
+                 * @enum {string}
+                 */
+                status: "ok" | "updating" | "error";
+                /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
+                record_count: number;
+                authoritative_nameservers: {
+                  /**
+                   * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
                    * @example [
-                   *       {
-                   *         "address": "198.51.100.1",
-                   *         "port": 53
-                   *       },
-                   *       {
-                   *         "address": "203.0.113.1",
-                   *         "port": 53
-                   *       }
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
                    *     ]
                    */
-                  primary_nameservers?: {
-                    /**
-                     * @description Public IPv4 or IPv6 address of the primary nameserver.
-                     * @example 198.51.100.1
-                     */
-                    address: string;
-                    /**
-                     * @description Port of the primary nameserver.
-                     * @default 53
-                     * @example 5353
-                     */
-                    port: number;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
-                     *     for the zone transfer. Must be base64 encoded.
-                     */
-                    tsig_key?: string;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
-                     *     used to generate the TSIG key.
-                     * @enum {string}
-                     */
-                    tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
-                  }[];
+                  assigned: string[];
                   /**
-                   * @description User-defined labels (`key/value` pairs) for the Resource.
-                   *     For more information, see "[Labels](#description/labels)".
-                   * @example {
-                   *       "environment": "prod",
-                   *       "example.com/my": "label",
-                   *       "just-a-key": ""
-                   *     }
-                   */
-                  labels: Record<string, string>;
-                  /** @description Protection configuration for the Resource. */
-                  protection: {
-                    /**
-                     * @description Prevent the Resource from being deleted.
-                     * @example false
-                     */
-                    delete: boolean;
-                  };
-                  /**
-                   * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                   * @description Authoritative nameservers currently delegated to by the parent DNS zone.
                    *
-                   *     Must be in between 60s and 2147483647s.
-                   *
-                   *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
-                   * @default 3600
-                   * @example 10800
+                   *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
+                   * @example [
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
+                   *     ]
                    */
-                  ttl: number;
+                  delegated: string[];
                   /**
-                   * @description Status of the [Zone](#tag/zones).
+                   * Format: date-time
+                   * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
+                   * @example 2016-01-30T23:55:00Z
+                   */
+                  delegation_last_check: string | null;
+                  /**
+                   * @description Status of the delegation.
                    * @enum {string}
                    */
-                  status: "ok" | "updating" | "error";
-                  /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
-                  record_count: number;
-                  authoritative_nameservers: {
-                    /**
-                     * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    assigned: string[];
-                    /**
-                     * @description Authoritative nameservers currently delegated to by the parent DNS zone.
-                     *
-                     *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    delegated: string[];
-                    /**
-                     * Format: date-time
-                     * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
-                     * @example 2016-01-30T23:55:00Z
-                     */
-                    delegation_last_check: string | null;
-                    /**
-                     * @description Status of the delegation.
-                     * @enum {string}
-                     */
-                    delegation_status?:
-                      | "valid"
-                      | "partially-valid"
-                      | "invalid"
-                      | "lame"
-                      | "unregistered"
-                      | "unknown";
-                  };
-                  /**
-                   * @description Registrar of the domain.
-                   * @enum {string}
-                   */
-                  registrar: "hetzner" | "other" | "unknown";
-                } & {
-                  /**
-                   * @description Mode of the [Zone](#tag/zones).
-                   *
-                   *     For more information, see [Zone Modes](#tag/zones/zone-modes).
-                   * @example secondary
-                   * @enum {string}
-                   */
-                  mode: "secondary";
-                });
+                  delegation_status?:
+                    | "valid"
+                    | "partially-valid"
+                    | "invalid"
+                    | "lame"
+                    | "unregistered"
+                    | "unknown";
+                };
+                /**
+                 * @description Registrar of the domain.
+                 * @enum {string}
+                 */
+                registrar: "hetzner" | "other" | "unknown";
+              } & {
+                /**
+                 * @description Mode of the [Zone](#tag/zones).
+                 *
+                 *     For more information, see [Zone Modes](#tag/zones/zone-modes).
+                 * @example secondary
+                 * @enum {string}
+                 */
+                mode: "secondary";
+              });
             /** Action */
             action: {
               /**
@@ -39425,315 +39425,315 @@ export interface operations {
             /** Zone */
             zone:
               | ({
+                /**
+                 * Format: int64
+                 * @description ID of the [Zone](#tag/zones).
+                 * @example 42
+                 */
+                id: number;
+                /**
+                 * @description Name of the [Zone](#tag/zones).
+                 *
+                 *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
+                 *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
+                 *
+                 *     The name must be in lower case and must not end with a dot.
+                 *     [Internationalized domain
+                 *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
+                 *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
+                 *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
+                 * @example example.com
+                 */
+                name: string;
+                /**
+                 * Format: date-time
+                 * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
+                 * @example 2016-01-30T23:55:00Z
+                 */
+                created: string;
+                /**
+                 * @description Primary nameservers of the [Zone](#tag/zones).
+                 *
+                 *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                 * @example [
+                 *       {
+                 *         "address": "198.51.100.1",
+                 *         "port": 53
+                 *       },
+                 *       {
+                 *         "address": "203.0.113.1",
+                 *         "port": 53
+                 *       }
+                 *     ]
+                 */
+                primary_nameservers?: {
                   /**
-                   * Format: int64
-                   * @description ID of the [Zone](#tag/zones).
-                   * @example 42
+                   * @description Public IPv4 or IPv6 address of the primary nameserver.
+                   * @example 198.51.100.1
                    */
-                  id: number;
+                  address: string;
                   /**
-                   * @description Name of the [Zone](#tag/zones).
-                   *
-                   *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
-                   *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
-                   *
-                   *     The name must be in lower case and must not end with a dot.
-                   *     [Internationalized domain
-                   *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
-                   *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
-                   *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
-                   * @example example.com
+                   * @description Port of the primary nameserver.
+                   * @default 53
+                   * @example 5353
                    */
-                  name: string;
+                  port: number;
                   /**
-                   * Format: date-time
-                   * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
-                   * @example 2016-01-30T23:55:00Z
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
+                   *     for the zone transfer. Must be base64 encoded.
                    */
-                  created: string;
+                  tsig_key?: string;
                   /**
-                   * @description Primary nameservers of the [Zone](#tag/zones).
-                   *
-                   *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
+                   *     used to generate the TSIG key.
+                   * @enum {string}
+                   */
+                  tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
+                }[];
+                /**
+                 * @description User-defined labels (`key/value` pairs) for the Resource.
+                 *     For more information, see "[Labels](#description/labels)".
+                 * @example {
+                 *       "environment": "prod",
+                 *       "example.com/my": "label",
+                 *       "just-a-key": ""
+                 *     }
+                 */
+                labels: Record<string, string>;
+                /** @description Protection configuration for the Resource. */
+                protection: {
+                  /**
+                   * @description Prevent the Resource from being deleted.
+                   * @example false
+                   */
+                  delete: boolean;
+                };
+                /**
+                 * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                 *
+                 *     Must be in between 60s and 2147483647s.
+                 *
+                 *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
+                 * @default 3600
+                 * @example 10800
+                 */
+                ttl: number;
+                /**
+                 * @description Status of the [Zone](#tag/zones).
+                 * @enum {string}
+                 */
+                status: "ok" | "updating" | "error";
+                /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
+                record_count: number;
+                authoritative_nameservers: {
+                  /**
+                   * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
                    * @example [
-                   *       {
-                   *         "address": "198.51.100.1",
-                   *         "port": 53
-                   *       },
-                   *       {
-                   *         "address": "203.0.113.1",
-                   *         "port": 53
-                   *       }
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
                    *     ]
                    */
-                  primary_nameservers?: {
-                    /**
-                     * @description Public IPv4 or IPv6 address of the primary nameserver.
-                     * @example 198.51.100.1
-                     */
-                    address: string;
-                    /**
-                     * @description Port of the primary nameserver.
-                     * @default 53
-                     * @example 5353
-                     */
-                    port: number;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
-                     *     for the zone transfer. Must be base64 encoded.
-                     */
-                    tsig_key?: string;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
-                     *     used to generate the TSIG key.
-                     * @enum {string}
-                     */
-                    tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
-                  }[];
+                  assigned: string[];
                   /**
-                   * @description User-defined labels (`key/value` pairs) for the Resource.
-                   *     For more information, see "[Labels](#description/labels)".
-                   * @example {
-                   *       "environment": "prod",
-                   *       "example.com/my": "label",
-                   *       "just-a-key": ""
-                   *     }
-                   */
-                  labels: Record<string, string>;
-                  /** @description Protection configuration for the Resource. */
-                  protection: {
-                    /**
-                     * @description Prevent the Resource from being deleted.
-                     * @example false
-                     */
-                    delete: boolean;
-                  };
-                  /**
-                   * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                   * @description Authoritative nameservers currently delegated to by the parent DNS zone.
                    *
-                   *     Must be in between 60s and 2147483647s.
-                   *
-                   *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
-                   * @default 3600
-                   * @example 10800
+                   *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
+                   * @example [
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
+                   *     ]
                    */
-                  ttl: number;
+                  delegated: string[];
                   /**
-                   * @description Status of the [Zone](#tag/zones).
+                   * Format: date-time
+                   * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
+                   * @example 2016-01-30T23:55:00Z
+                   */
+                  delegation_last_check: string | null;
+                  /**
+                   * @description Status of the delegation.
                    * @enum {string}
                    */
-                  status: "ok" | "updating" | "error";
-                  /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
-                  record_count: number;
-                  authoritative_nameservers: {
-                    /**
-                     * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    assigned: string[];
-                    /**
-                     * @description Authoritative nameservers currently delegated to by the parent DNS zone.
-                     *
-                     *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    delegated: string[];
-                    /**
-                     * Format: date-time
-                     * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
-                     * @example 2016-01-30T23:55:00Z
-                     */
-                    delegation_last_check: string | null;
-                    /**
-                     * @description Status of the delegation.
-                     * @enum {string}
-                     */
-                    delegation_status?:
-                      | "valid"
-                      | "partially-valid"
-                      | "invalid"
-                      | "lame"
-                      | "unregistered"
-                      | "unknown";
-                  };
-                  /**
-                   * @description Registrar of the domain.
-                   * @enum {string}
-                   */
-                  registrar: "hetzner" | "other" | "unknown";
-                } & {
-                  /**
-                   * @description Mode of the [Zone](#tag/zones).
-                   *
-                   *     For more information, see [Zone Modes](#tag/zones/zone-modes).
-                   * @example primary
-                   * @enum {string}
-                   */
-                  mode: "primary";
-                })
+                  delegation_status?:
+                    | "valid"
+                    | "partially-valid"
+                    | "invalid"
+                    | "lame"
+                    | "unregistered"
+                    | "unknown";
+                };
+                /**
+                 * @description Registrar of the domain.
+                 * @enum {string}
+                 */
+                registrar: "hetzner" | "other" | "unknown";
+              } & {
+                /**
+                 * @description Mode of the [Zone](#tag/zones).
+                 *
+                 *     For more information, see [Zone Modes](#tag/zones/zone-modes).
+                 * @example primary
+                 * @enum {string}
+                 */
+                mode: "primary";
+              })
               | ({
+                /**
+                 * Format: int64
+                 * @description ID of the [Zone](#tag/zones).
+                 * @example 42
+                 */
+                id: number;
+                /**
+                 * @description Name of the [Zone](#tag/zones).
+                 *
+                 *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
+                 *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
+                 *
+                 *     The name must be in lower case and must not end with a dot.
+                 *     [Internationalized domain
+                 *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
+                 *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
+                 *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
+                 * @example example.com
+                 */
+                name: string;
+                /**
+                 * Format: date-time
+                 * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
+                 * @example 2016-01-30T23:55:00Z
+                 */
+                created: string;
+                /**
+                 * @description Primary nameservers of the [Zone](#tag/zones).
+                 *
+                 *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                 * @example [
+                 *       {
+                 *         "address": "198.51.100.1",
+                 *         "port": 53
+                 *       },
+                 *       {
+                 *         "address": "203.0.113.1",
+                 *         "port": 53
+                 *       }
+                 *     ]
+                 */
+                primary_nameservers?: {
                   /**
-                   * Format: int64
-                   * @description ID of the [Zone](#tag/zones).
-                   * @example 42
+                   * @description Public IPv4 or IPv6 address of the primary nameserver.
+                   * @example 198.51.100.1
                    */
-                  id: number;
+                  address: string;
                   /**
-                   * @description Name of the [Zone](#tag/zones).
-                   *
-                   *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
-                   *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
-                   *
-                   *     The name must be in lower case and must not end with a dot.
-                   *     [Internationalized domain
-                   *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
-                   *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
-                   *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
-                   * @example example.com
+                   * @description Port of the primary nameserver.
+                   * @default 53
+                   * @example 5353
                    */
-                  name: string;
+                  port: number;
                   /**
-                   * Format: date-time
-                   * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
-                   * @example 2016-01-30T23:55:00Z
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
+                   *     for the zone transfer. Must be base64 encoded.
                    */
-                  created: string;
+                  tsig_key?: string;
                   /**
-                   * @description Primary nameservers of the [Zone](#tag/zones).
-                   *
-                   *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
+                   *     used to generate the TSIG key.
+                   * @enum {string}
+                   */
+                  tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
+                }[];
+                /**
+                 * @description User-defined labels (`key/value` pairs) for the Resource.
+                 *     For more information, see "[Labels](#description/labels)".
+                 * @example {
+                 *       "environment": "prod",
+                 *       "example.com/my": "label",
+                 *       "just-a-key": ""
+                 *     }
+                 */
+                labels: Record<string, string>;
+                /** @description Protection configuration for the Resource. */
+                protection: {
+                  /**
+                   * @description Prevent the Resource from being deleted.
+                   * @example false
+                   */
+                  delete: boolean;
+                };
+                /**
+                 * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                 *
+                 *     Must be in between 60s and 2147483647s.
+                 *
+                 *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
+                 * @default 3600
+                 * @example 10800
+                 */
+                ttl: number;
+                /**
+                 * @description Status of the [Zone](#tag/zones).
+                 * @enum {string}
+                 */
+                status: "ok" | "updating" | "error";
+                /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
+                record_count: number;
+                authoritative_nameservers: {
+                  /**
+                   * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
                    * @example [
-                   *       {
-                   *         "address": "198.51.100.1",
-                   *         "port": 53
-                   *       },
-                   *       {
-                   *         "address": "203.0.113.1",
-                   *         "port": 53
-                   *       }
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
                    *     ]
                    */
-                  primary_nameservers?: {
-                    /**
-                     * @description Public IPv4 or IPv6 address of the primary nameserver.
-                     * @example 198.51.100.1
-                     */
-                    address: string;
-                    /**
-                     * @description Port of the primary nameserver.
-                     * @default 53
-                     * @example 5353
-                     */
-                    port: number;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
-                     *     for the zone transfer. Must be base64 encoded.
-                     */
-                    tsig_key?: string;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
-                     *     used to generate the TSIG key.
-                     * @enum {string}
-                     */
-                    tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
-                  }[];
+                  assigned: string[];
                   /**
-                   * @description User-defined labels (`key/value` pairs) for the Resource.
-                   *     For more information, see "[Labels](#description/labels)".
-                   * @example {
-                   *       "environment": "prod",
-                   *       "example.com/my": "label",
-                   *       "just-a-key": ""
-                   *     }
-                   */
-                  labels: Record<string, string>;
-                  /** @description Protection configuration for the Resource. */
-                  protection: {
-                    /**
-                     * @description Prevent the Resource from being deleted.
-                     * @example false
-                     */
-                    delete: boolean;
-                  };
-                  /**
-                   * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                   * @description Authoritative nameservers currently delegated to by the parent DNS zone.
                    *
-                   *     Must be in between 60s and 2147483647s.
-                   *
-                   *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
-                   * @default 3600
-                   * @example 10800
+                   *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
+                   * @example [
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
+                   *     ]
                    */
-                  ttl: number;
+                  delegated: string[];
                   /**
-                   * @description Status of the [Zone](#tag/zones).
+                   * Format: date-time
+                   * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
+                   * @example 2016-01-30T23:55:00Z
+                   */
+                  delegation_last_check: string | null;
+                  /**
+                   * @description Status of the delegation.
                    * @enum {string}
                    */
-                  status: "ok" | "updating" | "error";
-                  /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
-                  record_count: number;
-                  authoritative_nameservers: {
-                    /**
-                     * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    assigned: string[];
-                    /**
-                     * @description Authoritative nameservers currently delegated to by the parent DNS zone.
-                     *
-                     *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    delegated: string[];
-                    /**
-                     * Format: date-time
-                     * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
-                     * @example 2016-01-30T23:55:00Z
-                     */
-                    delegation_last_check: string | null;
-                    /**
-                     * @description Status of the delegation.
-                     * @enum {string}
-                     */
-                    delegation_status?:
-                      | "valid"
-                      | "partially-valid"
-                      | "invalid"
-                      | "lame"
-                      | "unregistered"
-                      | "unknown";
-                  };
-                  /**
-                   * @description Registrar of the domain.
-                   * @enum {string}
-                   */
-                  registrar: "hetzner" | "other" | "unknown";
-                } & {
-                  /**
-                   * @description Mode of the [Zone](#tag/zones).
-                   *
-                   *     For more information, see [Zone Modes](#tag/zones/zone-modes).
-                   * @example secondary
-                   * @enum {string}
-                   */
-                  mode: "secondary";
-                });
+                  delegation_status?:
+                    | "valid"
+                    | "partially-valid"
+                    | "invalid"
+                    | "lame"
+                    | "unregistered"
+                    | "unknown";
+                };
+                /**
+                 * @description Registrar of the domain.
+                 * @enum {string}
+                 */
+                registrar: "hetzner" | "other" | "unknown";
+              } & {
+                /**
+                 * @description Mode of the [Zone](#tag/zones).
+                 *
+                 *     For more information, see [Zone Modes](#tag/zones/zone-modes).
+                 * @example secondary
+                 * @enum {string}
+                 */
+                mode: "secondary";
+              });
           };
         };
       };
@@ -39810,315 +39810,315 @@ export interface operations {
             /** Zone */
             zone:
               | ({
+                /**
+                 * Format: int64
+                 * @description ID of the [Zone](#tag/zones).
+                 * @example 42
+                 */
+                id: number;
+                /**
+                 * @description Name of the [Zone](#tag/zones).
+                 *
+                 *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
+                 *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
+                 *
+                 *     The name must be in lower case and must not end with a dot.
+                 *     [Internationalized domain
+                 *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
+                 *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
+                 *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
+                 * @example example.com
+                 */
+                name: string;
+                /**
+                 * Format: date-time
+                 * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
+                 * @example 2016-01-30T23:55:00Z
+                 */
+                created: string;
+                /**
+                 * @description Primary nameservers of the [Zone](#tag/zones).
+                 *
+                 *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                 * @example [
+                 *       {
+                 *         "address": "198.51.100.1",
+                 *         "port": 53
+                 *       },
+                 *       {
+                 *         "address": "203.0.113.1",
+                 *         "port": 53
+                 *       }
+                 *     ]
+                 */
+                primary_nameservers?: {
                   /**
-                   * Format: int64
-                   * @description ID of the [Zone](#tag/zones).
-                   * @example 42
+                   * @description Public IPv4 or IPv6 address of the primary nameserver.
+                   * @example 198.51.100.1
                    */
-                  id: number;
+                  address: string;
                   /**
-                   * @description Name of the [Zone](#tag/zones).
-                   *
-                   *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
-                   *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
-                   *
-                   *     The name must be in lower case and must not end with a dot.
-                   *     [Internationalized domain
-                   *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
-                   *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
-                   *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
-                   * @example example.com
+                   * @description Port of the primary nameserver.
+                   * @default 53
+                   * @example 5353
                    */
-                  name: string;
+                  port: number;
                   /**
-                   * Format: date-time
-                   * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
-                   * @example 2016-01-30T23:55:00Z
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
+                   *     for the zone transfer. Must be base64 encoded.
                    */
-                  created: string;
+                  tsig_key?: string;
                   /**
-                   * @description Primary nameservers of the [Zone](#tag/zones).
-                   *
-                   *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
+                   *     used to generate the TSIG key.
+                   * @enum {string}
+                   */
+                  tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
+                }[];
+                /**
+                 * @description User-defined labels (`key/value` pairs) for the Resource.
+                 *     For more information, see "[Labels](#description/labels)".
+                 * @example {
+                 *       "environment": "prod",
+                 *       "example.com/my": "label",
+                 *       "just-a-key": ""
+                 *     }
+                 */
+                labels: Record<string, string>;
+                /** @description Protection configuration for the Resource. */
+                protection: {
+                  /**
+                   * @description Prevent the Resource from being deleted.
+                   * @example false
+                   */
+                  delete: boolean;
+                };
+                /**
+                 * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                 *
+                 *     Must be in between 60s and 2147483647s.
+                 *
+                 *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
+                 * @default 3600
+                 * @example 10800
+                 */
+                ttl: number;
+                /**
+                 * @description Status of the [Zone](#tag/zones).
+                 * @enum {string}
+                 */
+                status: "ok" | "updating" | "error";
+                /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
+                record_count: number;
+                authoritative_nameservers: {
+                  /**
+                   * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
                    * @example [
-                   *       {
-                   *         "address": "198.51.100.1",
-                   *         "port": 53
-                   *       },
-                   *       {
-                   *         "address": "203.0.113.1",
-                   *         "port": 53
-                   *       }
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
                    *     ]
                    */
-                  primary_nameservers?: {
-                    /**
-                     * @description Public IPv4 or IPv6 address of the primary nameserver.
-                     * @example 198.51.100.1
-                     */
-                    address: string;
-                    /**
-                     * @description Port of the primary nameserver.
-                     * @default 53
-                     * @example 5353
-                     */
-                    port: number;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
-                     *     for the zone transfer. Must be base64 encoded.
-                     */
-                    tsig_key?: string;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
-                     *     used to generate the TSIG key.
-                     * @enum {string}
-                     */
-                    tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
-                  }[];
+                  assigned: string[];
                   /**
-                   * @description User-defined labels (`key/value` pairs) for the Resource.
-                   *     For more information, see "[Labels](#description/labels)".
-                   * @example {
-                   *       "environment": "prod",
-                   *       "example.com/my": "label",
-                   *       "just-a-key": ""
-                   *     }
-                   */
-                  labels: Record<string, string>;
-                  /** @description Protection configuration for the Resource. */
-                  protection: {
-                    /**
-                     * @description Prevent the Resource from being deleted.
-                     * @example false
-                     */
-                    delete: boolean;
-                  };
-                  /**
-                   * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                   * @description Authoritative nameservers currently delegated to by the parent DNS zone.
                    *
-                   *     Must be in between 60s and 2147483647s.
-                   *
-                   *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
-                   * @default 3600
-                   * @example 10800
+                   *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
+                   * @example [
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
+                   *     ]
                    */
-                  ttl: number;
+                  delegated: string[];
                   /**
-                   * @description Status of the [Zone](#tag/zones).
+                   * Format: date-time
+                   * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
+                   * @example 2016-01-30T23:55:00Z
+                   */
+                  delegation_last_check: string | null;
+                  /**
+                   * @description Status of the delegation.
                    * @enum {string}
                    */
-                  status: "ok" | "updating" | "error";
-                  /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
-                  record_count: number;
-                  authoritative_nameservers: {
-                    /**
-                     * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    assigned: string[];
-                    /**
-                     * @description Authoritative nameservers currently delegated to by the parent DNS zone.
-                     *
-                     *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    delegated: string[];
-                    /**
-                     * Format: date-time
-                     * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
-                     * @example 2016-01-30T23:55:00Z
-                     */
-                    delegation_last_check: string | null;
-                    /**
-                     * @description Status of the delegation.
-                     * @enum {string}
-                     */
-                    delegation_status?:
-                      | "valid"
-                      | "partially-valid"
-                      | "invalid"
-                      | "lame"
-                      | "unregistered"
-                      | "unknown";
-                  };
-                  /**
-                   * @description Registrar of the domain.
-                   * @enum {string}
-                   */
-                  registrar: "hetzner" | "other" | "unknown";
-                } & {
-                  /**
-                   * @description Mode of the [Zone](#tag/zones).
-                   *
-                   *     For more information, see [Zone Modes](#tag/zones/zone-modes).
-                   * @example primary
-                   * @enum {string}
-                   */
-                  mode: "primary";
-                })
+                  delegation_status?:
+                    | "valid"
+                    | "partially-valid"
+                    | "invalid"
+                    | "lame"
+                    | "unregistered"
+                    | "unknown";
+                };
+                /**
+                 * @description Registrar of the domain.
+                 * @enum {string}
+                 */
+                registrar: "hetzner" | "other" | "unknown";
+              } & {
+                /**
+                 * @description Mode of the [Zone](#tag/zones).
+                 *
+                 *     For more information, see [Zone Modes](#tag/zones/zone-modes).
+                 * @example primary
+                 * @enum {string}
+                 */
+                mode: "primary";
+              })
               | ({
+                /**
+                 * Format: int64
+                 * @description ID of the [Zone](#tag/zones).
+                 * @example 42
+                 */
+                id: number;
+                /**
+                 * @description Name of the [Zone](#tag/zones).
+                 *
+                 *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
+                 *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
+                 *
+                 *     The name must be in lower case and must not end with a dot.
+                 *     [Internationalized domain
+                 *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
+                 *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
+                 *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
+                 * @example example.com
+                 */
+                name: string;
+                /**
+                 * Format: date-time
+                 * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
+                 * @example 2016-01-30T23:55:00Z
+                 */
+                created: string;
+                /**
+                 * @description Primary nameservers of the [Zone](#tag/zones).
+                 *
+                 *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                 * @example [
+                 *       {
+                 *         "address": "198.51.100.1",
+                 *         "port": 53
+                 *       },
+                 *       {
+                 *         "address": "203.0.113.1",
+                 *         "port": 53
+                 *       }
+                 *     ]
+                 */
+                primary_nameservers?: {
                   /**
-                   * Format: int64
-                   * @description ID of the [Zone](#tag/zones).
-                   * @example 42
+                   * @description Public IPv4 or IPv6 address of the primary nameserver.
+                   * @example 198.51.100.1
                    */
-                  id: number;
+                  address: string;
                   /**
-                   * @description Name of the [Zone](#tag/zones).
-                   *
-                   *     All names with [well-known public suffixes](https://publicsuffix.org/) (e.g. `.de`,
-                   *     `.com`, `.co.uk`) are supported. Subdomains are not supported.
-                   *
-                   *     The name must be in lower case and must not end with a dot.
-                   *     [Internationalized domain
-                   *     names](https://en.wikipedia.org/wiki/Internationalized_domain_name) must be
-                   *     transcribed to [Punycode](https://wikipedia.org/wiki/Punycode) representation with
-                   *     ACE prefix, e.g. `xn--mnchen-3ya.de` (`münchen.de`).
-                   * @example example.com
+                   * @description Port of the primary nameserver.
+                   * @default 53
+                   * @example 5353
                    */
-                  name: string;
+                  port: number;
                   /**
-                   * Format: date-time
-                   * @description Point in time when the Resource was created (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format).
-                   * @example 2016-01-30T23:55:00Z
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
+                   *     for the zone transfer. Must be base64 encoded.
                    */
-                  created: string;
+                  tsig_key?: string;
                   /**
-                   * @description Primary nameservers of the [Zone](#tag/zones).
-                   *
-                   *     Only set if [Zone](#tag/zones) is in [secondary mode](#tag/zones/zone-modes), otherwise empty.
+                   * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
+                   *     used to generate the TSIG key.
+                   * @enum {string}
+                   */
+                  tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
+                }[];
+                /**
+                 * @description User-defined labels (`key/value` pairs) for the Resource.
+                 *     For more information, see "[Labels](#description/labels)".
+                 * @example {
+                 *       "environment": "prod",
+                 *       "example.com/my": "label",
+                 *       "just-a-key": ""
+                 *     }
+                 */
+                labels: Record<string, string>;
+                /** @description Protection configuration for the Resource. */
+                protection: {
+                  /**
+                   * @description Prevent the Resource from being deleted.
+                   * @example false
+                   */
+                  delete: boolean;
+                };
+                /**
+                 * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                 *
+                 *     Must be in between 60s and 2147483647s.
+                 *
+                 *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
+                 * @default 3600
+                 * @example 10800
+                 */
+                ttl: number;
+                /**
+                 * @description Status of the [Zone](#tag/zones).
+                 * @enum {string}
+                 */
+                status: "ok" | "updating" | "error";
+                /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
+                record_count: number;
+                authoritative_nameservers: {
+                  /**
+                   * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
                    * @example [
-                   *       {
-                   *         "address": "198.51.100.1",
-                   *         "port": 53
-                   *       },
-                   *       {
-                   *         "address": "203.0.113.1",
-                   *         "port": 53
-                   *       }
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
                    *     ]
                    */
-                  primary_nameservers?: {
-                    /**
-                     * @description Public IPv4 or IPv6 address of the primary nameserver.
-                     * @example 198.51.100.1
-                     */
-                    address: string;
-                    /**
-                     * @description Port of the primary nameserver.
-                     * @default 53
-                     * @example 5353
-                     */
-                    port: number;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) key to use
-                     *     for the zone transfer. Must be base64 encoded.
-                     */
-                    tsig_key?: string;
-                    /**
-                     * @description [Transaction signature (TSIG)](https://en.wikipedia.org/wiki/TSIG) algorithm
-                     *     used to generate the TSIG key.
-                     * @enum {string}
-                     */
-                    tsig_algorithm?: "hmac-md5" | "hmac-sha1" | "hmac-sha256";
-                  }[];
+                  assigned: string[];
                   /**
-                   * @description User-defined labels (`key/value` pairs) for the Resource.
-                   *     For more information, see "[Labels](#description/labels)".
-                   * @example {
-                   *       "environment": "prod",
-                   *       "example.com/my": "label",
-                   *       "just-a-key": ""
-                   *     }
-                   */
-                  labels: Record<string, string>;
-                  /** @description Protection configuration for the Resource. */
-                  protection: {
-                    /**
-                     * @description Prevent the Resource from being deleted.
-                     * @example false
-                     */
-                    delete: boolean;
-                  };
-                  /**
-                   * @description Default Time To Live (TTL) of the [Zone](#tag/zones).
+                   * @description Authoritative nameservers currently delegated to by the parent DNS zone.
                    *
-                   *     Must be in between 60s and 2147483647s.
-                   *
-                   *     This TTL is used for [RRSets](#tag/zone-rrsets) that do not explicitly define a TTL.
-                   * @default 3600
-                   * @example 10800
+                   *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
+                   * @example [
+                   *       "hydrogen.ns.hetzner.com.",
+                   *       "oxygen.ns.hetzner.com.",
+                   *       "helium.ns.hetzner.de."
+                   *     ]
                    */
-                  ttl: number;
+                  delegated: string[];
                   /**
-                   * @description Status of the [Zone](#tag/zones).
+                   * Format: date-time
+                   * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
+                   * @example 2016-01-30T23:55:00Z
+                   */
+                  delegation_last_check: string | null;
+                  /**
+                   * @description Status of the delegation.
                    * @enum {string}
                    */
-                  status: "ok" | "updating" | "error";
-                  /** @description Number of resource records (RR) within the [Zone](#tag/zones). */
-                  record_count: number;
-                  authoritative_nameservers: {
-                    /**
-                     * @description Authoritative Hetzner nameservers assigned to this [Zone](#tag/zones).
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    assigned: string[];
-                    /**
-                     * @description Authoritative nameservers currently delegated to by the parent DNS zone.
-                     *
-                     *     If these don't match the assigned authoritative nameservers, the DNS zone is currently not being served by Hetzner.
-                     * @example [
-                     *       "hydrogen.ns.hetzner.com.",
-                     *       "oxygen.ns.hetzner.com.",
-                     *       "helium.ns.hetzner.de."
-                     *     ]
-                     */
-                    delegated: string[];
-                    /**
-                     * Format: date-time
-                     * @description Point in time (in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) format) when the DNS zone delegation was last checked.
-                     * @example 2016-01-30T23:55:00Z
-                     */
-                    delegation_last_check: string | null;
-                    /**
-                     * @description Status of the delegation.
-                     * @enum {string}
-                     */
-                    delegation_status?:
-                      | "valid"
-                      | "partially-valid"
-                      | "invalid"
-                      | "lame"
-                      | "unregistered"
-                      | "unknown";
-                  };
-                  /**
-                   * @description Registrar of the domain.
-                   * @enum {string}
-                   */
-                  registrar: "hetzner" | "other" | "unknown";
-                } & {
-                  /**
-                   * @description Mode of the [Zone](#tag/zones).
-                   *
-                   *     For more information, see [Zone Modes](#tag/zones/zone-modes).
-                   * @example secondary
-                   * @enum {string}
-                   */
-                  mode: "secondary";
-                });
+                  delegation_status?:
+                    | "valid"
+                    | "partially-valid"
+                    | "invalid"
+                    | "lame"
+                    | "unregistered"
+                    | "unknown";
+                };
+                /**
+                 * @description Registrar of the domain.
+                 * @enum {string}
+                 */
+                registrar: "hetzner" | "other" | "unknown";
+              } & {
+                /**
+                 * @description Mode of the [Zone](#tag/zones).
+                 *
+                 *     For more information, see [Zone Modes](#tag/zones/zone-modes).
+                 * @example secondary
+                 * @enum {string}
+                 */
+                mode: "secondary";
+              });
           };
         };
       };

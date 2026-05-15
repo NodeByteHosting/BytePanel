@@ -22,9 +22,7 @@ const SERVER_STATUSES: readonly ServerStatus[] = [
 ];
 
 const toServerStatus = (status: string): ServerStatus =>
-  (SERVER_STATUSES as readonly string[]).includes(status)
-    ? (status as ServerStatus)
-    : "unknown";
+  (SERVER_STATUSES as readonly string[]).includes(status) ? (status as ServerStatus) : "unknown";
 
 export const createServerOps = (client: HetznerClient) => ({
   createServer: async (input: CreateServerInput): Promise<ProviderServer> => {
@@ -67,7 +65,7 @@ export const createServerOps = (client: HetznerClient) => ({
 
   getMetrics: async (
     id: ServerResourceId,
-    query: MetricsQuery
+    query: MetricsQuery,
   ): Promise<{ metrics: unknown }> => {
     const { data, error, response } = await client.GET(
       "/servers/{id}/metrics",
@@ -80,7 +78,7 @@ export const createServerOps = (client: HetznerClient) => ({
             type: [query.kind],
           },
         },
-      }
+      },
     );
     if (!response.ok) {
       throwIfHetznerError(error, response);
@@ -110,14 +108,14 @@ export const createServerOps = (client: HetznerClient) => ({
 
   rescaleServer: async (
     id: ServerResourceId,
-    serverType: string
+    serverType: string,
   ): Promise<void> => {
     const { error, response } = await client.POST(
       "/servers/{id}/actions/change_type",
       {
         body: { server_type: serverType, upgrade_disk: false },
         params: { path: { id: Number(id) } },
-      }
+      },
     );
     if (!response.ok) {
       throwIfHetznerError(error, response);
@@ -126,7 +124,7 @@ export const createServerOps = (client: HetznerClient) => ({
 
   setBackupsEnabled: async (
     id: ServerResourceId,
-    enabled: boolean
+    enabled: boolean,
   ): Promise<void> => {
     const path = enabled
       ? ("/servers/{id}/actions/enable_backup" as const)

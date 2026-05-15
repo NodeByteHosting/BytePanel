@@ -113,14 +113,14 @@ export interface Provider {
 
   createSnapshot(
     serverId: ServerResourceId,
-    opts: { description?: string }
+    opts: { description?: string },
   ): Promise<ImageResourceId>;
   getImage(id: ImageResourceId): Promise<ProviderImage | null>;
   deleteImage(id: ImageResourceId): Promise<{ deleted: boolean }>;
   listImagesForServer(serverId: ServerResourceId): Promise<ProviderImage[]>;
   rebuildFromImage(
     serverId: ServerResourceId,
-    imageId: ImageResourceId
+    imageId: ImageResourceId,
   ): Promise<void>;
 
   getCatalog(referenceImageId?: ImageResourceId | null): Promise<Catalog>;
