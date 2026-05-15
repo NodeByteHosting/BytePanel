@@ -82,32 +82,52 @@ const setBuildStatus = async (
 const resolveBuilderPlacement = async (
   provider: Awaited<ReturnType<typeof getProviderForUser>>
 ): Promise<{ location: string; serverType: string }> => {
-  const { location: preferredLocation, serverType } = HETZNER_BUILDER_PROFILE;
+  const { location: preferredLocation, serverType: configuredServerType } =
+    HETZNER_BUILDER_PROFILE;
 
   try {
     const catalog = await provider.getCatalog(null);
-    const type = catalog.serverTypes.find((entry) => entry.name === serverType);
+    const [defaultServerType] = catalog.serverTypes
+      .filter((entry) => entry.architecture === catalog.imageArchitecture)
+      .toSorted(
+        (a, b) =>
+          a.disk - b.disk ||
+          a.pricePerMonth - b.pricePerMonth ||
+          a.cores - b.cores
+      );
+
+    const configuredType = configuredServerType
+      ? catalog.serverTypes.find((entry) => entry.name === configuredServerType)
+      : null;
+
+    const type = configuredType ?? defaultServerType;
 
     if (!type || type.locations.length === 0) {
-      return { location: preferredLocation, serverType };
+      return {
+        location: preferredLocation,
+        serverType: configuredServerType || defaultServerType?.name || "",
+      };
     }
 
     const preferred = type.locations.find(
       (loc) => loc.name === preferredLocation && loc.available
     );
     if (preferred) {
-      return { location: preferred.name, serverType };
+      return { location: preferred.name, serverType: type.name };
     }
 
     const firstAvailable = type.locations.find((loc) => loc.available);
     if (firstAvailable) {
-      return { location: firstAvailable.name, serverType };
+      return { location: firstAvailable.name, serverType: type.name };
     }
 
-    return { location: type.locations[0].name, serverType };
+    return { location: type.locations[0].name, serverType: type.name };
   } catch {
     // If catalog lookup fails transiently, fall back to static profile values.
-    return { location: preferredLocation, serverType };
+    return {
+      location: preferredLocation,
+      serverType: configuredServerType || "cpx21",
+    };
   }
 };
 
