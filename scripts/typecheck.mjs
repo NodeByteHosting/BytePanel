@@ -15,6 +15,7 @@ const tscConfig = existsSync(ROOT_TSCONFIG) && existsSync(ROOT_PRICING)
   ? {
     extends: "../../tsconfig.json",
     compilerOptions: {
+      ignoreDeprecations: "6.0",
       incremental: false,
       noEmit: true,
     },
@@ -24,6 +25,7 @@ const tscConfig = existsSync(ROOT_TSCONFIG) && existsSync(ROOT_PRICING)
   : {
     compilerOptions: {
       baseUrl: ".",
+      ignoreDeprecations: "6.0",
       incremental: false,
       module: "ESNext",
       moduleResolution: "Bundler",
