@@ -45,7 +45,8 @@ jobs:
       - name: Generate Prisma client
         run: bunx --bun prisma generate
 
-      - name: Lint and format check
+      - name: Lint and format check (root only)
+        working-directory: .
         run: bun run check
 
       - name: Type check

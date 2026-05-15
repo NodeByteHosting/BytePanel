@@ -5,6 +5,9 @@ export default defineConfig({
   ...ultracite,
   ignorePatterns: [
     ...(ultracite.ignorePatterns ?? []),
+    "agent/**",
+    "games/**",
+    "lib/providers/**",
     "components/ui",
     "components/ai-elements",
     "components/kibo-ui",

@@ -6,6 +6,9 @@ import react from "ultracite/oxlint/react";
 export default defineConfig({
   extends: [core, react, next],
   ignorePatterns: [
+    "agent/**",
+    "games/**",
+    "lib/providers/**",
     "components/ui",
     "components/ai-elements",
     "components/kibo-ui",

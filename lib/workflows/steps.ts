@@ -2,6 +2,8 @@ import crypto from "node:crypto";
 
 import { FatalError, getStepMetadata } from "workflow";
 
+import { buildUfwRules, getGame } from "@/games";
+import type { GamePort } from "@/games";
 import { mintBootstrapJwt } from "@/lib/agent/bootstrap";
 import { enqueueCommand } from "@/lib/agent/commands";
 import { prisma } from "@/lib/db";
@@ -13,9 +15,6 @@ import {
 } from "@/lib/providers";
 import { ProviderApiError } from "@/lib/providers/errors";
 import type { Phase } from "@/protocol";
-
-import { buildUfwRules, getGame } from "../../games";
-import type { GamePort } from "../../games";
 
 const buildCloudInit = (input: {
   serverId: string;
