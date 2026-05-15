@@ -2,6 +2,7 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 
 const colors = {
   blue: "\u001B[34m",
@@ -130,69 +131,124 @@ const getConfiguredBranch = (repoRoot, submodulePath) => {
 const redactRemote = (url) =>
   url.replace(/https:\/\/[^@\s]+@github\.com\//u, "https://***@github.com/");
 
+const normalizePath = (path) => resolve(path).replaceAll("\\", "/");
+
+const getRequiredMarker = (submodule) => {
+  if (submodule === "games") {
+    return "index.ts";
+  }
+  if (submodule === "agent") {
+    return "package.json";
+  }
+  if (submodule === "lib/providers") {
+    return "index.ts";
+  }
+  return ".git";
+};
+
+const validateSubmodule = (repoRoot, submodule) => {
+  console.log(`\n${colors.blue}• ${submodule}${colors.reset}`);
+
+  const indexEntry = git(["ls-files", "--stage", "--", submodule], {
+    capture: true,
+    cwd: repoRoot,
+  })
+    .stdout.split("\n")
+    .map((l) => l.trim())
+    .find(Boolean);
+
+  const [mode, gitlinkSha] = indexEntry?.split(/\s+/u) ?? [];
+
+  if (mode !== "160000") {
+    log.err(
+      `  ✗ Not registered as gitlink in index (mode=${mode ?? "missing"})`
+    );
+    return { failed: true, gitlinkFailure: true };
+  }
+
+  const repoCheck = git(
+    ["-C", submodule, "rev-parse", "--is-inside-work-tree"],
+    {
+      capture: true,
+      cwd: repoRoot,
+    }
+  );
+
+  if (repoCheck.code !== 0) {
+    log.err("  ✗ Directory is not an initialized git repository");
+    return { failed: true, gitlinkFailure: false };
+  }
+
+  const topLevel = git(["-C", submodule, "rev-parse", "--show-toplevel"], {
+    capture: true,
+    cwd: repoRoot,
+  });
+  const expectedTopLevel = normalizePath(`${repoRoot}/${submodule}`);
+  const actualTopLevel = normalizePath(topLevel.stdout || "");
+
+  if (topLevel.code !== 0 || actualTopLevel !== expectedTopLevel) {
+    log.err(
+      "  ✗ Submodule path is not an isolated checkout (likely missing initialization)"
+    );
+    return { failed: true, gitlinkFailure: false };
+  }
+
+  const head = git(["-C", submodule, "rev-parse", "HEAD"], {
+    capture: true,
+    cwd: repoRoot,
+  });
+  if (head.code !== 0 || !head.stdout || head.stdout !== gitlinkSha) {
+    log.err(
+      `  ✗ Checkout mismatch (expected ${gitlinkSha ?? "unknown"}, got ${head.stdout || "unknown"})`
+    );
+    return { failed: true, gitlinkFailure: false };
+  }
+
+  const marker = `${repoRoot}/${submodule}/${getRequiredMarker(submodule)}`;
+  if (!existsSync(marker)) {
+    log.err(`  ✗ Missing expected file: ${marker}`);
+    return { failed: true, gitlinkFailure: false };
+  }
+
+  const branch = git(["-C", submodule, "branch", "--show-current"], {
+    capture: true,
+    cwd: repoRoot,
+  }).stdout;
+
+  if (branch) {
+    log.ok(`  ✓ Branch: ${branch}`);
+  } else {
+    log.warn("  ⚠ Detached HEAD");
+  }
+
+  const remote = git(["-C", submodule, "remote", "get-url", "origin"], {
+    capture: true,
+    cwd: repoRoot,
+  });
+
+  if (remote.code !== 0 || !remote.stdout) {
+    log.warn("  ⚠ No origin remote configured");
+  } else {
+    log.ok(`  ✓ Origin: ${redactRemote(remote.stdout)}`);
+  }
+
+  log.ok("  ✓ Registered and initialized");
+  return { failed: false, gitlinkFailure: false };
+};
+
 const validate = (repoRoot, submodules) => {
   log.info("🔍 Validating submodules...");
   let failures = 0;
   let gitlinkFailures = 0;
 
   for (const submodule of submodules) {
-    console.log(`\n${colors.blue}• ${submodule}${colors.reset}`);
-
-    const mode = git(["ls-files", "--stage", "--", submodule], {
-      capture: true,
-      cwd: repoRoot,
-    })
-      .stdout.split("\n")
-      .map((l) => l.trim())
-      .find(Boolean)
-      ?.split(/\s+/u)[0];
-
-    if (mode !== "160000") {
-      log.err(
-        `  ✗ Not registered as gitlink in index (mode=${mode ?? "missing"})`
-      );
+    const result = validateSubmodule(repoRoot, submodule);
+    if (result.failed) {
       failures += 1;
+    }
+    if (result.gitlinkFailure) {
       gitlinkFailures += 1;
-      continue;
     }
-
-    const repoCheck = git(
-      ["-C", submodule, "rev-parse", "--is-inside-work-tree"],
-      {
-        capture: true,
-        cwd: repoRoot,
-      }
-    );
-
-    if (repoCheck.code !== 0) {
-      log.err("  ✗ Directory is not an initialized git repository");
-      failures += 1;
-      continue;
-    }
-
-    const branch = git(["-C", submodule, "branch", "--show-current"], {
-      capture: true,
-      cwd: repoRoot,
-    }).stdout;
-
-    if (branch) {
-      log.ok(`  ✓ Branch: ${branch}`);
-    } else {
-      log.warn("  ⚠ Detached HEAD");
-    }
-
-    const remote = git(["-C", submodule, "remote", "get-url", "origin"], {
-      capture: true,
-      cwd: repoRoot,
-    });
-
-    if (remote.code !== 0 || !remote.stdout) {
-      log.warn("  ⚠ No origin remote configured");
-    } else {
-      log.ok(`  ✓ Origin: ${redactRemote(remote.stdout)}`);
-    }
-
-    log.ok("  ✓ Registered and initialized");
   }
 
   console.log();
@@ -249,13 +305,25 @@ const validate = (repoRoot, submodules) => {
 };
 
 const setup = (repoRoot, submodules, authArgs) => {
+  const forceFresh = Boolean(process.env.CI || process.env.VERCEL);
+
   log.info("🔧 Syncing submodule remotes...");
   git([...authArgs, "submodule", "sync", "--recursive"], { cwd: repoRoot });
 
+  if (forceFresh) {
+    log.info("🧹 CI/Vercel: forcing fresh submodule checkout...");
+    git([...authArgs, "submodule", "deinit", "--all", "--force"], {
+      cwd: repoRoot,
+    });
+  }
+
   log.info("🔧 Initializing and updating submodules...");
-  git([...authArgs, "submodule", "update", "--init", "--recursive"], {
-    cwd: repoRoot,
-  });
+  git(
+    [...authArgs, "submodule", "update", "--init", "--recursive", "--force"],
+    {
+      cwd: repoRoot,
+    }
+  );
 
   return validate(repoRoot, submodules);
 };
