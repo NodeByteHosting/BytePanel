@@ -5,13 +5,12 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
+    "validate:providers": "node scripts/validate-providers.mjs",
     "fmt": "deno fmt",
     "fmt:check": "deno fmt --check",
     "lint": "deno lint",
-    "types": "tsc --noEmit",
-    "ci": "npm run fmt:check && npm run lint && npm run types"
-  },
-  "devDependencies": {
-    "typescript": "^6.0.3"
+    "typecheck": "node scripts/typecheck.mjs",
+    "types": "npm run typecheck",
+    "ci": "npm run fmt:check && npm run lint && npm run validate:providers && npm run typecheck"
   }
 }

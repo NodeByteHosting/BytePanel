@@ -1,6 +1,7 @@
 # NodeByte Providers (GSP)
 
-GSP is the provider abstraction layer used by NodeByte GSM to manage cloud infrastructure across multiple hosting vendors.
+GSP is the provider abstraction layer used by NodeByte GSM to manage cloud infrastructure across
+multiple hosting vendors.
 
 Core responsibilities:
 
@@ -26,20 +27,21 @@ The provider package exports:
 
 ## Requirements
 
-- TypeScript 6.0+
-- Node.js 20+ (for type checking and linting)
+- Deno 2.x+
+- Node.js 20+ (for validation and type-check scripts)
 
 ## Development
 
 ```bash
 npm install
-npm run check
+npm run ci
 ```
 
 Useful scripts:
 
 ```bash
-npm run types
+npm run validate:providers
+npm run typecheck
 npm run lint
 ```
 
