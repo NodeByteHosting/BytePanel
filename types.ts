@@ -106,7 +106,7 @@ export interface Provider {
   rescaleServer(id: ServerResourceId, serverType: string): Promise<void>;
   getMetrics(
     id: ServerResourceId,
-    query: MetricsQuery
+    query: MetricsQuery,
   ): Promise<{ metrics: unknown }>;
 
   setBackupsEnabled(id: ServerResourceId, enabled: boolean): Promise<void>;

@@ -16,7 +16,7 @@ export class ProviderApiError extends Error {
 
 export const formatProviderError = (
   error: unknown,
-  response: Response
+  response: Response,
 ): string => {
   const body = error as { error?: { message?: string } } | undefined;
   return body?.error?.message ?? response.statusText;
