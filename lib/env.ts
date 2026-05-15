@@ -38,6 +38,7 @@ export const env = createEnv({
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     NEXT_RUNTIME: process.env.NEXT_RUNTIME,
+    NODEBYTE_PUBLIC_URL: process.env.NODEBYTE_PUBLIC_URL,
     SENTRY_ORG: process.env.SENTRY_ORG,
     SENTRY_PROJECT: process.env.SENTRY_PROJECT,
     SMTP_FROM: process.env.SMTP_FROM,
@@ -71,6 +72,10 @@ export const env = createEnv({
     KV_REST_API_URL: z.string().min(1).url(),
 
     NEXT_RUNTIME: z.enum(["nodejs", "edge"]).optional(),
+    // Overrides the computed API_URL for local dev bakes — set this to a
+    // publicly reachable URL (e.g. ngrok/Cloudflare Tunnel) so the builder VM
+    // on Hetzner can download the agent binary. Not needed on Vercel.
+    NODEBYTE_PUBLIC_URL: z.string().min(1).url().optional(),
     SENTRY_ORG: z.string().min(1).optional(),
 
     SENTRY_PROJECT: z.string().min(1).optional(),
@@ -105,10 +110,14 @@ export const SEO_URL = productionUrl ?? LOCAL_URL;
 // deployment provisioned them. Production deployments use the project's prod
 // URL; previews use the branch-stable URL (so callbacks survive redeploys of
 // the same branch); dev falls back to localhost.
+//
+// NODEBYTE_PUBLIC_URL overrides everything — required when baking from local
+// dev since the builder VM on Hetzner cannot reach localhost:3000.
 export const API_URL =
-  env.VERCEL_ENV === "production"
+  env.NODEBYTE_PUBLIC_URL ??
+  (env.VERCEL_ENV === "production"
     ? (productionUrl ?? LOCAL_URL)
-    : (branchUrl ?? LOCAL_URL);
+    : (branchUrl ?? LOCAL_URL));
 
 // Identity used to scope per-user snapshot images so a build on one deployment
 // can't clobber another deployment's golden image. Production shares one

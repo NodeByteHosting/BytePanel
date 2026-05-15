@@ -16,13 +16,36 @@ import {
   stepUpdateBuildStatus,
 } from "./build-snapshot-steps";
 
+const parsePositiveInt = (
+  raw: string | undefined,
+  fallback: number
+): number => {
+  if (!raw) {
+    return fallback;
+  }
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
 // 45 min: covers apt upgrade + Docker install on a fresh Ubuntu 24.04 VM,
 // with headroom for slow apt mirrors. Game images are pulled lazily at
 // per-server provision time, not baked into the snapshot.
-const MAX_BUILD_WAIT_SECONDS = 45 * 60;
-const BUILD_POLL_SECONDS = 15;
-const MAX_SNAPSHOT_WAIT_SECONDS = 15 * 60;
-const SNAPSHOT_POLL_SECONDS = 10;
+const MAX_BUILD_WAIT_SECONDS = parsePositiveInt(
+  process.env.SNAPSHOT_BUILDER_MAX_WAIT_SECONDS,
+  45 * 60
+);
+const BUILD_POLL_SECONDS = parsePositiveInt(
+  process.env.SNAPSHOT_BUILDER_POLL_SECONDS,
+  15
+);
+const MAX_SNAPSHOT_WAIT_SECONDS = parsePositiveInt(
+  process.env.SNAPSHOT_IMAGE_MAX_WAIT_SECONDS,
+  15 * 60
+);
+const SNAPSHOT_POLL_SECONDS = parsePositiveInt(
+  process.env.SNAPSHOT_IMAGE_POLL_SECONDS,
+  10
+);
 
 const waitForBuilderOff = async (
   providerBuilderId: string,
@@ -48,7 +71,13 @@ const waitForBuilderOff = async (
     }
     await sleep(`${BUILD_POLL_SECONDS}s`);
   }
-  throw new Error("Builder VM never reached 'off' status (build timed out)");
+  throw new FatalError(
+    `Builder VM never reached 'off' status within ${MAX_BUILD_WAIT_SECONDS}s ` +
+      `(provider id: ${providerBuilderId}). This usually means cloud-init ` +
+      `failed before running shutdown. Inspect the VM console or SSH in and ` +
+      `check: cloud-init status --long, journalctl -u cloud-init -u cloud-final, ` +
+      `and /var/log/cloud-init-output.log`
+  );
 };
 
 const waitForSnapshotReady = async (

@@ -1,5 +1,8 @@
 import "server-only";
+import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { Sandbox } from "@vercel/sandbox";
 import { FatalError } from "workflow";
@@ -7,8 +10,12 @@ import { FatalError } from "workflow";
 const BUN_INSTALL = "curl -fsSL https://bun.sh/install | bash";
 // Root install is required because agent/src/*.ts imports from ../../protocol,
 // which lives at the repo root and pulls in zod from the root node_modules.
+const GIT_AUTH_REWRITE = `git config --global url."https://x-access-token:\${GIT_AUTH_TOKEN}@github.com/".insteadOf "https://github.com/"`;
 const BUILD_SCRIPT = [
   'export PATH="$HOME/.bun/bin:$PATH"',
+  GIT_AUTH_REWRITE,
+  "git submodule sync --recursive",
+  "git submodule update --init --recursive",
   "bun install --production --ignore-scripts",
   "cd agent",
   "bun install --production --ignore-scripts",
@@ -21,6 +28,74 @@ interface GitSource {
   username?: string;
   password?: string;
 }
+
+const AGENT_BINARY_PATH = "dist/nodebyte-agent";
+
+const runBun = (
+  args: string[],
+  cwd: string
+): { stderr: string; stdout: string; status: number } => {
+  const result = spawnSync("bun", args, {
+    cwd,
+    encoding: "utf-8",
+    shell: false,
+  });
+  return {
+    status: result.status ?? 1,
+    stderr: result.stderr?.toString() ?? "",
+    stdout: result.stdout?.toString() ?? "",
+  };
+};
+
+const sha256 = (buf: Buffer): string =>
+  crypto.createHash("sha256").update(buf).digest("hex");
+
+const compileAgentLocally = (): { bytes: Buffer; sha: string } => {
+  const repoRoot = process.cwd();
+  const agentDir = join(repoRoot, "agent");
+
+  if (!existsSync(agentDir)) {
+    throw new FatalError(
+      "Local agent directory not found. Expected a checked-out `agent/` submodule in the repo root."
+    );
+  }
+
+  const install = runBun(
+    ["install", "--production", "--ignore-scripts"],
+    agentDir
+  );
+  if (install.status !== 0) {
+    throw new FatalError(
+      `Local agent dependency install failed (exit ${install.status}): ${install.stderr || install.stdout}`
+    );
+  }
+
+  const build = runBun(
+    [
+      "build",
+      "--compile",
+      "--target=bun-linux-x64",
+      "./src/index.ts",
+      "--outfile",
+      "../dist/nodebyte-agent",
+    ],
+    agentDir
+  );
+  if (build.status !== 0) {
+    throw new FatalError(
+      `Local agent build failed (exit ${build.status}): ${build.stderr || build.stdout}`
+    );
+  }
+
+  const buffer = readFileSync(join(repoRoot, AGENT_BINARY_PATH));
+  if (!buffer.length) {
+    throw new FatalError(
+      "Local agent build produced no dist/nodebyte-agent file"
+    );
+  }
+
+  return { bytes: buffer, sha: sha256(buffer) };
+};
 
 const resolveGitSource = (): GitSource => {
   const explicitUrl = process.env.NBP_GIT_REPO_URL;
@@ -50,9 +125,6 @@ const resolveGitSource = (): GitSource => {
   return { revision: sha, url };
 };
 
-const sha256 = (buf: Buffer): string =>
-  crypto.createHash("sha256").update(buf).digest("hex");
-
 /**
  * Validate that the environment has the credentials needed for Vercel Sandbox.
  * Throws a descriptive error early so admins see exactly what is missing rather
@@ -61,6 +133,10 @@ const sha256 = (buf: Buffer): string =>
 const assertSandboxEnv = (git: GitSource) => {
   const hasToken = Boolean(process.env.VERCEL_SANDBOX_GIT_TOKEN);
   const isGitHub = git.url.includes("github.com");
+  const needsSandboxCreds =
+    process.platform === "win32" ||
+    process.env.NODE_ENV === "production" ||
+    process.env.NBP_USE_VERCEL_SANDBOX_AGENT_BUILD === "1";
 
   if (isGitHub && !hasToken && !git.username) {
     throw new FatalError(
@@ -70,19 +146,30 @@ const assertSandboxEnv = (git: GitSource) => {
     );
   }
 
-  // The SDK infers team/project from ~/.vercel/auth.json in dev or from
-  // VERCEL_ACCESS_TOKEN in CI/production. Without either, Sandbox.create will
+  // The SDK accepts OIDC tokens (VERCEL_OIDC_TOKEN, set via `vercel env pull`),
+  // access tokens (VERCEL_ACCESS_TOKEN / VERCEL_TOKEN), or infers from
+  // ~/.vercel/auth.json in dev. Without any of these, Sandbox.create will
   // return 400/401 with no useful message.
   const hasVercelCreds =
     Boolean(process.env.VERCEL_ACCESS_TOKEN) ||
-    Boolean(process.env.VERCEL_TOKEN);
-  // The SDK can also infer from the local Vercel CLI JSON — only warn if we
-  // have no explicit token in CI, because local dev will usually work.
+    Boolean(process.env.VERCEL_TOKEN) ||
+    Boolean(process.env.VERCEL_OIDC_TOKEN);
+
+  if (needsSandboxCreds && !hasVercelCreds) {
+    throw new FatalError(
+      `No Vercel credentials found. Vercel Sandbox is required for agent ` +
+        `compilation in this environment (Windows dev, production, or when ` +
+        `NBP_USE_VERCEL_SANDBOX_AGENT_BUILD=1). Set VERCEL_ACCESS_TOKEN to a ` +
+        `Vercel API token, or run \`vercel env pull\` to populate VERCEL_OIDC_TOKEN.`
+    );
+  }
+
+  // In production, OIDC is injected automatically by Vercel. Explicit token is
+  // only required in external CI environments that have neither.
   if (!hasVercelCreds && process.env.NODE_ENV === "production") {
     throw new FatalError(
-      `VERCEL_ACCESS_TOKEN is not set. Vercel Sandbox requires an access token ` +
-        `in production. Set VERCEL_ACCESS_TOKEN to a Vercel API token with ` +
-        `"Sandbox" scope enabled for your team.`
+      `No Vercel credentials found. Vercel Sandbox requires VERCEL_ACCESS_TOKEN ` +
+        `or VERCEL_OIDC_TOKEN in production.`
     );
   }
 };
@@ -91,6 +178,18 @@ export const compileAgentBinary = async (): Promise<{
   bytes: Buffer;
   sha: string;
 }> => {
+  const shouldUseSandbox =
+    process.platform === "win32" ||
+    process.env.NODE_ENV === "production" ||
+    process.env.NBP_USE_VERCEL_SANDBOX_AGENT_BUILD === "1";
+
+  // Local development on non-Windows hosts can build directly from the checked
+  // out agent submodule. Windows dev must use Vercel Sandbox because Bun's
+  // Linux target compile cannot be produced reliably on Windows.
+  if (!shouldUseSandbox) {
+    return compileAgentLocally();
+  }
+
   const git = resolveGitSource();
 
   assertSandboxEnv(git);
@@ -129,6 +228,7 @@ export const compileAgentBinary = async (): Promise<{
     const installBun = await sandbox.runCommand({
       args: ["-c", BUN_INSTALL],
       cmd: "bash",
+      env: git.password ? { GIT_AUTH_TOKEN: git.password } : undefined,
     });
     if (installBun.exitCode !== 0) {
       throw new Error(
@@ -139,6 +239,7 @@ export const compileAgentBinary = async (): Promise<{
     const build = await sandbox.runCommand({
       args: ["-c", BUILD_SCRIPT],
       cmd: "bash",
+      env: git.password ? { GIT_AUTH_TOKEN: git.password } : undefined,
     });
     if (build.exitCode !== 0) {
       const combined = await build.output("both");

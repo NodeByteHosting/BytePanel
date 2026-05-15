@@ -20,6 +20,7 @@ export const GET = async () => {
       previousSnapshotId: true,
       snapshotId: true,
       status: true,
+      statusTimeline: true,
     },
     where: { userId: user.id },
   });
@@ -47,7 +48,12 @@ export const POST = async () => {
       return;
     }
     await tx.snapshotBuild.create({
-      data: { id: buildId, status: "pending", userId: user.id },
+      data: {
+        id: buildId,
+        status: "pending",
+        statusTimeline: { pending: new Date().toISOString() },
+        userId: user.id,
+      },
     });
   });
 

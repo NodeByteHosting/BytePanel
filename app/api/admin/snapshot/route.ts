@@ -9,6 +9,20 @@ import { sendSnapshotBakeStartedEmail } from "@/lib/mail";
 import { requireSuperAdmin } from "@/lib/session";
 import { buildSnapshot } from "@/lib/workflows/build-snapshot";
 
+const coerceTimeline = (value: unknown): Record<string, string> | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const timeline: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry === "string") {
+      timeline[key] = entry;
+    }
+  }
+  return timeline;
+};
+
 export const runtime = "nodejs";
 
 // GET /api/admin/snapshot — latest snapshot build + current system snapshot ID
@@ -29,6 +43,7 @@ export const GET = async () => {
         providerBuilderId: true,
         snapshotId: true,
         status: true,
+        statusTimeline: true,
         user: { select: { email: true, name: true } },
         userId: true,
       },
@@ -39,7 +54,22 @@ export const GET = async () => {
     }),
   ]);
 
-  return NextResponse.json({ build, systemSnapshot });
+  const normalizedBuild = build
+    ? {
+        agentSha: build.agentSha,
+        createdAt: build.createdAt.toISOString(),
+        errorReason: build.errorReason,
+        finishedAt: build.finishedAt?.toISOString() ?? null,
+        id: build.id,
+        previousSnapshotId: build.previousSnapshotId,
+        snapshotId: build.snapshotId,
+        status: build.status,
+        statusTimeline: coerceTimeline(build.statusTimeline),
+        triggeredBy: build.user?.email ?? null,
+      }
+    : null;
+
+  return NextResponse.json({ build: normalizedBuild, systemSnapshot });
 };
 
 // POST /api/admin/snapshot — trigger a new bake
@@ -70,7 +100,12 @@ export const POST = async (req: Request) => {
       return;
     }
     await tx.snapshotBuild.create({
-      data: { id: buildId, status: "pending", userId: actorId },
+      data: {
+        id: buildId,
+        status: "pending",
+        statusTimeline: { pending: new Date().toISOString() },
+        userId: actorId,
+      },
     });
   });
 
@@ -92,19 +127,14 @@ export const POST = async (req: Request) => {
     userAgent: req.headers.get("user-agent"),
   });
 
-  // Notify all superadmins (fire-and-forget — never block the response)
+  // Notify the triggering user (fire-and-forget — never block the response)
   void (async () => {
-    const superAdmins = await prisma.user.findMany({
-      select: { email: true },
-      where: { superAdmin: true },
-    });
-    const toEmails = superAdmins.map((u) => u.email).filter(Boolean);
-    if (toEmails.length > 0 && actorEmail) {
+    if (actorEmail) {
       await sendSnapshotBakeStartedEmail({
         adminUrl: `${SEO_URL}/admin/snapshot`,
         buildId,
         environment: process.env.VERCEL_ENV ?? "development",
-        toEmails,
+        toEmails: [actorEmail],
         triggeredByEmail: actorEmail,
       });
     }

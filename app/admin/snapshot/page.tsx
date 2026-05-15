@@ -7,10 +7,28 @@ import {
 import { prisma } from "@/lib/db";
 import { env, SNAPSHOT_ENVIRONMENT } from "@/lib/env";
 import { requireSuperAdmin } from "@/lib/session";
-import type { SnapshotBuildStatus } from "@/lib/snapshot-build/types";
+import type {
+  SnapshotBuildStatus,
+  SnapshotStatusTimeline,
+} from "@/lib/snapshot-build/types";
 
 import { PageBody, PageHeader } from "../../dashboard/components/page-header";
 import { SnapshotPanel } from "./snapshot-panel";
+
+const coerceTimeline = (value: unknown): SnapshotStatusTimeline | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const timeline: SnapshotStatusTimeline = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry !== "string") {
+      continue;
+    }
+    timeline[key as keyof SnapshotStatusTimeline] = entry;
+  }
+  return timeline;
+};
 
 const AdminSnapshotPage = async () => {
   await requireSuperAdmin();
@@ -27,6 +45,7 @@ const AdminSnapshotPage = async () => {
         previousSnapshotId: true,
         snapshotId: true,
         status: true,
+        statusTimeline: true,
         user: { select: { email: true, name: true } },
         userId: true,
       },
@@ -83,6 +102,7 @@ const AdminSnapshotPage = async () => {
                   previousSnapshotId: latestBuild.previousSnapshotId,
                   snapshotId: latestBuild.snapshotId,
                   status: latestBuild.status as SnapshotBuildStatus,
+                  statusTimeline: coerceTimeline(latestBuild.statusTimeline),
                   triggeredBy: latestBuild.user?.email ?? null,
                 }
               : null

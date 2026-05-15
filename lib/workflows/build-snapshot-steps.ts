@@ -16,23 +16,107 @@ import {
 } from "@/lib/providers/errors";
 import { HETZNER_BUILDER_PROFILE } from "@/lib/providers/hetzner";
 import { compileAgentBinary } from "@/lib/sandbox/compile-agent";
+import type { SnapshotStatusTimeline } from "@/lib/snapshot-build/types";
 
 import { buildSnapshotCloudInit } from "./build-snapshot-cloud-init";
 
 const SNAPSHOT_DESCRIPTION = `nodebyte-gold-${SNAPSHOT_ENVIRONMENT.replace(":", "-")}`;
 // Covers cloud-init runtime (apt upgrade + Docker install) plus headroom.
 // Game images are pulled lazily at per-server provision time.
-const AGENT_DOWNLOAD_TOKEN_TTL_SECONDS = 60 * 60;
+const AGENT_DOWNLOAD_TOKEN_TTL_SECONDS = 3 * 60 * 60;
+
+const coerceTimeline = (value: unknown): SnapshotStatusTimeline => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const timeline: SnapshotStatusTimeline = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry !== "string") {
+      continue;
+    }
+    timeline[key as keyof SnapshotStatusTimeline] = entry;
+  }
+  return timeline;
+};
+
+const withStatusTimestamp = (
+  timelineValue: unknown,
+  status: SnapshotBuildStatus
+): SnapshotStatusTimeline => {
+  const timeline = coerceTimeline(timelineValue);
+  if (!timeline[status]) {
+    timeline[status] = new Date().toISOString();
+  }
+  return timeline;
+};
+
+const setBuildStatus = async (
+  buildId: string,
+  status: SnapshotBuildStatus,
+  extra: {
+    errorReason?: string;
+    finishedAt?: Date;
+    providerBuilderId?: string;
+    previousSnapshotId?: string | null;
+    snapshotId?: string;
+  } = {}
+) => {
+  const current = await prisma.snapshotBuild.findUnique({
+    select: { statusTimeline: true },
+    where: { id: buildId },
+  });
+
+  const statusTimeline = withStatusTimestamp(current?.statusTimeline, status);
+
+  await prisma.snapshotBuild.update({
+    data: {
+      ...extra,
+      status,
+      statusTimeline,
+    },
+    where: { id: buildId },
+  });
+};
+
+const resolveBuilderPlacement = async (
+  provider: Awaited<ReturnType<typeof getProviderForUser>>
+): Promise<{ location: string; serverType: string }> => {
+  const { location: preferredLocation, serverType } = HETZNER_BUILDER_PROFILE;
+
+  try {
+    const catalog = await provider.getCatalog(null);
+    const type = catalog.serverTypes.find((entry) => entry.name === serverType);
+
+    if (!type || type.locations.length === 0) {
+      return { location: preferredLocation, serverType };
+    }
+
+    const preferred = type.locations.find(
+      (loc) => loc.name === preferredLocation && loc.available
+    );
+    if (preferred) {
+      return { location: preferred.name, serverType };
+    }
+
+    const firstAvailable = type.locations.find((loc) => loc.available);
+    if (firstAvailable) {
+      return { location: firstAvailable.name, serverType };
+    }
+
+    return { location: type.locations[0].name, serverType };
+  } catch {
+    // If catalog lookup fails transiently, fall back to static profile values.
+    return { location: preferredLocation, serverType };
+  }
+};
 
 export const stepUpdateBuildStatus = async (input: {
   buildId: string;
   status: SnapshotBuildStatus;
 }) => {
   "use step";
-  await prisma.snapshotBuild.update({
-    data: { status: input.status },
-    where: { id: input.buildId },
-  });
+  await setBuildStatus(input.buildId, input.status);
 };
 
 export const stepCompileAgent = async (input: {
@@ -51,10 +135,7 @@ export const stepCompileAgent = async (input: {
     throw new FatalError(`SnapshotBuild ${input.buildId} not found`);
   }
 
-  await prisma.snapshotBuild.update({
-    data: { status: "compiling_agent" },
-    where: { id: input.buildId },
-  });
+  await setBuildStatus(input.buildId, "compiling_agent");
 
   let compileResult: Awaited<ReturnType<typeof compileAgentBinary>>;
   try {
@@ -117,6 +198,7 @@ export const stepCreateBuilderVm = async (input: {
   }
 
   const userData = buildSnapshotCloudInit(input.agentDownloadUrl);
+  const placement = await resolveBuilderPlacement(provider);
   const name = `nodebyte-builder-${input.buildId.toLowerCase().slice(-12)}-${crypto
     .randomBytes(2)
     .toString("hex")}`;
@@ -125,9 +207,9 @@ export const stepCreateBuilderVm = async (input: {
   try {
     created = await provider.createServer({
       imageId: HETZNER_BUILDER_PROFILE.baseImage,
-      location: HETZNER_BUILDER_PROFILE.location,
+      location: placement.location,
       name,
-      serverType: HETZNER_BUILDER_PROFILE.serverType,
+      serverType: placement.serverType,
       userData,
     });
   } catch (error) {
@@ -137,9 +219,8 @@ export const stepCreateBuilderVm = async (input: {
     throw error;
   }
 
-  await prisma.snapshotBuild.update({
-    data: { providerBuilderId: created.id, status: "creating_vm" },
-    where: { id: input.buildId },
+  await setBuildStatus(input.buildId, "creating_vm", {
+    providerBuilderId: created.id,
   });
 
   return { providerBuilderId: created.id };
@@ -194,6 +275,10 @@ export const stepSaveImageId = async (input: {
   const newId = input.snapshotImageId;
   const environment = SNAPSHOT_ENVIRONMENT;
   const result = await prisma.$transaction(async (tx) => {
+    const currentBuild = await tx.snapshotBuild.findUnique({
+      select: { statusTimeline: true },
+      where: { id: input.buildId },
+    });
     const existing = await tx.systemSnapshot.findUnique({
       select: { providerImageId: true },
       where: { environment },
@@ -214,6 +299,10 @@ export const stepSaveImageId = async (input: {
         previousSnapshotId,
         snapshotId: newId,
         status: "ready",
+        statusTimeline: withStatusTimestamp(
+          currentBuild?.statusTimeline,
+          "ready"
+        ),
       },
       where: { id: input.buildId },
     });
@@ -280,13 +369,9 @@ export const stepMarkFailed = async (input: {
   reason: string;
 }) => {
   "use step";
-  await prisma.snapshotBuild.update({
-    data: {
-      errorReason: input.reason,
-      finishedAt: new Date(),
-      status: "failed",
-    },
-    where: { id: input.buildId },
+  await setBuildStatus(input.buildId, "failed", {
+    errorReason: input.reason,
+    finishedAt: new Date(),
   });
 };
 
@@ -319,18 +404,16 @@ export const stepNotifySuperAdmins = async (input: {
   "use step";
 
   const build = await prisma.snapshotBuild.findUnique({
-    select: { createdAt: true, finishedAt: true },
+    select: {
+      createdAt: true,
+      finishedAt: true,
+      user: { select: { email: true } },
+    },
     where: { id: input.buildId },
   });
 
-  const superAdmins = await prisma.user.findMany({
-    select: { email: true },
-    where: { superAdmin: true },
-  });
-
-  const toEmails = superAdmins.map((u) => u.email).filter(Boolean);
-
-  if (toEmails.length === 0) {
+  const toEmail = build?.user?.email;
+  if (!toEmail) {
     return;
   }
 
@@ -345,6 +428,6 @@ export const stepNotifySuperAdmins = async (input: {
     newSnapshotId: input.newSnapshotId ?? null,
     startedAt: build?.createdAt?.toISOString() ?? new Date().toISOString(),
     success: input.success,
-    toEmails,
+    toEmails: [toEmail],
   });
 };

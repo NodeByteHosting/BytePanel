@@ -302,6 +302,7 @@ model SnapshotBuild {
   id                 String              @id
   userId             String
   status             SnapshotBuildStatus @default(pending)
+  statusTimeline     Json                @default("{}")
   agentBlobUrl       String?
   agentSha           String?
   provider           String              @default("hetzner")

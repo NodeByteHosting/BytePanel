@@ -7,9 +7,14 @@ export type SnapshotBuildStatus =
   | "ready"
   | "failed";
 
+export type SnapshotStatusTimeline = Partial<
+  Record<SnapshotBuildStatus, string>
+>;
+
 export interface SnapshotBuildSummary {
   id: string;
   status: SnapshotBuildStatus;
+  statusTimeline?: SnapshotStatusTimeline;
   snapshotId: string | null;
   previousSnapshotId: string | null;
   errorReason: string | null;

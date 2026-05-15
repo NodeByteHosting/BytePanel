@@ -52,3 +52,5 @@ generated/
 .env*.local
 
 tsconfig.tsbuildinfo
+.vercel
+.env*.local
