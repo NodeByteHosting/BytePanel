@@ -118,7 +118,11 @@ const resolveGitSource = (): GitSource => {
     );
   }
 
-  const token = process.env.VERCEL_SANDBOX_GIT_TOKEN;
+  // Accept any of these — one token should work everywhere.
+  const token =
+    process.env.GIT_AUTH_TOKEN ??
+    process.env.VERCEL_SANDBOX_GIT_TOKEN ??
+    process.env.GITHUB_TOKEN;
   if (token) {
     return { password: token, revision: sha, url, username: "x-access-token" };
   }
@@ -131,7 +135,11 @@ const resolveGitSource = (): GitSource => {
  * than a generic "Status code 400" from deep inside the SDK.
  */
 const assertSandboxEnv = (git: GitSource) => {
-  const hasToken = Boolean(process.env.VERCEL_SANDBOX_GIT_TOKEN);
+  const hasToken = Boolean(
+    process.env.GIT_AUTH_TOKEN ??
+    process.env.VERCEL_SANDBOX_GIT_TOKEN ??
+    process.env.GITHUB_TOKEN
+  );
   const isGitHub = git.url.includes("github.com");
   const needsSandboxCreds =
     process.platform === "win32" ||
@@ -140,9 +148,8 @@ const assertSandboxEnv = (git: GitSource) => {
 
   if (isGitHub && !hasToken && !git.username) {
     throw new FatalError(
-      `VERCEL_SANDBOX_GIT_TOKEN is not set. Vercel Sandbox cannot clone a private ` +
-        `GitHub repo without credentials. ` +
-        `Set VERCEL_SANDBOX_GIT_TOKEN to a GitHub PAT with repo read access.`
+      `No GitHub token found for private repo access. Set GIT_AUTH_TOKEN ` +
+        `(or VERCEL_SANDBOX_GIT_TOKEN / GITHUB_TOKEN) to a PAT with repo read access.`
     );
   }
 
