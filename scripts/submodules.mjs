@@ -127,6 +127,9 @@ const getConfiguredBranch = (repoRoot, submodulePath) => {
   return "main";
 };
 
+const redactRemote = (url) =>
+  url.replace(/https:\/\/[^@\s]+@github\.com\//u, "https://***@github.com/");
+
 const validate = (repoRoot, submodules) => {
   log.info("🔍 Validating submodules...");
   let failures = 0;
@@ -186,7 +189,7 @@ const validate = (repoRoot, submodules) => {
     if (remote.code !== 0 || !remote.stdout) {
       log.warn("  ⚠ No origin remote configured");
     } else {
-      log.ok(`  ✓ Origin: ${remote.stdout}`);
+      log.ok(`  ✓ Origin: ${redactRemote(remote.stdout)}`);
     }
 
     log.ok("  ✓ Registered and initialized");
