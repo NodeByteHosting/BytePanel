@@ -6,12 +6,13 @@ import type { paths } from "./schema";
 
 export type HetznerClient = ReturnType<typeof createClient<paths>>;
 
-export const createHetznerClient = (token: string): HetznerClient => createClient<paths>({
-  baseUrl: "https://api.hetzner.cloud/v1",
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
+export const createHetznerClient = (token: string): HetznerClient =>
+  createClient<paths>({
+    baseUrl: "https://api.hetzner.cloud/v1",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
 export const throwIfHetznerError = (
   error: unknown,

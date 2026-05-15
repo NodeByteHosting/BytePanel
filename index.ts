@@ -55,7 +55,7 @@ export const getProviderForUserWithImage = async (
   };
 };
 
-export { MissingProviderCredentialsError, ProviderApiError, formatProviderError } from "./errors";
+export { formatProviderError, MissingProviderCredentialsError, ProviderApiError } from "./errors";
 export type {
   Catalog,
   CatalogLocation,

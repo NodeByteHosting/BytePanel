@@ -13,7 +13,7 @@ import type { HetznerClient } from "./client";
  */
 const toTier = (
   name: string,
-  cpuType: "shared" | "dedicated"
+  cpuType: "shared" | "dedicated",
 ): CatalogServerType["tier"] => {
   if (cpuType === "dedicated") {
     return "dedicated";
@@ -27,7 +27,7 @@ const toTier = (
 
 export const getHetznerCatalog = async (
   client: HetznerClient,
-  imageId: string | null
+  imageId: string | null,
 ): Promise<Catalog> => {
   const baseRequests = [
     client.GET("/server_types", {
@@ -40,13 +40,15 @@ export const getHetznerCatalog = async (
 
   const imageRequest = imageId
     ? client.GET("/images/{id}", {
-        next: { revalidate: 3600 },
-        params: { path: { id: Number(imageId) } },
-      })
+      next: { revalidate: 3600 },
+      params: { path: { id: Number(imageId) } },
+    })
     : Promise.resolve(null);
 
-  const [serverTypesRes, datacentersRes, pricingRes, imageRes] =
-    await Promise.all([...baseRequests, imageRequest]);
+  const [serverTypesRes, datacentersRes, pricingRes, imageRes] = await Promise.all([
+    ...baseRequests,
+    imageRequest,
+  ]);
 
   throwIfHetznerError(serverTypesRes.error, serverTypesRes.response);
   throwIfHetznerError(datacentersRes.error, datacentersRes.response);
@@ -98,7 +100,7 @@ export const getHetznerCatalog = async (
     .map<CatalogServerType>((t) => {
       // Hetzner per-location monthly gross EUR prices
       const hetznerByLocation = new Map(
-        t.prices.map((p) => [p.location, Number(p.price_monthly.gross)])
+        t.prices.map((p) => [p.location, Number(p.price_monthly.gross)]),
       );
 
       const locations: CatalogLocation[] = [];
@@ -155,7 +157,7 @@ export const getHetznerCatalog = async (
       (a, b) =>
         a.pricePerMonth - b.pricePerMonth ||
         a.memory - b.memory ||
-        a.cores - b.cores
+        a.cores - b.cores,
     );
 
   return {
