@@ -178,9 +178,13 @@ const BuildProgress = ({
     <div className="grid gap-3">
       {STEPS.map((step, index) => {
         const isErrorStep = errored && errorIndex === index;
+        const isTerminalReadyStep =
+          build.status === "ready" && step.key === "ready";
         let status: StepStatus;
         if (isErrorStep) {
           status = "error";
+        } else if (isTerminalReadyStep) {
+          status = "done";
         } else if (currentIndex > index) {
           status = "done";
         } else if (currentIndex === index) {

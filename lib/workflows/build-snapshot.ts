@@ -10,6 +10,7 @@ import {
   stepGetBuilderStatus,
   stepGetImageStatus,
   stepMarkFailed,
+  stepMarkReady,
   stepNotifySuperAdmins,
   stepReadBuildState,
   stepSaveImageId,
@@ -101,6 +102,35 @@ const waitForSnapshotReady = async (
   throw new Error("Snapshot never became available (timed out)");
 };
 
+const cleanupBuilderVm = async (
+  providerBuilderId: string,
+  userId: string
+): Promise<void> => {
+  const maxAttempts = 4;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const { deleted } = await stepDeleteBuilder({ providerBuilderId, userId });
+    if (deleted) {
+      return;
+    }
+
+    const { status } = await stepGetBuilderStatus({
+      providerBuilderId,
+      userId,
+    });
+    if (status === "unknown") {
+      return;
+    }
+
+    if (attempt < maxAttempts) {
+      await sleep(`${BUILD_POLL_SECONDS}s`);
+    }
+  }
+
+  throw new Error(
+    `Builder VM cleanup did not complete for provider id ${providerBuilderId}`
+  );
+};
+
 export const buildSnapshot = async (input: {
   buildId: string;
   userId: string;
@@ -137,7 +167,7 @@ export const buildSnapshot = async (input: {
       userId,
     });
 
-    await stepDeleteBuilder({ providerBuilderId, userId });
+    await cleanupBuilderVm(providerBuilderId, userId);
 
     await stepDeletePreviousSnapshot({
       newSnapshotId: snapshotImageId,
@@ -152,6 +182,8 @@ export const buildSnapshot = async (input: {
       newSnapshotId: snapshotImageId,
       success: true,
     });
+
+    await stepMarkReady({ buildId });
   } catch (error) {
     // Normalise: the workflow runner may wrap errors in non-standard objects
     // after retry exhaustion — extract the message defensively.

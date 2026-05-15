@@ -275,10 +275,6 @@ export const stepSaveImageId = async (input: {
   const newId = input.snapshotImageId;
   const environment = SNAPSHOT_ENVIRONMENT;
   const result = await prisma.$transaction(async (tx) => {
-    const currentBuild = await tx.snapshotBuild.findUnique({
-      select: { statusTimeline: true },
-      where: { id: input.buildId },
-    });
     const existing = await tx.systemSnapshot.findUnique({
       select: { providerImageId: true },
       where: { environment },
@@ -295,20 +291,23 @@ export const stepSaveImageId = async (input: {
     });
     await tx.snapshotBuild.update({
       data: {
-        finishedAt: new Date(),
         previousSnapshotId,
         snapshotId: newId,
-        status: "ready",
-        statusTimeline: withStatusTimestamp(
-          currentBuild?.statusTimeline,
-          "ready"
-        ),
       },
       where: { id: input.buildId },
     });
     return { previousSnapshotId };
   });
   return result;
+};
+
+export const stepMarkReady = async (input: {
+  buildId: string;
+}): Promise<void> => {
+  "use step";
+  await setBuildStatus(input.buildId, "ready", {
+    finishedAt: new Date(),
+  });
 };
 
 export const stepDeleteBuilder = async (input: {
