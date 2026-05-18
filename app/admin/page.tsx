@@ -1,56 +1,96 @@
-import { DollarSign, Server, TrendingUp, Users } from "lucide-react";
+import {
+  CreditCardIcon,
+  DollarSignIcon,
+  ServerIcon,
+  UsersIcon,
+  ZapIcon,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { games } from "@/games";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
+import { cn } from "@/lib/utils";
 
 import { PageBody, PageHeader } from "../dashboard/components/page-header";
+import { SimpleBarChart } from "./components/charts";
+import { MetricsGrid } from "./components/metric-card";
 
-const StatCard = ({
-  title,
-  value,
-  icon: Icon,
-  description,
-}: {
-  title: string;
-  value: string | number;
-  icon: React.ElementType;
-  description?: string;
-}) => (
-  <div className="rounded-2xl border border-border/50 bg-card/30 p-4 backdrop-blur-sm md:p-5">
-    <div className="mb-3 flex items-center justify-between">
-      <p className="text-sm font-medium text-muted-foreground">{title}</p>
-      <div className="rounded-lg border border-border/50 bg-card/50 p-1.5">
-        <Icon className="size-4 text-muted-foreground" />
-      </div>
-    </div>
-    <p className="text-2xl font-bold tracking-tight">{value}</p>
-    {description && (
-      <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-    )}
-  </div>
-);
+const getHealthClass = (pct: number) => {
+  if (pct >= 80) {
+    return "text-emerald-600 dark:text-emerald-400";
+  }
+  if (pct >= 50) {
+    return "text-amber-600 dark:text-amber-400";
+  }
+  return "text-red-600 dark:text-red-400";
+};
 
 const AdminOverviewPage = async () => {
   await requireAdmin();
 
   const [
     totalUsers,
+    newUsersThisMonth,
+    newUsersLastMonth,
     totalServers,
     activeServers,
+    failedServers,
     activeSubscriptions,
     monthlyRevenueCents,
+    lastMonthRevenueCents,
     recentUsers,
+    recentServers,
+    serversByGame,
   ] = await Promise.all([
+    // User stats
     prisma.user.count(),
+    prisma.user.count({
+      where: {
+        createdAt: {
+          gte: new Date(new Date().setDate(1)),
+        },
+      },
+    }),
+    prisma.user.count({
+      where: {
+        createdAt: {
+          gte: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
+          lt: new Date(new Date().setDate(1)),
+        },
+      },
+    }),
+    // Server stats
     prisma.server.count({ where: { deletedAt: null } }),
     prisma.server.count({
       where: { deletedAt: null, observedState: "running" },
     }),
+    prisma.server.count({
+      where: {
+        deletedAt: null,
+        observedState: { in: ["failed", "unhealthy"] },
+      },
+    }),
+    // Subscription stats
     prisma.subscription.count({ where: { status: "active" } }),
     prisma.subscription.aggregate({
       _sum: { pricePerMonthCents: true },
       where: { status: "active" },
     }),
+    prisma.subscription.aggregate({
+      _sum: { pricePerMonthCents: true },
+      where: {
+        createdAt: {
+          lt: new Date(new Date().setDate(1)),
+        },
+        status: "active",
+      },
+    }),
+    // Recent data
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -60,74 +100,370 @@ const AdminOverviewPage = async () => {
         name: true,
         role: true,
       },
-      take: 10,
+      take: 5,
+    }),
+    prisma.server.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        createdAt: true,
+        game: true,
+        id: true,
+        name: true,
+        observedState: true,
+        user: {
+          select: {
+            email: true,
+            name: true,
+          },
+        },
+        userId: true,
+      },
+      take: 5,
+    }),
+    // Servers by game
+    prisma.server.groupBy({
+      _count: true,
+      by: ["game"],
+      orderBy: { _count: { game: "desc" } },
+      where: { deletedAt: null },
     }),
   ]);
 
   const revenue = (
     (monthlyRevenueCents._sum.pricePerMonthCents ?? 0) / 100
   ).toFixed(2);
+  const lastMonthRevenue = (
+    (lastMonthRevenueCents._sum.pricePerMonthCents ?? 0) / 100
+  ).toFixed(2);
+  const userChange =
+    newUsersLastMonth > 0
+      ? ((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100
+      : 0;
+  const revenueChange =
+    Number.parseFloat(lastMonthRevenue) > 0
+      ? ((Number.parseFloat(revenue) - Number.parseFloat(lastMonthRevenue)) /
+          Number.parseFloat(lastMonthRevenue)) *
+        100
+      : 0;
+
+  const stoppedServers = totalServers - activeServers - failedServers;
+  const healthPct =
+    totalServers > 0 ? Math.round((activeServers / totalServers) * 100) : 0;
+
+  const gameData = serversByGame.slice(0, 6).map((g) => ({
+    label: g.game.charAt(0).toUpperCase() + g.game.slice(1),
+    value: g._count,
+  }));
+
+  const SERVER_STATE_CONFIG: Record<
+    string,
+    { dot: string; text: string; label: string }
+  > = {
+    failed: {
+      dot: "bg-red-500",
+      label: "Failed",
+      text: "text-red-600 dark:text-red-400",
+    },
+    running: {
+      dot: "bg-emerald-500",
+      label: "Running",
+      text: "text-emerald-600 dark:text-emerald-400",
+    },
+    stopped: {
+      dot: "bg-zinc-400",
+      label: "Stopped",
+      text: "text-zinc-500 dark:text-zinc-400",
+    },
+    unhealthy: {
+      dot: "bg-amber-500",
+      label: "Unhealthy",
+      text: "text-amber-600 dark:text-amber-400",
+    },
+  };
 
   return (
     <>
       <PageHeader title="Overview" />
       <PageBody>
-        <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatCard
-              title="Total users"
-              value={totalUsers.toLocaleString()}
-              icon={Users}
-            />
-            <StatCard
-              title="Active servers"
-              value={`${activeServers} / ${totalServers}`}
-              icon={Server}
-              description="running / total"
-            />
-            <StatCard
-              title="Active subscriptions"
-              value={activeSubscriptions.toLocaleString()}
-              icon={TrendingUp}
-            />
-            <StatCard
-              title="Monthly revenue"
-              value={`$${revenue}`}
-              icon={DollarSign}
-              description="from active subscriptions"
-            />
+        <div className="flex flex-col gap-8">
+          {/* Stat cards */}
+          <MetricsGrid
+            columns={4}
+            metrics={[
+              {
+                accent: "blue",
+                change:
+                  newUsersLastMonth > 0
+                    ? {
+                        isPositive: userChange >= 0,
+                        period: "vs last month",
+                        value: Math.round(Math.abs(userChange)),
+                      }
+                    : undefined,
+                description: `${newUsersThisMonth} joined this month`,
+                icon: <UsersIcon className="size-4" />,
+                title: "Total users",
+                value: totalUsers.toLocaleString(),
+              },
+              {
+                accent: "emerald",
+                description: `${totalServers} total · ${failedServers} failed`,
+                icon: <ZapIcon className="size-4" />,
+                title: "Active servers",
+                value: activeServers,
+              },
+              {
+                accent: "violet",
+                description: "active plans",
+                icon: <CreditCardIcon className="size-4" />,
+                title: "Subscriptions",
+                value: activeSubscriptions.toLocaleString(),
+              },
+              {
+                accent: "amber",
+                change:
+                  Number.parseFloat(lastMonthRevenue) > 0
+                    ? {
+                        isPositive: revenueChange >= 0,
+                        period: "vs last month",
+                        value: Math.round(Math.abs(revenueChange)),
+                      }
+                    : undefined,
+                icon: <DollarSignIcon className="size-4" />,
+                title: "Monthly revenue",
+                value: `£${revenue}`,
+              },
+            ]}
+          />
+
+          {/* Health bar + charts row */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Platform health */}
+            <div className="flex flex-col gap-4 rounded-xl border border-border/60 bg-card p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold">Platform health</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Server state breakdown
+                  </p>
+                </div>
+                <span
+                  className={cn(
+                    "text-2xl font-bold tabular-nums",
+                    getHealthClass(healthPct)
+                  )}
+                >
+                  {healthPct}%
+                </span>
+              </div>
+
+              {/* Segmented bar */}
+              {totalServers > 0 && (
+                <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="bg-emerald-500 transition-all"
+                    style={{
+                      width: `${(activeServers / totalServers) * 100}%`,
+                    }}
+                  />
+                  <div
+                    className="bg-amber-500 transition-all"
+                    style={{
+                      width: `${(failedServers / totalServers) * 100}%`,
+                    }}
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  {
+                    dot: "bg-emerald-500",
+                    label: "Running",
+                    text: "text-emerald-600 dark:text-emerald-400",
+                    value: activeServers,
+                  },
+                  {
+                    dot: "bg-zinc-400",
+                    label: "Stopped",
+                    text: "text-zinc-500",
+                    value: stoppedServers,
+                  },
+                  {
+                    dot: "bg-amber-500",
+                    label: "Failed",
+                    text: "text-amber-600 dark:text-amber-400",
+                    value: failedServers,
+                  },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    className="flex flex-col gap-1 rounded-xl border border-border/40 bg-background/50 p-3"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <div className={cn("size-2 rounded-full", s.dot)} />
+                      <span className="text-xs text-muted-foreground">
+                        {s.label}
+                      </span>
+                    </div>
+                    <span
+                      className={cn("text-xl font-bold tabular-nums", s.text)}
+                    >
+                      {s.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-auto flex gap-2">
+                <Button asChild size="sm" variant="outline" className="flex-1">
+                  <Link href="/admin/servers">View all servers</Link>
+                </Button>
+              </div>
+            </div>
+
+            {/* Games chart */}
+            {gameData.length > 0 && (
+              <SimpleBarChart
+                title="Servers by game"
+                description="Active server distribution"
+                data={gameData}
+                height={160}
+              />
+            )}
           </div>
 
-          <div className="rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm">
-            <div className="border-b border-border/50 px-5 py-4">
-              <h2 className="text-sm font-semibold">Recent signups</h2>
-            </div>
-            <div className="divide-y divide-border/50">
-              {recentUsers.map((u) => (
-                <div
-                  key={u.id}
-                  className="flex items-center justify-between px-5 py-3"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">
-                      {u.name ?? u.email}
-                    </span>
-                    {u.name && (
-                      <span className="text-xs text-muted-foreground">
-                        {u.email}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs capitalize text-muted-foreground">
-                      {u.role}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {u.createdAt.toLocaleDateString()}
-                    </span>
-                  </div>
+          {/* Recent activity */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Recent signups */}
+            <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+              <div className="flex items-center justify-between border-b border-border/50 px-5 py-4">
+                <div>
+                  <h3 className="text-sm font-semibold">Recent signups</h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Latest user registrations
+                  </p>
                 </div>
-              ))}
+                <Button asChild size="sm" variant="ghost">
+                  <Link href="/admin/users">View all</Link>
+                </Button>
+              </div>
+              {recentUsers.length === 0 ? (
+                <p className="py-12 text-center text-sm text-muted-foreground">
+                  No recent signups
+                </p>
+              ) : (
+                <div className="divide-y divide-border/50">
+                  {recentUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center gap-3 px-5 py-3"
+                    >
+                      <Avatar className="size-8 shrink-0 rounded-lg">
+                        <AvatarFallback className="rounded-lg text-xs font-medium">
+                          {(user.name ?? user.email).charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          {user.name ?? user.email}
+                        </p>
+                        {user.name && (
+                          <p className="truncate text-xs text-muted-foreground">
+                            {user.email}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        {user.role !== "user" && (
+                          <Badge
+                            className="text-xs capitalize"
+                            variant="outline"
+                          >
+                            {user.role}
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recent servers */}
+            <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+              <div className="flex items-center justify-between border-b border-border/50 px-5 py-4">
+                <div>
+                  <h3 className="text-sm font-semibold">Recent servers</h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Latest server creations
+                  </p>
+                </div>
+                <Button asChild size="sm" variant="ghost">
+                  <Link href="/admin/servers">View all</Link>
+                </Button>
+              </div>
+              {recentServers.length === 0 ? (
+                <p className="py-12 text-center text-sm text-muted-foreground">
+                  No recent servers
+                </p>
+              ) : (
+                <div className="divide-y divide-border/50">
+                  {recentServers.map((server) => {
+                    const game = games.find((g) => g.id === server.game);
+                    const stateConf =
+                      SERVER_STATE_CONFIG[server.observedState] ??
+                      SERVER_STATE_CONFIG.stopped;
+                    return (
+                      <div
+                        key={server.id}
+                        className="flex items-center gap-3 px-5 py-3"
+                      >
+                        {game ? (
+                          <Image
+                            src={game.image}
+                            alt={game.name}
+                            width={32}
+                            height={32}
+                            className="size-8 shrink-0 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-muted">
+                            <ServerIcon className="size-4 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">
+                            {server.name}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {server.user?.name ?? server.user?.email}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <div
+                            className={cn(
+                              "size-1.5 rounded-full",
+                              stateConf.dot
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "text-xs font-medium",
+                              stateConf.text
+                            )}
+                          >
+                            {stateConf.label}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

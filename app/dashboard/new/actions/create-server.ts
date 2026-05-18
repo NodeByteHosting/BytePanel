@@ -4,19 +4,15 @@ import crypto from "node:crypto";
 
 import type { Prisma } from "@prisma/client";
 import { humanId } from "human-id";
-import { revalidatePath } from "next/cache";
 import type { Stripe } from "stripe";
 import { ulid } from "ulid";
-import { start } from "workflow/api";
 import { z } from "zod";
 
 import { games, validateSettings } from "@/games";
 import { prisma } from "@/lib/db";
-import { SNAPSHOT_ENVIRONMENT } from "@/lib/env";
-import { sendServerCreatedEmail } from "@/lib/mail";
+import { API_URL, SNAPSHOT_ENVIRONMENT } from "@/lib/env";
 import { getProviderForUserWithImage } from "@/lib/providers";
 import { requireUser } from "@/lib/session";
-import { provisionServer } from "@/lib/workflows/provision-server";
 
 const createServerSchema = z.object({
   game: z.enum(games.map((g) => g.id) as [string, ...string[]]),
@@ -30,7 +26,14 @@ export type CreateServerInput = z.infer<typeof createServerSchema>;
 
 export type CreateServerResult =
   | { ok: true; id: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string }
+  | {
+      ok: false;
+      error: string;
+      paymentRequired: true;
+      checkoutUrl: string;
+      serverId: string;
+    };
 
 /**
  * Get or create a Stripe Price for a given server type and monthly GBP pence amount.
@@ -134,7 +137,7 @@ export const createServer = async (
     },
   });
 
-  // Create Stripe subscription for the provisioned server
+  // Create a Stripe Checkout Session — provisioning starts after payment is confirmed
   try {
     const { getOrCreateStripeCustomer } = await import("@/lib/stripe");
     const stripeLib = await import("@/lib/stripe");
@@ -147,7 +150,6 @@ export const createServer = async (
       user.name
     );
 
-    // Use the plan name as the Stripe Price lookup key (created in the dashboard)
     const pricePerMonthCents = Math.round(type.pricePerMonth * 100);
     const priceId = await getOrCreateStripePrice(
       stripe,
@@ -155,61 +157,42 @@ export const createServer = async (
       pricePerMonthCents
     );
 
-    const subscription = await stripe.subscriptions.create({
+    const session = await stripe.checkout.sessions.create({
+      cancel_url: `${API_URL}/dashboard/new`,
       customer: stripeCustomerId,
-      items: [{ price: priceId }],
+      line_items: [{ price: priceId, quantity: 1 }],
       metadata: {
         nodebyteServerId: server.id,
         nodebyteUserId: user.id,
-        serverType: type.name,
       },
-      payment_behavior: "default_incomplete",
-      payment_settings: { save_default_payment_method: "on_subscription" },
+      mode: "subscription",
+      subscription_data: {
+        metadata: {
+          nodebyteServerId: server.id,
+          nodebyteUserId: user.id,
+          serverType: type.name,
+        },
+      },
+      success_url: `${API_URL}/dashboard/new/success?session_id={CHECKOUT_SESSION_ID}`,
     });
 
-    await prisma.subscription.create({
-      data: {
-        billingCustomerId: stripeCustomerId,
-        currency: "GBP",
-        id: subscription.id,
-        planName: type.name,
-        pricePerMonthCents,
-        serverId: server.id,
-        status: "incomplete",
-        stripePriceId: priceId,
-        stripeProductId:
-          typeof subscription.items.data[0].price.product === "string"
-            ? subscription.items.data[0].price.product
-            : subscription.items.data[0].price.product.id,
-        stripeSubscriptionId: subscription.id,
-      },
-    });
-  } catch (billingError) {
-    // Server was created; billing setup failed — log and continue.
-    // The subscription can be reconciled later via the billing dashboard.
-    console.error("[create-server] Stripe billing error:", billingError);
-  }
-
-  await start(provisionServer, [{ serverId: server.id }]);
-
-  // Fire welcome/notification email — non-blocking
-  const panelUrl = process.env.BETTER_AUTH_URL ?? "https://panel.nodebyte.host";
-  void (async () => {
-    try {
-      await sendServerCreatedEmail({
-        game: parsed.data.game,
-        region: parsed.data.location,
-        serverName: parsed.data.name,
-        serverUrl: `${panelUrl}/dashboard/${server.id}`,
-        toEmail: user.email,
-        userName: user.name,
-      });
-    } catch {
-      /* ignore */
+    if (!session.url) {
+      throw new Error("Stripe did not return a checkout URL");
     }
-  })();
 
-  revalidatePath("/dashboard", "layout");
-
-  return { id: server.id, ok: true };
+    return {
+      checkoutUrl: session.url,
+      error: "Payment required",
+      ok: false as const,
+      paymentRequired: true as const,
+      serverId: server.id,
+    };
+  } catch (billingError) {
+    console.error("[create-server] Stripe billing error:", billingError);
+    await prisma.server.delete({ where: { id: server.id } });
+    return {
+      error: "Billing setup failed. Please try again.",
+      ok: false,
+    };
+  }
 };

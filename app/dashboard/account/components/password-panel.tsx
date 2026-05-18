@@ -35,44 +35,47 @@ export const PasswordPanel = () => {
   };
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-      <div className="space-y-2">
-        <Label htmlFor="current-password">Current password</Label>
-        <Input
-          autoComplete="current-password"
-          id="current-password"
-          name="currentPassword"
-          onChange={(event) => setCurrentPassword(event.target.value)}
-          required
-          type="password"
-          value={currentPassword}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="new-password">New password</Label>
-        <Input
-          autoComplete="new-password"
-          id="new-password"
-          minLength={8}
-          name="newPassword"
-          onChange={(event) => setNewPassword(event.target.value)}
-          required
-          type="password"
-          value={newPassword}
-        />
-        <p className="text-muted-foreground text-xs">
-          Changing your password signs out other devices.
-        </p>
-      </div>
-      <div className="flex justify-start">
-        <Button
-          disabled={pending || !currentPassword || !newPassword}
-          size="sm"
-          type="submit"
-        >
-          {pending ? "Updating…" : "Change password"}
-        </Button>
-      </div>
-    </form>
+    <div className="max-w-xl rounded-xl border border-border/60 bg-card p-5">
+      <h2 className="text-sm font-semibold mb-4">Change password</h2>
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+        <div className="space-y-2">
+          <Label htmlFor="current-password">Current password</Label>
+          <Input
+            autoComplete="current-password"
+            id="current-password"
+            name="currentPassword"
+            onChange={(event) => setCurrentPassword(event.target.value)}
+            required
+            type="password"
+            value={currentPassword}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="new-password">New password</Label>
+          <Input
+            autoComplete="new-password"
+            id="new-password"
+            minLength={8}
+            name="newPassword"
+            onChange={(event) => setNewPassword(event.target.value)}
+            required
+            type="password"
+            value={newPassword}
+          />
+          <p className="text-muted-foreground text-xs">
+            Changing your password signs out other devices.
+          </p>
+        </div>
+        <div className="flex justify-start">
+          <Button
+            disabled={pending || !currentPassword || !newPassword}
+            size="sm"
+            type="submit"
+          >
+            {pending ? "Updating…" : "Change password"}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 };

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { checkSubscriptionForServer } from "@/lib/billing/subscription-check";
 import { prisma } from "@/lib/db";
 import { getProviderForUser } from "@/lib/providers";
 import {
@@ -95,6 +96,15 @@ export const POST = async (
 
   if (!server) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // ⚠️ BILLING: Verify subscription is active before allowing backup creation
+  const subscriptionCheck = await checkSubscriptionForServer(id);
+  if (!subscriptionCheck.isValid) {
+    return NextResponse.json(
+      { error: subscriptionCheck.message },
+      { status: 402 }
+    );
   }
 
   if (!server.providerServerId) {

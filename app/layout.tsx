@@ -40,7 +40,7 @@ const RootLayout = ({ children }: { children: ReactNode }) => (
     )}
     suppressHydrationWarning
   >
-    <body className="bg-background pb-32">
+    <body className="bg-background">
       <ThemeProvider>
         <TooltipProvider>{children}</TooltipProvider>
         <Toaster position="bottom-center" />

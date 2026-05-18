@@ -9,7 +9,7 @@ const MarketingLayout = async ({ children }: { children: ReactNode }) => {
   const isAuthenticated = Boolean(session?.user);
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col pb-32">
       <main className="flex-1">{children}</main>
 
       <footer className="border-t border-border/50">

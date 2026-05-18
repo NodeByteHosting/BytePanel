@@ -30,9 +30,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { games } from "@/games";
 import type { CatalogServerType } from "@/lib/providers/types";
@@ -57,8 +57,22 @@ const PROVISIONING_PHASES = new Set([
   "errored",
 ]);
 
+const STATE_BADGE: Record<string, string> = {
+  deleting:
+    "border-red-500/40 bg-red-500/10 text-red-600 dark:bg-red-500/15 dark:text-red-400",
+  failed:
+    "border-red-500/40 bg-red-500/10 text-red-600 dark:bg-red-500/15 dark:text-red-400",
+  lost: "border-red-500/40 bg-red-500/10 text-red-600 dark:bg-red-500/15 dark:text-red-400",
+  running:
+    "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400",
+  stopped:
+    "border-zinc-500/40 bg-zinc-500/10 text-zinc-500 dark:bg-zinc-500/15 dark:text-zinc-400",
+  unhealthy:
+    "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400",
+};
+
 const ALL_TABS = [
-  { label: "Connect", minRole: "viewer" as ServerRole, value: "connect" },
+  { label: "Overview", minRole: "viewer" as ServerRole, value: "connect" },
   { label: "Activity", minRole: "viewer" as ServerRole, value: "activity" },
   { label: "Console", minRole: "viewer" as ServerRole, value: "console" },
   { label: "Graphs", minRole: "viewer" as ServerRole, value: "graphs" },
@@ -87,27 +101,17 @@ interface Props {
   children: ReactNode;
 }
 
-const stateBadgeClass = (state: string, deleting: boolean): string => {
-  if (deleting || state === "failed" || state === "lost") {
-    return "";
+const getStatusDotColor = (key: string) => {
+  if (key === "running") {
+    return "bg-emerald-500";
   }
-  if (state === "running") {
-    return "border-emerald-600 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400";
+  if (key === "unhealthy") {
+    return "bg-amber-500";
   }
-  return "";
-};
-
-const stateBadgeVariant = (
-  state: string,
-  deleting: boolean
-): "default" | "secondary" | "destructive" | "outline" => {
-  if (deleting || state === "failed" || state === "lost") {
-    return "destructive";
+  if (["failed", "lost", "deleting"].includes(key)) {
+    return "bg-red-500";
   }
-  if (state === "unhealthy") {
-    return "secondary";
-  }
-  return "outline";
+  return "bg-zinc-400";
 };
 
 export const ServerShell = ({
@@ -129,6 +133,7 @@ export const ServerShell = ({
   const [server, setServer] = useState(initial);
   const [pending, setPending] = useState<null | string>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
 
   useEffect(() => {
     const t = setInterval(async () => {
@@ -182,6 +187,13 @@ export const ServerShell = ({
   const updateServer = (patch: Partial<ServerView>) =>
     setServer((prev) => ({ ...prev, ...patch }));
 
+  const handleDeleteOpenChange = (open: boolean) => {
+    setDeleteOpen(open);
+    if (!open) {
+      setDeleteConfirmName("");
+    }
+  };
+
   const isProvisioning = PROVISIONING_PHASES.has(server.phase);
   const game = games.find((g) => g.id === server.game);
 
@@ -190,80 +202,99 @@ export const ServerShell = ({
   }
 
   const deleting = server.desiredState === "deleted";
-  const statusLabel = deleting ? "deleting" : server.observedState;
+  const statusKey = deleting ? "deleting" : server.observedState;
+  const statusLabel = statusKey.charAt(0).toUpperCase() + statusKey.slice(1);
 
   const meta = (
     <Badge
       className={cn(
-        "capitalize",
-        stateBadgeClass(server.observedState, deleting)
+        "capitalize text-xs font-medium",
+        STATE_BADGE[statusKey] ??
+          "border-zinc-500/40 bg-zinc-500/10 text-zinc-500"
       )}
-      variant={stateBadgeVariant(server.observedState, deleting)}
+      variant="outline"
     >
+      <span
+        className={cn(
+          "mr-1.5 inline-block h-1.5 w-1.5 rounded-full",
+          getStatusDotColor(statusKey)
+        )}
+      />
       {statusLabel}
     </Badge>
   );
 
   const actions = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button aria-label="Server actions" size="icon" variant="ghost">
-          <MoreHorizontalIcon />
+    <div className="flex items-center gap-1.5">
+      {canControl && server.observedState === "stopped" && (
+        <Button
+          className="gap-1.5"
+          disabled={pending !== null}
+          size="sm"
+          onClick={() => sendCommand("START")}
+        >
+          <PlayIcon className="size-3.5" />
+          <span className="hidden sm:inline">Start</span>
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          disabled={
-            !canControl ||
-            pending !== null ||
-            server.observedState !== "stopped"
-          }
-          onSelect={() => sendCommand("START")}
-        >
-          <PlayIcon />
-          Start
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          disabled={
-            !canControl ||
-            pending !== null ||
-            server.observedState !== "running"
-          }
-          onSelect={() => sendCommand("STOP")}
-        >
-          <SquareIcon />
-          Stop
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          disabled={
-            !canControl ||
-            pending !== null ||
-            server.observedState !== "running"
-          }
-          onSelect={() => sendCommand("RESTART")}
-        >
-          <RotateCcwIcon />
-          Restart
-        </DropdownMenuItem>
-        {canDelete && (
-          <>
-            <DropdownMenuSeparator />
+      )}
+      {canControl && server.observedState === "running" && (
+        <>
+          <Button
+            className="gap-1.5"
+            disabled={pending !== null}
+            size="sm"
+            variant="outline"
+            onClick={() => sendCommand("RESTART")}
+          >
+            <RotateCcwIcon className="size-3.5" />
+            <span className="hidden sm:inline">Restart</span>
+          </Button>
+          <Button
+            className="gap-1.5"
+            disabled={pending !== null}
+            size="sm"
+            variant="outline"
+            onClick={() => sendCommand("STOP")}
+          >
+            <SquareIcon className="size-3.5" />
+            <span className="hidden sm:inline">Stop</span>
+          </Button>
+        </>
+      )}
+      {pending && (
+        <span className="text-xs text-muted-foreground capitalize">
+          {pending.toLowerCase()}…
+        </span>
+      )}
+      {canDelete && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              aria-label="Server options"
+              className="size-8"
+              size="icon"
+              variant="ghost"
+            >
+              <MoreHorizontalIcon className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
             <DropdownMenuItem
               disabled={pending !== null || deleting}
               onSelect={() => setDeleteOpen(true)}
               variant="destructive"
             >
               <Trash2Icon />
-              Delete
+              Delete server
             </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
   );
 
   const deleteDialog = (
-    <AlertDialog onOpenChange={setDeleteOpen} open={deleteOpen}>
+    <AlertDialog onOpenChange={handleDeleteOpenChange} open={deleteOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete this server?</AlertDialogTitle>
@@ -272,9 +303,30 @@ export const ServerShell = ({
             permanently deleted.
           </AlertDialogDescription>
         </AlertDialogHeader>
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Type{" "}
+            <span className="font-medium text-foreground">{server.name}</span>{" "}
+            to confirm.
+          </p>
+          <Input
+            autoComplete="off"
+            placeholder={server.name}
+            value={deleteConfirmName}
+            onChange={(event) => setDeleteConfirmName(event.target.value)}
+          />
+        </div>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={runDelete}>Delete</AlertDialogAction>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            disabled={
+              pending === "DELETE" || deleteConfirmName.trim() !== server.name
+            }
+            onClick={runDelete}
+          >
+            {pending === "DELETE" ? "Deleting..." : "Delete"}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -323,31 +375,33 @@ export const ServerShell = ({
         title={server.name}
       >
         <Tabs
-          className="[&_[data-slot=tabs-trigger]]:flex-none"
+          className="w-full **:data-[slot=tabs-list]:w-max **:data-[slot=tabs-trigger]:flex-none"
           value={activeTab}
         >
-          <TabsList variant="line">
-            {visibleTabs.map((tab) => (
-              <TabsTrigger asChild key={tab.value} value={tab.value}>
-                <Link
-                  href={
-                    tab.value === "connect"
-                      ? `/dashboard/${server.id}`
-                      : `/dashboard/${server.id}/${tab.value}`
-                  }
-                >
-                  {tab.value === "team" ? (
-                    <span className="flex items-center gap-1.5">
-                      <Users2Icon className="size-3.5" />
-                      Team
-                    </span>
-                  ) : (
-                    tab.label
-                  )}
-                </Link>
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="-mx-1 overflow-x-auto px-1 pb-1">
+            <TabsList variant="line">
+              {visibleTabs.map((tab) => (
+                <TabsTrigger asChild key={tab.value} value={tab.value}>
+                  <Link
+                    href={
+                      tab.value === "connect"
+                        ? `/dashboard/${server.id}`
+                        : `/dashboard/${server.id}/${tab.value}`
+                    }
+                  >
+                    {tab.value === "team" ? (
+                      <span className="flex items-center gap-1.5">
+                        <Users2Icon className="size-3.5" />
+                        Team
+                      </span>
+                    ) : (
+                      tab.label
+                    )}
+                  </Link>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
         </Tabs>
       </PageHeader>
       <PageBody flush={activeTab === "console"} wide={activeTab === "console"}>

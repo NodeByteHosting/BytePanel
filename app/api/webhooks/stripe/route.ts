@@ -1,7 +1,9 @@
 import type { InvoiceStatus, SubscriptionStatus } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import type { Stripe } from "stripe";
+import { start } from "workflow/api";
 
 import { logEvent } from "@/lib/audit";
 import { prisma } from "@/lib/db";
@@ -10,9 +12,11 @@ import {
   sendInvoicePaidEmail,
   sendInvoiceFailedEmail,
   sendSuspensionWarningEmail,
+  sendServerCreatedEmail,
 } from "@/lib/mail";
-import { SUSPENSION_GRACE_DAYS } from "@/lib/pricing";
+import { ADDON_DEFAULTS, SUSPENSION_GRACE_DAYS } from "@/lib/pricing";
 import { stripe } from "@/lib/stripe";
+import { provisionServer } from "@/lib/workflows/provision-server";
 
 /**
  * Map a Stripe subscription status to our internal SubscriptionStatus enum.
@@ -361,6 +365,135 @@ const handleInvoicePaymentSucceeded = async (invoice: Stripe.Invoice) => {
   }
 };
 
+/** Send the server-created welcome email — errors are silently swallowed */
+const sendCheckoutWelcomeEmail = async (serverId: string) => {
+  const server = await prisma.server.findUnique({
+    select: {
+      game: true,
+      location: true,
+      name: true,
+      user: { select: { email: true, name: true } },
+    },
+    where: { id: serverId },
+  });
+  if (!server?.user) {
+    return;
+  }
+  const appUrl = process.env.BETTER_AUTH_URL ?? "https://panel.nodebyte.host";
+  try {
+    await sendServerCreatedEmail({
+      game: server.game,
+      region: server.location,
+      serverName: server.name,
+      serverUrl: `${appUrl}/dashboard/${serverId}`,
+      toEmail: server.user.email,
+      userName: server.user.name,
+    });
+  } catch {
+    // ignore
+  }
+};
+
+/** Upsert subscription + addons from a completed checkout */
+const upsertCheckoutSubscriptionAndAddons = async (
+  session: Stripe.Checkout.Session,
+  subscriptionId: string,
+  customerId: string
+) => {
+  const serverId = session.metadata?.nodebyteServerId ?? "";
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const [firstItem] = subscription.items.data;
+  const pricePerMonthCents = firstItem?.price.unit_amount ?? 0;
+  const stripeProductId =
+    typeof firstItem?.price.product === "string"
+      ? firstItem.price.product
+      : ((firstItem?.price.product as Stripe.Product)?.id ?? "");
+
+  await prisma.subscription.upsert({
+    create: {
+      billingCustomerId: customerId,
+      currency: (subscription.currency ?? "gbp").toUpperCase(),
+      id: subscriptionId,
+      planName: subscription.metadata?.serverType ?? "unknown",
+      pricePerMonthCents,
+      serverId,
+      status: "active",
+      stripePriceId: firstItem?.price.id ?? "",
+      stripeProductId,
+      stripeSubscriptionId: subscriptionId,
+    },
+    update: { status: "active" },
+    where: { stripeSubscriptionId: subscriptionId },
+  });
+
+  await prisma.serverAddon.createMany({
+    data: [
+      {
+        freeAllowance: ADDON_DEFAULTS.backup.freeAllowance,
+        id: `${serverId}-backup`,
+        pricePerUnitCents: ADDON_DEFAULTS.backup.pricePerExtraUnitCents,
+        quantity: ADDON_DEFAULTS.backup.freeAllowance,
+        serverId,
+        subscriptionId,
+        type: "backup",
+      },
+      {
+        freeAllowance: ADDON_DEFAULTS.snapshot.freeAllowance,
+        id: `${serverId}-snapshot`,
+        pricePerUnitCents: ADDON_DEFAULTS.snapshot.pricePerExtraUnitCents,
+        quantity: ADDON_DEFAULTS.snapshot.freeAllowance,
+        serverId,
+        subscriptionId,
+        type: "snapshot",
+      },
+      {
+        freeAllowance: ADDON_DEFAULTS.database.freeAllowance,
+        id: `${serverId}-database`,
+        pricePerUnitCents: ADDON_DEFAULTS.database.pricePerExtraUnitCents,
+        quantity: ADDON_DEFAULTS.database.freeAllowance,
+        serverId,
+        subscriptionId,
+        type: "database",
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  return serverId;
+};
+
+/** Handle checkout.session.completed — creates subscription/addons and starts provisioning */
+const handleCheckoutSessionCompleted = async (
+  session: Stripe.Checkout.Session
+) => {
+  const serverId = session.metadata?.nodebyteServerId;
+  if (!serverId) {
+    return;
+  }
+
+  const subscriptionId =
+    typeof session.subscription === "string"
+      ? session.subscription
+      : ((session.subscription as Stripe.Subscription | null)?.id ?? null);
+  if (!subscriptionId) {
+    return;
+  }
+
+  const customerId =
+    typeof session.customer === "string"
+      ? session.customer
+      : ((session.customer as Stripe.Customer | null)?.id ?? "");
+
+  await upsertCheckoutSubscriptionAndAddons(
+    session,
+    subscriptionId,
+    customerId
+  );
+  await start(provisionServer, [{ serverId }]);
+  revalidatePath("/dashboard", "layout");
+  await sendCheckoutWelcomeEmail(serverId);
+};
+
 /** Handle invoice.payment_failed */
 const handleInvoicePaymentFailed = async (invoice: Stripe.Invoice) => {
   await upsertInvoice(invoice);
@@ -508,6 +641,12 @@ export const POST = async (req: Request) => {
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         await handleInvoicePaymentFailed(invoice);
+        break;
+      }
+
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await handleCheckoutSessionCompleted(session);
         break;
       }
 

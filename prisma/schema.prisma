@@ -167,6 +167,7 @@ model Server {
   activityEvents   ActivityEvent[]
   logChunks        LogChunk[]
   enrollments      AgentEnrollment[]
+  agentErrors      AgentError[]
   subscription     Subscription?
   members          ServerMember[]
   invites          ServerInvite[]
@@ -215,17 +216,37 @@ model ServerInvite {
 }
 
 model Agent {
-  id              String    @id
-  serverId        String    @unique
+  id              String       @id
+  serverId        String       @unique
   publicKey       String
-  sessionVersion  Int       @default(0)
+  sessionVersion  Int          @default(0)
   lastHeartbeatAt DateTime?
   lastCommandId   String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  server          Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  server          Server       @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  errors          AgentError[]
 
   @@map("agents")
+}
+
+model AgentError {
+  id           String   @id
+  agentId      String
+  serverId     String
+  errorCode    String
+  errorMessage String
+  phase        String
+  details      Json     @default("{}")
+  reportedAt   DateTime @default(now())
+  recordedAt   DateTime @default(now())
+  agent        Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  server       Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId, phase])
+  @@index([agentId])
+  @@index([recordedAt])
+  @@map("agent_errors")
 }
 
 model AgentEnrollment {
