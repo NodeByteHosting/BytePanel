@@ -116,19 +116,23 @@ export const ProfilePanel = ({ user }: Props) => {
   };
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={handleProfileSubmit}>
-      <div className="space-y-2">
-        <Label>Photo</Label>
-        <div className="flex items-center gap-4">
-          <Avatar className="size-16 rounded-lg after:rounded-lg" size="lg">
+    <div className="max-w-xl space-y-6">
+      {/* Avatar card */}
+      <div className="rounded-xl border border-border/60 bg-card p-5">
+        <h2 className="text-sm font-semibold mb-4">Profile photo</h2>
+        <div className="flex items-center gap-5">
+          <Avatar
+            className="size-16 rounded-xl after:rounded-xl ring-2 ring-border/60"
+            size="lg"
+          >
             {imageSrc ? (
               <AvatarImage
                 alt={name || user.email}
-                className="rounded-lg"
+                className="rounded-xl"
                 src={imageSrc}
               />
             ) : null}
-            <AvatarFallback className="rounded-lg text-base">
+            <AvatarFallback className="rounded-xl text-lg font-semibold bg-primary/10 text-primary">
               {getInitials(name, user.email)}
             </AvatarFallback>
           </Avatar>
@@ -139,66 +143,79 @@ export const ProfilePanel = ({ user }: Props) => {
             ref={imageInputRef}
             type="file"
           />
-          <div className="flex flex-wrap gap-2">
-            <Button
-              disabled={imagePending}
-              onClick={() => imageInputRef.current?.click()}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              {imageButtonLabel}
-            </Button>
-            {hasImage ? (
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium mb-1">{name || user.email}</p>
+            <p className="text-xs text-muted-foreground mb-3">{user.email}</p>
+            <div className="flex flex-wrap gap-2">
               <Button
                 disabled={imagePending}
-                onClick={handleImageRemove}
+                onClick={() => imageInputRef.current?.click()}
                 size="sm"
                 type="button"
-                variant="ghost"
+                variant="outline"
               >
-                Remove
+                {imageButtonLabel}
               </Button>
-            ) : null}
+              {hasImage ? (
+                <Button
+                  disabled={imagePending}
+                  onClick={handleImageRemove}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive"
+                >
+                  Remove
+                </Button>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="name">Name</Label>
-        <Input
-          autoComplete="name"
-          id="name"
-          name="name"
-          onChange={(event) => setName(event.target.value)}
-          required
-          value={name}
-        />
+
+      {/* Profile details card */}
+      <div className="rounded-xl border border-border/60 bg-card p-5">
+        <h2 className="text-sm font-semibold mb-4">Profile details</h2>
+        <form className="flex flex-col gap-4" onSubmit={handleProfileSubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="name">Display name</Label>
+            <Input
+              autoComplete="name"
+              id="name"
+              name="name"
+              onChange={(event) => setName(event.target.value)}
+              required
+              value={name}
+              placeholder="Your name"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email address</Label>
+            <Input
+              disabled
+              id="email"
+              name="email"
+              readOnly
+              type="email"
+              value={user.email}
+            />
+            <p className="text-muted-foreground text-xs">
+              {user.emailVerified
+                ? "Your email is verified."
+                : "Email change isn't supported yet."}
+            </p>
+          </div>
+          <div className="flex justify-end pt-1">
+            <Button
+              disabled={!profileDirty || profilePending}
+              size="sm"
+              type="submit"
+            >
+              {profilePending ? "Saving…" : "Save changes"}
+            </Button>
+          </div>
+        </form>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          disabled
-          id="email"
-          name="email"
-          readOnly
-          type="email"
-          value={user.email}
-        />
-        <p className="text-muted-foreground text-xs">
-          {user.emailVerified
-            ? "Verified."
-            : "Email change isn't supported yet."}
-        </p>
-      </div>
-      <div className="flex justify-start">
-        <Button
-          disabled={!profileDirty || profilePending}
-          size="sm"
-          type="submit"
-        >
-          {profilePending ? "Saving…" : "Save"}
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 };

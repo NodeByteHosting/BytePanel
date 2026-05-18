@@ -1,39 +1,37 @@
-import { DollarSign, Receipt, TrendingUp } from "lucide-react";
+import { DollarSign, ExternalLink, Receipt, TrendingUp } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { prisma } from "@/lib/db";
 import { requireSuperAdmin } from "@/lib/session";
+import { cn } from "@/lib/utils";
 
 import { PageBody, PageHeader } from "../../dashboard/components/page-header";
+import { MetricCard } from "../components";
 
-const statusVariant = (
-  status: string
-): "default" | "secondary" | "destructive" | "outline" => {
+const subStatusClass = (status: string): string => {
   if (status === "active") {
-    return "default";
+    return "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
   }
   if (status === "past_due" || status === "unpaid") {
-    return "destructive";
+    return "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400";
   }
   if (status === "canceled" || status === "incomplete_expired") {
-    return "secondary";
+    return "border-zinc-500/40 bg-zinc-500/10 text-zinc-500 dark:text-zinc-400";
   }
-  return "outline";
+  return "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400";
 };
 
-const invoiceStatusVariant = (
-  status: string
-): "default" | "secondary" | "destructive" | "outline" => {
+const invoiceStatusClass = (status: string): string => {
   if (status === "paid") {
-    return "default";
+    return "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
   }
   if (status === "open") {
-    return "outline";
+    return "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400";
   }
   if (status === "void" || status === "uncollectible") {
-    return "secondary";
+    return "border-zinc-500/40 bg-zinc-500/10 text-zinc-500 dark:text-zinc-400";
   }
-  return "destructive";
+  return "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400";
 };
 
 const AdminSubscriptionsPage = async () => {
@@ -100,56 +98,31 @@ const AdminSubscriptionsPage = async () => {
         <div className="flex flex-col gap-6">
           {/* Summary */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="rounded-2xl border border-border/50 bg-card/30 p-4 backdrop-blur-sm md:p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Monthly revenue
-                </p>
-                <div className="rounded-lg border border-border/50 bg-card/50 p-1.5">
-                  <DollarSign className="size-4 text-muted-foreground" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold tracking-tight">
-                £{(activeRevenue / 100).toFixed(2)}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                from active subscriptions
-              </p>
-            </div>
+            <MetricCard
+              title="Monthly Revenue"
+              value={`£${(activeRevenue / 100).toFixed(2)}`}
+              description="from active subscriptions"
+              icon={<DollarSign className="size-4" />}
+              accent="emerald"
+            />
 
-            <div className="rounded-2xl border border-border/50 bg-card/30 p-4 backdrop-blur-sm md:p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Active subs
-                </p>
-                <div className="rounded-lg border border-border/50 bg-card/50 p-1.5">
-                  <TrendingUp className="size-4 text-muted-foreground" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold tracking-tight">{activeCount}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {totalCount} total
-              </p>
-            </div>
+            <MetricCard
+              title="Active Subscriptions"
+              value={activeCount}
+              description={`${totalCount} total`}
+              icon={<TrendingUp className="size-4" />}
+              accent="blue"
+            />
 
-            <div className="rounded-2xl border border-border/50 bg-card/30 p-4 backdrop-blur-sm md:p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Past due
-                </p>
-                <div className="rounded-lg border border-border/50 bg-card/50 p-1.5">
-                  <Receipt className="size-4 text-muted-foreground" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold tracking-tight text-destructive">
-                {pastDueCount}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                require attention
-              </p>
-            </div>
+            <MetricCard
+              title="Past Due"
+              value={pastDueCount}
+              description="require attention"
+              icon={<Receipt className="size-4" />}
+              accent={pastDueCount > 0 ? "red" : "zinc"}
+            />
 
-            <div className="col-span-2 rounded-2xl border border-border/50 bg-card/30 p-4 backdrop-blur-sm sm:col-span-1 md:p-5">
+            <div className="col-span-2 overflow-hidden rounded-xl border border-border/60 bg-card p-4 sm:col-span-1">
               <p className="mb-3 text-sm font-medium text-muted-foreground">
                 Breakdown
               </p>
@@ -160,8 +133,11 @@ const AdminSubscriptionsPage = async () => {
                     className="flex items-center justify-between"
                   >
                     <Badge
-                      variant={statusVariant(r.status)}
-                      className="text-xs capitalize"
+                      className={cn(
+                        "text-xs capitalize",
+                        subStatusClass(r.status)
+                      )}
+                      variant="outline"
                     >
                       {r.status.replace("_", " ")}
                     </Badge>
@@ -176,7 +152,7 @@ const AdminSubscriptionsPage = async () => {
           </div>
 
           {/* Subscriptions table */}
-          <div className="rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm">
+          <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
             <div className="border-b border-border/50 px-5 py-4">
               <h2 className="text-sm font-semibold">All subscriptions</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
@@ -204,8 +180,11 @@ const AdminSubscriptionsPage = async () => {
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge
-                        variant={statusVariant(sub.status)}
-                        className="text-xs capitalize"
+                        className={cn(
+                          "text-xs capitalize",
+                          subStatusClass(sub.status)
+                        )}
+                        variant="outline"
                       >
                         {sub.status.replace("_", " ")}
                       </Badge>
@@ -244,7 +223,7 @@ const AdminSubscriptionsPage = async () => {
           </div>
 
           {/* Recent invoices */}
-          <div className="rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm">
+          <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
             <div className="border-b border-border/50 px-5 py-4">
               <h2 className="text-sm font-semibold">Recent invoices</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
@@ -283,8 +262,11 @@ const AdminSubscriptionsPage = async () => {
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge
-                          variant={invoiceStatusVariant(inv.status)}
-                          className="text-xs capitalize"
+                          className={cn(
+                            "text-xs capitalize",
+                            invoiceStatusClass(inv.status)
+                          )}
+                          variant="outline"
                         >
                           {inv.status}
                         </Badge>
@@ -301,8 +283,9 @@ const AdminSubscriptionsPage = async () => {
                             href={inv.invoiceUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-primary underline-offset-2 hover:underline"
+                            className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline"
                           >
+                            <ExternalLink className="size-3" />
                             View
                           </a>
                         )}

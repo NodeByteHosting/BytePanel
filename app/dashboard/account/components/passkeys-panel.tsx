@@ -116,10 +116,10 @@ export const PasskeysPanel = () => {
       );
     }
     return (
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col divide-y divide-border/50">
         {passkeys.map((passkey) => (
           <div
-            className="flex items-center justify-between gap-4"
+            className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0"
             key={passkey.id}
           >
             <div className="flex min-w-0 items-center gap-3">
@@ -149,7 +149,8 @@ export const PasskeysPanel = () => {
 
   return (
     <>
-      <div className="flex flex-col items-start gap-4">
+      <div className="max-w-xl space-y-4 rounded-xl border border-border/60 bg-card p-5">
+        <h2 className="text-sm font-semibold">Passkeys</h2>
         {renderList()}
         <Button
           onClick={() => setAddOpen(true)}

@@ -29,7 +29,7 @@ const NewServerPage = async () => {
         <>
           <PageHeader title="New server" />
           <PageBody>
-            <div className="rounded-2xl border border-dashed border-border/50 bg-card/30 p-8 text-center backdrop-blur-sm">
+            <div className="overflow-hidden rounded-xl border border-dashed border-border/60 bg-card p-8 text-center">
               <p className="font-semibold text-lg">
                 Provisioning is not ready yet
               </p>

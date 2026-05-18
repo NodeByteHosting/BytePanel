@@ -1,47 +1,80 @@
-import { AlertCircle, CheckCircle2, CreditCard, XCircle } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  CreditCard,
+  XCircle,
+  TrendingUp,
+  ArrowRight,
+} from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { prisma } from "@/lib/db";
 import { formatNodeBytePrice } from "@/lib/pricing";
 import { requireUser } from "@/lib/session";
+import { cn } from "@/lib/utils";
 
-import { PageBody, PageHeader } from "../../components/page-header";
+import { PageBody } from "../../components/page-header";
 import { CustomerPortalButton } from "../components/customer-portal-button";
 
 const statusConfig = {
-  active: { color: "text-green-500", icon: CheckCircle2, label: "Active" },
+  active: {
+    bg: "bg-emerald-500/10 border-emerald-500/30",
+    color: "text-emerald-600 dark:text-emerald-400",
+    dot: "bg-emerald-500",
+    icon: CheckCircle2,
+    label: "Active",
+  },
   canceled: {
-    color: "text-muted-foreground",
+    bg: "bg-zinc-500/10 border-zinc-500/30",
+    color: "text-zinc-500 dark:text-zinc-400",
+    dot: "bg-zinc-400",
     icon: XCircle,
     label: "Canceled",
   },
   incomplete: {
-    color: "text-amber-500",
+    bg: "bg-amber-500/10 border-amber-500/30",
+    color: "text-amber-600 dark:text-amber-400",
+    dot: "bg-amber-500",
     icon: AlertCircle,
     label: "Incomplete",
   },
   incomplete_expired: {
-    color: "text-destructive",
+    bg: "bg-red-500/10 border-red-500/30",
+    color: "text-red-600 dark:text-red-400",
+    dot: "bg-red-500",
     icon: XCircle,
     label: "Expired",
   },
-  past_due: { color: "text-destructive", icon: AlertCircle, label: "Past due" },
+  past_due: {
+    bg: "bg-red-500/10 border-red-500/30",
+    color: "text-red-600 dark:text-red-400",
+    dot: "bg-red-500",
+    icon: AlertCircle,
+    label: "Past due",
+  },
   paused: {
-    color: "text-muted-foreground",
+    bg: "bg-zinc-500/10 border-zinc-500/30",
+    color: "text-zinc-500 dark:text-zinc-400",
+    dot: "bg-zinc-400",
     icon: AlertCircle,
     label: "Paused",
   },
-  trialing: { color: "text-blue-500", icon: CheckCircle2, label: "Trial" },
-  unpaid: { color: "text-destructive", icon: AlertCircle, label: "Unpaid" },
+  trialing: {
+    bg: "bg-blue-500/10 border-blue-500/30",
+    color: "text-blue-600 dark:text-blue-400",
+    dot: "bg-blue-500",
+    icon: CheckCircle2,
+    label: "Trial",
+  },
+  unpaid: {
+    bg: "bg-red-500/10 border-red-500/30",
+    color: "text-red-600 dark:text-red-400",
+    dot: "bg-red-500",
+    icon: AlertCircle,
+    label: "Unpaid",
+  },
 } as const;
 
 const BillingPage = async () => {
@@ -66,153 +99,178 @@ const BillingPage = async () => {
       (s) => s.status !== "active" && s.status !== "trialing"
     ) ?? [];
 
+  const totalMonthlyCents = activeSubscriptions.reduce(
+    (sum, s) => sum + s.pricePerMonthCents,
+    0
+  );
+
   return (
-    <>
-      <PageHeader title="Billing">
-        <p className="text-muted-foreground text-sm">
-          Manage your NodeByte subscriptions and payment details.
-        </p>
-      </PageHeader>
-      <PageBody>
-        <div className="grid gap-6">
-          {/* Summary banner */}
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-4 pb-3">
-              <CreditCard className="size-5 text-muted-foreground" />
+    <PageBody constrained>
+      <div className="space-y-6">
+        {/* Summary card */}
+        <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+          <div className="flex items-center justify-between gap-4 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2.5">
+                <CreditCard className="size-5 text-primary" />
+              </div>
               <div>
-                <CardTitle className="text-base">
-                  Payment & subscriptions
-                </CardTitle>
-                <CardDescription>
+                <p className="text-sm font-semibold text-foreground">
                   {activeSubscriptions.length > 0
                     ? `${activeSubscriptions.length} active plan${activeSubscriptions.length > 1 ? "s" : ""}`
                     : "No active subscriptions"}
-                </CardDescription>
-              </div>
-              {billingCustomer && (
-                <div className="ml-auto">
-                  <CustomerPortalButton
-                    stripeCustomerId={billingCustomer.stripeCustomerId}
-                  />
-                </div>
-              )}
-            </CardHeader>
-          </Card>
-
-          {/* Active subscriptions */}
-          {activeSubscriptions.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="font-medium text-sm">Active plans</h3>
-              <div className="grid gap-3">
-                {activeSubscriptions.map((sub) => {
-                  const cfg =
-                    statusConfig[sub.status as keyof typeof statusConfig] ??
-                    statusConfig.incomplete;
-                  const StatusIcon = cfg.icon;
-                  return (
-                    <Card key={sub.id}>
-                      <CardContent className="flex items-center justify-between gap-4 py-4">
-                        <div className="flex items-center gap-3">
-                          <StatusIcon className={`size-4 ${cfg.color}`} />
-                          <div>
-                            <p className="font-medium text-sm">
-                              {sub.server?.name ?? "Unknown server"}
-                            </p>
-                            <p className="text-muted-foreground text-xs capitalize">
-                              {sub.planName} · {sub.server?.game ?? ""}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          {sub.currentPeriodEnd && (
-                            <p className="text-muted-foreground text-xs">
-                              Renews{" "}
-                              {sub.currentPeriodEnd.toLocaleDateString(
-                                "en-US",
-                                {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                }
-                              )}
-                            </p>
-                          )}
-                          <Badge variant="outline" className="font-mono">
-                            {formatNodeBytePrice(sub.pricePerMonthCents)}/mo
-                          </Badge>
-                          {sub.server && (
-                            <Button asChild variant="ghost" size="sm">
-                              <Link href={`/dashboard/${sub.server.id}`}>
-                                Manage
-                              </Link>
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                </p>
+                {activeSubscriptions.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    <span className="font-medium text-foreground">
+                      {formatNodeBytePrice(totalMonthlyCents)}
+                    </span>{" "}
+                    / month total
+                  </p>
+                )}
               </div>
             </div>
-          )}
+            {billingCustomer && (
+              <CustomerPortalButton
+                stripeCustomerId={billingCustomer.stripeCustomerId}
+              />
+            )}
+          </div>
+        </div>
 
-          {/* Past subscriptions */}
-          {inactiveSubscriptions.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="font-medium text-muted-foreground text-sm">
-                Past subscriptions
-              </h3>
-              <div className="grid gap-2">
-                {inactiveSubscriptions.map((sub) => {
-                  const cfg =
-                    statusConfig[sub.status as keyof typeof statusConfig] ??
-                    statusConfig.canceled;
-                  const StatusIcon = cfg.icon;
-                  return (
-                    <div
-                      key={sub.id}
-                      className="flex items-center justify-between gap-4 rounded-md border border-border bg-muted/20 px-4 py-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <StatusIcon className={`size-4 ${cfg.color}`} />
-                        <div>
-                          <p className="font-medium text-sm">
-                            {sub.server?.name ?? "Unknown server"}
+        {/* Active subscriptions */}
+        {activeSubscriptions.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-foreground">
+              Active plans
+            </h2>
+            <div className="grid gap-3">
+              {activeSubscriptions.map((sub) => {
+                const cfg =
+                  statusConfig[sub.status as keyof typeof statusConfig] ??
+                  statusConfig.incomplete;
+                return (
+                  <div
+                    key={sub.id}
+                    className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card px-4 py-4"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={cn("rounded-lg border p-2 shrink-0", cfg.bg)}
+                      >
+                        <TrendingUp className={cn("size-4", cfg.color)} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm truncate">
+                          {sub.server?.name ?? "Unknown server"}
+                        </p>
+                        <p className="text-muted-foreground text-xs capitalize mt-0.5">
+                          {sub.planName}
+                          {sub.server?.game && ` · ${sub.server.game}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="hidden sm:block text-right">
+                        <p className="font-mono text-sm font-semibold">
+                          {formatNodeBytePrice(sub.pricePerMonthCents)}/mo
+                        </p>
+                        {sub.currentPeriodEnd && (
+                          <p className="text-muted-foreground text-xs mt-0.5">
+                            Renews{" "}
+                            {sub.currentPeriodEnd.toLocaleDateString("en-US", {
+                              day: "numeric",
+                              month: "short",
+                            })}
                           </p>
-                          <p className="text-muted-foreground text-xs capitalize">
-                            {sub.planName} · {cfg.label}
-                          </p>
-                        </div>
+                        )}
                       </div>
                       <Badge
-                        variant="secondary"
-                        className="font-mono text-muted-foreground"
+                        variant="outline"
+                        className={cn(
+                          "gap-1.5 text-xs font-medium",
+                          cfg.bg,
+                          cfg.color
+                        )}
                       >
-                        {formatNodeBytePrice(sub.pricePerMonthCents)}/mo
+                        <span
+                          className={cn("h-1.5 w-1.5 rounded-full", cfg.dot)}
+                        />
+                        {cfg.label}
                       </Badge>
+                      {sub.server && (
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="sm"
+                          className="px-2"
+                        >
+                          <Link href={`/dashboard/${sub.server.id}`}>
+                            <ArrowRight className="size-4" />
+                          </Link>
+                        </Button>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Empty state */}
-          {!billingCustomer || billingCustomer.subscriptions.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border bg-muted/20 py-12 text-center">
-              <CreditCard className="mx-auto mb-3 size-8 text-muted-foreground" />
-              <p className="font-medium text-sm">No subscriptions yet</p>
-              <p className="mt-1 text-muted-foreground text-sm">
+        {/* Past subscriptions */}
+        {inactiveSubscriptions.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground">
+              Past plans
+            </h2>
+            <div className="grid gap-2">
+              {inactiveSubscriptions.map((sub) => {
+                const cfg =
+                  statusConfig[sub.status as keyof typeof statusConfig] ??
+                  statusConfig.canceled;
+                return (
+                  <div
+                    key={sub.id}
+                    className="flex items-center justify-between gap-4 rounded-lg border border-border/40 bg-muted/20 px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">
+                        {sub.server?.name ?? "Unknown server"}
+                      </p>
+                      <p className="text-muted-foreground text-xs capitalize mt-0.5">
+                        {sub.planName} · {cfg.label}
+                      </p>
+                    </div>
+                    <span className="font-mono text-sm text-muted-foreground shrink-0">
+                      {formatNodeBytePrice(sub.pricePerMonthCents)}/mo
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!billingCustomer || billingCustomer.subscriptions.length === 0 ? (
+          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border bg-muted/20 py-14 text-center">
+            <div className="rounded-xl bg-muted p-4">
+              <CreditCard className="size-8 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm">No subscriptions yet</p>
+              <p className="mt-1 text-muted-foreground text-sm max-w-xs">
                 Create your first game server to get started.
               </p>
-              <Button asChild variant="outline" size="sm" className="mt-4">
-                <Link href="/dashboard/new">Deploy a server</Link>
-              </Button>
             </div>
-          ) : null}
-        </div>
-      </PageBody>
-    </>
+            <Button asChild size="sm">
+              <Link href="/dashboard/new">Deploy a server</Link>
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    </PageBody>
   );
 };
 

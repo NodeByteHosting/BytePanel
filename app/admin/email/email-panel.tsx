@@ -1,25 +1,20 @@
 "use client";
 
 import {
+  CheckCircle2Icon,
   ChevronLeft,
   ChevronRight,
-  Mail,
-  Megaphone,
-  ScrollText,
-  Send,
+  MailIcon,
+  MegaphoneIcon,
+  ScrollTextIcon,
+  SendIcon,
+  UsersIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -31,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Test email tab
@@ -70,34 +66,39 @@ const TestEmailTab = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Send test email</CardTitle>
-        <CardDescription>
+    <div className="rounded-2xl border border-border/50 bg-card/20 backdrop-blur-sm">
+      <div className="border-b border-border/50 px-5 py-4">
+        <h3 className="font-semibold text-sm">Send test email</h3>
+        <p className="mt-0.5 text-xs text-muted-foreground">
           Send a one-off email to verify your SMTP configuration is working.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <Label>Recipient</Label>
-          <Input
-            type="email"
-            placeholder="user@example.com"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-          />
+        </p>
+      </div>
+      <div className="flex flex-col gap-4 p-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="test-to">Recipient</Label>
+            <Input
+              id="test-to"
+              placeholder="user@example.com"
+              type="email"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="test-subject">Subject</Label>
+            <Input
+              id="test-subject"
+              placeholder="Test email from NodeByte Panel"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+            />
+          </div>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label>Subject</Label>
-          <Input
-            placeholder="Test email from NodeByte Panel"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label>Body</Label>
+          <Label htmlFor="test-body">Body</Label>
           <Textarea
+            id="test-body"
             placeholder="Email body…"
             rows={6}
             value={body}
@@ -106,12 +107,12 @@ const TestEmailTab = () => {
         </div>
         <div className="flex justify-end">
           <Button disabled={sending} onClick={handleSend}>
-            <Send className="size-4" />
-            {sending ? "Sending…" : "Send test"}
+            <SendIcon className="size-4" />
+            {sending ? "Sending…" : "Send test email"}
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
@@ -154,55 +155,69 @@ const BroadcastTab = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Broadcast email</CardTitle>
-        <CardDescription>
+    <div className="rounded-2xl border border-border/50 bg-card/20 backdrop-blur-sm">
+      <div className="border-b border-border/50 px-5 py-4">
+        <h3 className="font-semibold text-sm">Broadcast email</h3>
+        <p className="mt-0.5 text-xs text-muted-foreground">
           Send a message to all users or just admins. Requires super-admin
           access.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <Label>Audience</Label>
-          <Select
-            value={audience}
-            onValueChange={(v) => setAudience(v as "all" | "admins")}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All users</SelectItem>
-              <SelectItem value="admins">Admins only</SelectItem>
-            </SelectContent>
-          </Select>
+        </p>
+      </div>
+      <div className="flex flex-col gap-4 p-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="bc-audience">
+              <UsersIcon className="mr-1.5 inline-block size-3.5 align-middle" />
+              Audience
+            </Label>
+            <Select
+              value={audience}
+              onValueChange={(v) => setAudience(v as "all" | "admins")}
+            >
+              <SelectTrigger id="bc-audience">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All users</SelectItem>
+                <SelectItem value="admins">Admins only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="bc-subject">Subject</Label>
+            <Input
+              id="bc-subject"
+              placeholder="Important notice from NodeByte"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+            />
+          </div>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label>Subject</Label>
-          <Input
-            placeholder="Important notice from NodeByte"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label>Body</Label>
+          <Label htmlFor="bc-body">Message</Label>
           <Textarea
+            id="bc-body"
             placeholder="Compose your broadcast message…"
             rows={8}
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
         </div>
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            This will send an email to{" "}
+            <span className="font-medium text-foreground">
+              {audience === "admins" ? "all admins" : "all users"}
+            </span>
+            .
+          </p>
           <Button disabled={sending} onClick={handleBroadcast}>
-            <Megaphone className="size-4" />
+            <MegaphoneIcon className="size-4" />
             {sending ? "Sending…" : "Send broadcast"}
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
@@ -256,101 +271,120 @@ const EmailLogsTab = () => {
   }, [fetchLogs]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Email send history</CardTitle>
-        <CardDescription>
+    <div className="rounded-2xl border border-border/50 bg-card/20 backdrop-blur-sm">
+      <div className="border-b border-border/50 px-5 py-4">
+        <h3 className="font-semibold text-sm">Email send history</h3>
+        <p className="mt-0.5 text-xs text-muted-foreground">
           Audit trail of test emails and broadcasts sent from the admin panel.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-0">
-        {(loading || !data) && (
-          <div className="px-6 py-10 text-center text-sm text-muted-foreground">
-            Loading…
-          </div>
-        )}
-        {!loading && data && data.logs.length === 0 && (
-          <div className="px-6 py-10 text-center text-sm text-muted-foreground">
-            No email activity yet.
-          </div>
-        )}
-        {!loading && data && data.logs.length > 0 && (
-          <div className="divide-y">
-            {data.logs.map((log) => {
-              const meta = log.metadata ?? {};
-              return (
-                <div
-                  key={log.id}
-                  className="flex flex-col gap-0.5 px-6 py-3 sm:flex-row sm:items-start sm:justify-between"
-                >
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {log.action === "admin.email.broadcast_sent"
-                          ? "broadcast"
-                          : "test"}
+        </p>
+      </div>
+      {(loading || !data) && (
+        <div className="px-6 py-10 text-center text-sm text-muted-foreground">
+          Loading…
+        </div>
+      )}
+      {!loading && data && data.logs.length === 0 && (
+        <div className="px-6 py-10 text-center text-sm text-muted-foreground">
+          No email activity yet.
+        </div>
+      )}
+      {!loading && data && data.logs.length > 0 && (
+        <div className="divide-y divide-border/50">
+          {data.logs.map((log) => {
+            const meta = log.metadata ?? {};
+            const isBroadcast = log.action === "admin.email.broadcast_sent";
+            return (
+              <div
+                key={log.id}
+                className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-start sm:justify-between"
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className={cn(
+                      "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg",
+                      isBroadcast
+                        ? "bg-violet-500/10 text-violet-500"
+                        : "bg-emerald-500/10 text-emerald-500"
+                    )}
+                  >
+                    {isBroadcast ? (
+                      <MegaphoneIcon className="size-3.5" />
+                    ) : (
+                      <CheckCircle2Icon className="size-3.5" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge
+                        className={cn(
+                          "text-xs",
+                          isBroadcast
+                            ? "border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400"
+                            : "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        )}
+                        variant="outline"
+                      >
+                        {isBroadcast ? "broadcast" : "test"}
                       </Badge>
-                      <span className="text-sm">
+                      <span className="text-sm font-medium">
                         {String(meta.subject ?? "—")}
                       </span>
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       by {log.actorEmail ?? "unknown"}
-                      {log.action === "admin.email.broadcast_sent" &&
-                        meta.sent !== undefined && (
-                          <span className="ml-2">
-                            {String(meta.sent)}/{String(meta.recipientCount)}{" "}
-                            sent
-                            {meta.audience ? ` · ${String(meta.audience)}` : ""}
-                          </span>
-                        )}
-                      {log.action === "admin.email.test_sent" &&
-                        Boolean(meta.to) && (
-                          <span className="ml-2">→ {String(meta.to)}</span>
-                        )}
-                    </div>
+                      {isBroadcast && meta.sent !== undefined && (
+                        <span className="ml-2">
+                          · {String(meta.sent)}/{String(meta.recipientCount)}{" "}
+                          delivered
+                          {meta.audience ? ` · ${String(meta.audience)}` : ""}
+                        </span>
+                      )}
+                      {!isBroadcast && Boolean(meta.to) && (
+                        <span className="ml-2">· to {String(meta.to)}</span>
+                      )}
+                    </p>
                   </div>
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {new Date(log.createdAt).toLocaleString()}
-                  </span>
                 </div>
-              );
-            })}
-          </div>
-        )}
-        {data && data.totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-3 text-sm text-muted-foreground border-t">
-            <span>
-              {(data.page - 1) * data.pageSize + 1}–
-              {Math.min(data.page * data.pageSize, data.total)} of {data.total}
+                <time className="shrink-0 text-xs text-muted-foreground/70">
+                  {new Date(log.createdAt).toLocaleString()}
+                </time>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {data && data.totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-border/50 px-5 py-3 text-sm text-muted-foreground">
+          <span>
+            {(data.page - 1) * data.pageSize + 1}–
+            {Math.min(data.page * data.pageSize, data.total)} of {data.total}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button
+              className="size-8"
+              disabled={page <= 1}
+              size="icon"
+              variant="ghost"
+              onClick={() => setPage((p) => p - 1)}
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <span className="px-2">
+              {page} / {data.totalPages}
             </span>
-            <div className="flex items-center gap-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="size-7"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                <ChevronLeft className="size-4" />
-              </Button>
-              <span className="px-2">
-                {page} / {data.totalPages}
-              </span>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="size-7"
-                disabled={page >= data.totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
+            <Button
+              className="size-8"
+              disabled={page >= data.totalPages}
+              size="icon"
+              variant="ghost"
+              onClick={() => setPage((p) => p + 1)}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -360,18 +394,18 @@ const EmailLogsTab = () => {
 
 export const EmailPanel = () => (
   <Tabs defaultValue="test">
-    <TabsList className="mb-4">
-      <TabsTrigger value="test">
-        <Mail className="size-4" />
+    <TabsList className="mb-4 h-auto gap-1 rounded-xl p-1">
+      <TabsTrigger className="gap-1.5 rounded-lg" value="test">
+        <MailIcon className="size-3.5" />
         Test send
       </TabsTrigger>
-      <TabsTrigger value="broadcast">
-        <Megaphone className="size-4" />
+      <TabsTrigger className="gap-1.5 rounded-lg" value="broadcast">
+        <MegaphoneIcon className="size-3.5" />
         Broadcast
       </TabsTrigger>
-      <TabsTrigger value="logs">
-        <ScrollText className="size-4" />
-        Logs
+      <TabsTrigger className="gap-1.5 rounded-lg" value="logs">
+        <ScrollTextIcon className="size-3.5" />
+        History
       </TabsTrigger>
     </TabsList>
     <TabsContent value="test">

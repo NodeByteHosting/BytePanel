@@ -1,18 +1,20 @@
 "use client";
 
 import {
+  AppleIcon,
   ChevronLeft,
   ChevronRight,
-  Monitor,
-  RefreshCw,
-  Trash2,
+  GlobeIcon,
+  LaptopIcon,
+  RefreshCwIcon,
+  SmartphoneIcon,
+  Trash2Icon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface AdminSession {
   id: string;
@@ -33,23 +35,73 @@ interface PagedResponse {
   totalPages: number;
 }
 
-const parseUa = (ua: string | null) => {
+const getDeviceInfo = (
+  ua: string | null
+): { label: string; icon: React.ElementType; os: string } => {
   if (!ua) {
-    return "Unknown device";
+    return { icon: GlobeIcon, label: "Unknown", os: "Unknown" };
   }
-  if (/iPhone|iPad|Android/iu.test(ua)) {
-    return "Mobile";
+  if (/iPhone/iu.test(ua)) {
+    return { icon: SmartphoneIcon, label: "iPhone", os: "iOS" };
+  }
+  if (/iPad/iu.test(ua)) {
+    return { icon: AppleIcon, label: "iPad", os: "iPadOS" };
+  }
+  if (/Android/iu.test(ua)) {
+    return { icon: SmartphoneIcon, label: "Android", os: "Android" };
   }
   if (/Mac/iu.test(ua)) {
-    return "macOS";
+    return { icon: LaptopIcon, label: "Mac", os: "macOS" };
   }
   if (/Windows/iu.test(ua)) {
-    return "Windows";
+    return { icon: LaptopIcon, label: "Windows PC", os: "Windows" };
   }
   if (/Linux/iu.test(ua)) {
-    return "Linux";
+    return { icon: LaptopIcon, label: "Linux", os: "Linux" };
   }
-  return "Browser";
+  return { icon: GlobeIcon, label: "Browser", os: "Unknown" };
+};
+
+const getBrowserName = (ua: string | null): string => {
+  if (!ua) {
+    return "";
+  }
+  if (/Edg\//iu.test(ua)) {
+    return "Edge";
+  }
+  if (/OPR\//iu.test(ua) || /Opera/iu.test(ua)) {
+    return "Opera";
+  }
+  if (/Firefox/iu.test(ua)) {
+    return "Firefox";
+  }
+  if (/Chrome/iu.test(ua)) {
+    return "Chrome";
+  }
+  if (/Safari/iu.test(ua)) {
+    return "Safari";
+  }
+  return "";
+};
+
+const getExpiryClass = (expired: boolean, expiresInDays: number) => {
+  if (expired) {
+    return "text-destructive";
+  }
+  if (expiresInDays <= 1) {
+    return "text-amber-600 dark:text-amber-400";
+  }
+  return "text-emerald-600 dark:text-emerald-400";
+};
+
+const getExpiryLabel = (expired: boolean, expiresInDays: number) => {
+  if (expired) {
+    return "expired";
+  }
+  if (expiresInDays > 0) {
+    return `expires in ${expiresInDays}d`;
+  }
+  return "expires today";
 };
 
 export const SessionsTable = () => {
@@ -107,88 +159,114 @@ export const SessionsTable = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        {data && (
+          <p className="text-sm text-muted-foreground">
+            {data.total} active session{data.total === 1 ? "" : "s"}
+          </p>
+        )}
         <Button
+          className="ml-auto gap-1.5"
+          disabled={loading}
           size="sm"
           variant="outline"
-          disabled={loading}
-          onClick={() => fetchSessions()}
+          onClick={() => void fetchSessions()}
         >
-          <RefreshCw className="size-4" />
+          <RefreshCwIcon
+            className={cn("size-3.5", loading && "animate-spin")}
+          />
           Refresh
         </Button>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          {(loading || !data) && (
-            <div className="py-12 text-center text-sm text-muted-foreground">
-              Loading…
-            </div>
-          )}
-          {!loading && data && data.sessions.length === 0 && (
-            <div className="py-12 text-center text-sm text-muted-foreground">
-              No active sessions.
-            </div>
-          )}
-          {!loading && data && data.sessions.length > 0 && (
-            <div className="divide-y">
-              {data.sessions.map((session) => {
-                const expiresIn =
-                  new Date(session.expiresAt).getTime() - Date.now();
-                const expiresInDays = Math.round(expiresIn / 86_400_000);
-                return (
-                  <div
-                    key={session.id}
-                    className="flex items-center justify-between gap-4 px-6 py-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-                        <Monitor className="size-4 text-muted-foreground" />
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-2 text-sm font-medium leading-none">
-                          {session.user.name ?? session.user.email}
-                          {session.user.name && (
-                            <span className="text-xs font-normal text-muted-foreground">
-                              {session.user.email}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                          <Badge variant="outline" className="text-xs">
-                            {parseUa(session.userAgent)}
-                          </Badge>
-                          {session.ipAddress && (
-                            <span className="font-mono">
-                              {session.ipAddress}
-                            </span>
-                          )}
-                          <span>
-                            expires in{" "}
-                            {expiresInDays > 0 ? `${expiresInDays}d` : "< 1d"}
-                          </span>
-                        </div>
-                      </div>
+      <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
+        {(loading || !data) && (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            Loading…
+          </div>
+        )}
+        {!loading && data && data.sessions.length === 0 && (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            No active sessions.
+          </div>
+        )}
+        {!loading && data && data.sessions.length > 0 && (
+          <div className="divide-y divide-border/50">
+            {data.sessions.map((session) => {
+              const expiresIn =
+                new Date(session.expiresAt).getTime() - Date.now();
+              const expiresInDays = Math.round(expiresIn / 86_400_000);
+              const expired = expiresIn <= 0;
+              const device = getDeviceInfo(session.userAgent);
+              const browser = getBrowserName(session.userAgent);
+              const DeviceIcon = device.icon;
+              const createdDate = new Date(
+                session.createdAt
+              ).toLocaleDateString(undefined, {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              });
+
+              return (
+                <div
+                  key={session.id}
+                  className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Device icon */}
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border/50 bg-muted/50">
+                      <DeviceIcon className="size-4 text-muted-foreground" />
                     </div>
 
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      disabled={revoking === session.id}
-                      onClick={() => handleRevoke(session)}
-                    >
-                      <Trash2 className="size-4" />
-                      {revoking === session.id ? "Revoking…" : "Revoke"}
-                    </Button>
+                    {/* Info */}
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span className="font-medium text-sm leading-snug">
+                          {session.user.name ?? session.user.email}
+                        </span>
+                        {session.user.name && (
+                          <span className="text-xs text-muted-foreground">
+                            {session.user.email}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <DeviceIcon className="size-3 shrink-0" />
+                          {device.os}
+                          {browser ? ` · ${browser}` : ""}
+                        </span>
+                        {session.ipAddress && (
+                          <span className="font-mono">{session.ipAddress}</span>
+                        )}
+                        <span>Started {createdDate}</span>
+                        <span
+                          className={cn(getExpiryClass(expired, expiresInDays))}
+                        >
+                          {getExpiryLabel(expired, expiresInDays)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
+                  <Button
+                    className="w-full shrink-0 gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-auto"
+                    disabled={revoking === session.id}
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleRevoke(session)}
+                  >
+                    <Trash2Icon className="size-3.5" />
+                    {revoking === session.id ? "Revoking…" : "Revoke"}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {data && data.totalPages > 1 && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -198,10 +276,11 @@ export const SessionsTable = () => {
           </span>
           <div className="flex items-center gap-1">
             <Button
+              aria-label="Previous page"
+              className="size-8 min-h-11 min-w-11"
+              disabled={page <= 1}
               size="icon"
               variant="ghost"
-              className="size-7"
-              disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
             >
               <ChevronLeft className="size-4" />
@@ -210,10 +289,11 @@ export const SessionsTable = () => {
               {page} / {data.totalPages}
             </span>
             <Button
+              aria-label="Next page"
+              className="size-8 min-h-11 min-w-11"
+              disabled={page >= data.totalPages}
               size="icon"
               variant="ghost"
-              className="size-7"
-              disabled={page >= data.totalPages}
               onClick={() => setPage((p) => p + 1)}
             >
               <ChevronRight className="size-4" />

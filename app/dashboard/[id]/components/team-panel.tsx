@@ -8,13 +8,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -190,13 +183,14 @@ export const TeamPanel = ({
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+      {/* Team members */}
+      <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
+        <div className="flex items-center justify-between gap-4 border-b border-border/50 px-5 py-4">
           <div>
-            <CardTitle>Team members</CardTitle>
-            <CardDescription>
+            <p className="text-sm font-semibold">Team members</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
               Manage who has access to this server.
-            </CardDescription>
+            </p>
           </div>
           <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
             <DialogTrigger asChild>
@@ -262,10 +256,11 @@ export const TeamPanel = ({
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
+        </div>
+
+        <div className="divide-y divide-border/50">
           {/* Owner row */}
-          <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+          <div className="flex items-center justify-between gap-3 px-4 py-3">
             <div className="flex items-center gap-3">
               <UserAvatar user={owner} />
               <div className="flex flex-col">
@@ -273,7 +268,7 @@ export const TeamPanel = ({
                   {owner.name ?? owner.email}
                 </span>
                 {owner.name && (
-                  <span className="text-muted-foreground text-xs">
+                  <span className="text-xs text-muted-foreground">
                     {owner.email}
                   </span>
                 )}
@@ -291,7 +286,7 @@ export const TeamPanel = ({
           {members.map((member) => (
             <div
               key={member.id}
-              className="flex items-center justify-between rounded-lg border px-4 py-3"
+              className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/30"
             >
               <div className="flex items-center gap-3">
                 <UserAvatar user={member.user} />
@@ -300,7 +295,7 @@ export const TeamPanel = ({
                     {member.user.name ?? member.user.email}
                   </span>
                   {member.user.name && (
-                    <span className="text-muted-foreground text-xs">
+                    <span className="text-xs text-muted-foreground">
                       {member.user.email}
                     </span>
                   )}
@@ -350,31 +345,31 @@ export const TeamPanel = ({
           ))}
 
           {members.length === 0 && (
-            <p className="py-4 text-center text-muted-foreground text-sm">
+            <p className="py-12 text-center text-sm text-muted-foreground">
               No members yet. Invite someone to get started.
             </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Pending invites */}
       {invites.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending invites</CardTitle>
-            <CardDescription>
+        <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
+          <div className="border-b border-border/50 px-5 py-4">
+            <p className="text-sm font-semibold">Pending invites</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
               These invites have not been accepted yet.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
+            </p>
+          </div>
+          <div className="divide-y divide-border/50">
             {invites.map((invite) => (
               <div
                 key={invite.id}
-                className="flex items-center justify-between rounded-lg border px-4 py-3"
+                className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/30"
               >
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">{invite.email}</span>
-                  <span className="text-muted-foreground text-xs">
+                  <span className="text-xs text-muted-foreground">
                     Expires {new Date(invite.expiresAt).toLocaleDateString()}
                   </span>
                 </div>
@@ -391,8 +386,8 @@ export const TeamPanel = ({
                 </div>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1,18 +1,13 @@
 "use client";
 
-import {
-  ChevronLeft,
-  ChevronRight,
-  Search,
-  SlidersHorizontal,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface AuditEntry {
   id: string;
@@ -35,26 +30,54 @@ interface PagedResponse {
   totalPages: number;
 }
 
-// Colour-code action categories
-const actionVariant = (
+const categoryStyle = (
   action: string
-): "default" | "secondary" | "destructive" | "outline" => {
-  if (action.startsWith("admin.")) {
-    return "secondary";
-  }
+): { dot: string; text: string; bg: string } => {
   if (
-    action.startsWith("server.delete") ||
-    action.startsWith("admin.user.ban")
+    action.startsWith("admin.user.ban") ||
+    action.startsWith("server.delete")
   ) {
-    return "destructive";
+    return {
+      bg: "bg-red-500/10",
+      dot: "bg-red-500",
+      text: "text-red-600 dark:text-red-400",
+    };
+  }
+  if (action.startsWith("admin.")) {
+    return {
+      bg: "bg-violet-500/10",
+      dot: "bg-violet-500",
+      text: "text-violet-600 dark:text-violet-400",
+    };
   }
   if (action.startsWith("billing.")) {
-    return "outline";
+    return {
+      bg: "bg-emerald-500/10",
+      dot: "bg-emerald-500",
+      text: "text-emerald-600 dark:text-emerald-400",
+    };
   }
-  return "default";
+  if (action.startsWith("server.")) {
+    return {
+      bg: "bg-blue-500/10",
+      dot: "bg-blue-500",
+      text: "text-blue-600 dark:text-blue-400",
+    };
+  }
+  if (action.startsWith("auth.")) {
+    return {
+      bg: "bg-amber-500/10",
+      dot: "bg-amber-500",
+      text: "text-amber-600 dark:text-amber-400",
+    };
+  }
+  return {
+    bg: "bg-zinc-500/10",
+    dot: "bg-zinc-400",
+    text: "text-zinc-600 dark:text-zinc-400",
+  };
 };
 
-// Format action code for display: "admin.user.set_role" → "admin · user · set role"
 const fmtAction = (action: string) =>
   action.replaceAll("_", " ").replaceAll(".", " · ");
 
@@ -117,93 +140,130 @@ export const AuditLogTable = () => {
             setPage(1);
           }}
         >
-          <SlidersHorizontal className="size-4" />
-          Filter
+          Search
         </Button>
       </div>
 
-      {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          {(loading || !data) && (
-            <div className="py-12 text-center text-sm text-muted-foreground">
-              Loading…
-            </div>
-          )}
-          {!loading && data && data.logs.length === 0 && (
-            <div className="py-12 text-center text-sm text-muted-foreground">
-              No audit events found.
-            </div>
-          )}
-          {!loading && data && data.logs.length > 0 && (
-            <div className="divide-y">
-              {data.logs.map((log) => (
+      {/* Timeline */}
+      <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
+        {(loading || !data) && (
+          <div className="divide-y divide-border/50">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex gap-4 px-5 py-4">
+                <div className="flex shrink-0 flex-col items-center gap-1 pt-1.5">
+                  <Skeleton className="size-2 rounded-full" />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-5 w-32 rounded-md" />
+                  <Skeleton className="h-3 w-56" />
+                </div>
+                <Skeleton className="hidden h-3 w-24 sm:block" />
+              </div>
+            ))}
+          </div>
+        )}
+        {!loading && data && data.logs.length === 0 && (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            No audit events found.
+          </div>
+        )}
+        {!loading && data && data.logs.length > 0 && (
+          <div className="divide-y divide-border/50">
+            {data.logs.map((log) => {
+              const style = categoryStyle(log.action);
+              return (
                 <div
                   key={log.id}
-                  className="flex flex-col gap-1 px-6 py-3 sm:flex-row sm:items-start sm:justify-between"
+                  className="flex gap-4 px-5 py-4 transition-colors hover:bg-muted/30"
                 >
-                  <div className="flex flex-col gap-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge
-                        variant={actionVariant(log.action)}
-                        className="font-mono text-xs"
-                      >
-                        {fmtAction(log.action)}
-                      </Badge>
-                      {log.targetType && (
-                        <span className="text-xs text-muted-foreground">
-                          on{" "}
-                          <span className="text-foreground/70">
-                            {log.targetType}
+                  {/* Left: coloured timeline dot + line */}
+                  <div className="flex flex-col items-center gap-1 pt-1">
+                    <div
+                      className={cn("size-2 shrink-0 rounded-full", style.dot)}
+                    />
+                    <div className="w-px flex-1 bg-border/40" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="min-w-0 flex-1 pb-1">
+                    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+                      <div className="min-w-0">
+                        {/* Action badge */}
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-md px-2 py-0.5 font-mono text-xs font-medium",
+                            style.bg,
+                            style.text
+                          )}
+                        >
+                          {fmtAction(log.action)}
+                        </span>
+
+                        {/* Actor + target */}
+                        <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                          <span>
+                            by{" "}
+                            <span className="font-medium text-foreground/80">
+                              {log.actorEmail ?? "system"}
+                            </span>
                           </span>
-                          {log.targetId && (
-                            <span className="ml-1 font-mono text-xs text-muted-foreground/60">
-                              {log.targetId.slice(0, 8)}…
+                          {log.targetType && (
+                            <span>
+                              on{" "}
+                              <span className="text-foreground/70">
+                                {log.targetType}
+                              </span>
+                              {log.targetId && (
+                                <span className="ml-1 font-mono text-muted-foreground/60">
+                                  {log.targetId.slice(0, 8)}…
+                                </span>
+                              )}
                             </span>
                           )}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span>
-                        by{" "}
-                        <span className="text-foreground/80">
-                          {log.actorEmail ?? "system"}
-                        </span>
-                      </span>
-                      {log.ipAddress && (
-                        <span className="font-mono">{log.ipAddress}</span>
-                      )}
-                    </div>
-                    {log.metadata && Object.keys(log.metadata).length > 0 && (
-                      <div className="mt-0.5 font-mono text-xs text-muted-foreground/70 break-all">
-                        {JSON.stringify(log.metadata)}
+                          {log.ipAddress && (
+                            <span className="font-mono">{log.ipAddress}</span>
+                          )}
+                        </p>
+
+                        {/* Metadata */}
+                        {log.metadata &&
+                          Object.keys(log.metadata).length > 0 && (
+                            <p className="mt-1 break-all font-mono text-[11px] text-muted-foreground/60">
+                              {JSON.stringify(log.metadata)}
+                            </p>
+                          )}
                       </div>
-                    )}
+
+                      {/* Timestamp */}
+                      <time
+                        className="shrink-0 text-xs text-muted-foreground/70"
+                        dateTime={log.createdAt}
+                      >
+                        {new Date(log.createdAt).toLocaleString()}
+                      </time>
+                    </div>
                   </div>
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {new Date(log.createdAt).toLocaleString()}
-                  </span>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Pagination */}
       {data && data.totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <span>
             {(data.page - 1) * data.pageSize + 1}–
             {Math.min(data.page * data.pageSize, data.total)} of {data.total}
           </span>
           <div className="flex items-center gap-1">
             <Button
+              aria-label="Previous page"
+              className="size-8 min-h-11 min-w-11"
+              disabled={page <= 1}
               size="icon"
               variant="ghost"
-              className="size-7"
-              disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
             >
               <ChevronLeft className="size-4" />
@@ -212,10 +272,11 @@ export const AuditLogTable = () => {
               {page} / {data.totalPages}
             </span>
             <Button
+              aria-label="Next page"
+              className="size-8 min-h-11 min-w-11"
+              disabled={page >= data.totalPages}
               size="icon"
               variant="ghost"
-              className="size-7"
-              disabled={page >= data.totalPages}
               onClick={() => setPage((p) => p + 1)}
             >
               <ChevronRight className="size-4" />
