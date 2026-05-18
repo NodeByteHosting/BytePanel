@@ -172,6 +172,13 @@ export const executeCommand = async (
       message: `Command ${command.type} failed: ${message}`,
       phase: "errored",
     });
+    // Report error to backend
+    void buffer.enqueueError({
+      errorCode: `CMD_${command.type}_FAILED`,
+      errorMessage: message,
+      phase: "install",
+      details: { commandId: command.id, commandType: command.type },
+    });
     await ackCommand(state, command.id, "failed", durationMs, message);
   }
 };

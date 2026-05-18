@@ -125,4 +125,39 @@ export class EventBuffer {
       this.flushing = false;
     }
   }
+
+  async enqueueError(input: {
+    errorCode: string;
+    errorMessage: string;
+    phase:
+      | "provisioning"
+      | "baking"
+      | "agent_bootstrap"
+      | "install"
+      | "unknown";
+    details?: Record<string, unknown>;
+    timestamp?: number;
+  }): Promise<void> {
+    try {
+      const res = await signedFetch({
+        agentId: this.state.agentId,
+        body: {
+          details: input.details,
+          errorCode: input.errorCode,
+          errorMessage: input.errorMessage,
+          phase: input.phase,
+          timestamp: input.timestamp ?? Date.now(),
+        },
+        method: "POST",
+        privateKey: this.state.privateKey,
+        protectionBypass: this.state.vercelProtectionBypass,
+        url: new URL("/api/agent/errors", this.state.apiBaseUrl).toString(),
+      });
+      if (!res.ok) {
+        console.warn(`error report failed: ${res.status}`);
+      }
+    } catch (error) {
+      console.warn("error report failed", error);
+    }
+  }
 }
