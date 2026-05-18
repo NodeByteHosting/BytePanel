@@ -42,7 +42,7 @@ export const useLiveMetrics = (
 ): UseLiveMetricsReturn => {
   const [metrics, setMetrics] = useState<LiveMetrics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchMetrics = useCallback(async () => {
     if (observedState !== "running") {
@@ -52,7 +52,7 @@ export const useLiveMetrics = (
     }
 
     try {
-      setError(null);
+      setErrorMessage(null);
       const response = await fetch(`/api/servers/${serverId}/metrics/live`, {
         cache: "no-store",
       });
@@ -70,7 +70,7 @@ export const useLiveMetrics = (
       const data = await response.json();
       setMetrics(data.metrics || null);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Unknown error");
+      setErrorMessage(error instanceof Error ? error.message : "Unknown error");
       setMetrics(null);
     } finally {
       setLoading(false);
@@ -93,5 +93,5 @@ export const useLiveMetrics = (
     return () => clearInterval(interval);
   }, [serverId, observedState, pollInterval, fetchMetrics]);
 
-  return { error, loading, metrics, refresh: fetchMetrics };
+  return { error: errorMessage, loading, metrics, refresh: fetchMetrics };
 };
