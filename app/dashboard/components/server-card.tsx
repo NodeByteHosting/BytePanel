@@ -94,53 +94,23 @@ const statusConfig = {
   },
 };
 
-const metricsCache = new Map<string, { data: Metrics; timestamp: number }>();
-
-const fetchMetrics = async (serverId: string): Promise<Metrics> => {
-  const cached = metricsCache.get(serverId);
-  if (cached && Date.now() - cached.timestamp < 5000) {
-    return cached.data;
-  }
-
+const fetchLiveMetrics = async (serverId: string): Promise<Metrics> => {
   try {
-    const now = new Date();
-    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
-
-    const response = await fetch(
-      `/api/servers/${serverId}/metrics?type=cpu&start=${fiveMinutesAgo.toISOString()}&end=${now.toISOString()}`
-    );
-
+    const response = await fetch(`/api/servers/${serverId}/metrics/live`, {
+      cache: "no-store",
+    });
     if (!response.ok) {
       return {};
     }
-
     const data = await response.json();
-    const timeSeries = data.metrics?.time_series || {};
-    const cpuValues = timeSeries["node_cpu_seconds_total"]?.values || [];
-    const memoryValues =
-      timeSeries["node_memory_MemAvailable_bytes"]?.values || [];
-
-    let cpu = 0;
-    if (cpuValues.length > 0) {
-      cpu = Math.min(
-        Math.round(Number.parseFloat(cpuValues.at(-1)[1]) * 100) / 100,
-        100
-      );
+    const m = data.metrics;
+    if (!m) {
+      return {};
     }
-
-    let memory = 0;
-    if (memoryValues.length > 0) {
-      memory = Math.min(
-        Math.round(
-          Number.parseFloat(memoryValues.at(-1)[1]) / 1024 / 1024 / 10
-        ),
-        100
-      );
-    }
-
-    const metrics = { cpu: cpu || undefined, memory: memory || undefined };
-    metricsCache.set(serverId, { data: metrics, timestamp: Date.now() });
-    return metrics;
+    return {
+      cpu: typeof m.cpu === "number" ? m.cpu : undefined,
+      memory: typeof m.memory === "number" ? m.memory : undefined,
+    };
   } catch {
     return {};
   }
@@ -192,20 +162,38 @@ export const ServerCard = ({ server, game }: Props) => {
     statusConfig.stopped;
 
   useEffect(() => {
-    if (server.observedState === "running") {
-      setMetricsLoading(true);
-      const load = async () => {
-        try {
-          const m = await fetchMetrics(server.id);
-          setMetrics(m);
-        } finally {
-          setMetricsLoading(false);
-        }
-      };
-      void load();
-    } else {
+    if (server.observedState !== "running") {
       setMetrics({});
+      setMetricsLoading(false);
+      return;
     }
+
+    setMetricsLoading(true);
+    let cancelled = false;
+
+    const load = async () => {
+      const m = await fetchLiveMetrics(server.id);
+      if (!cancelled) {
+        setMetrics(m);
+        setMetricsLoading(false);
+      }
+    };
+    void load();
+
+    // Poll every 10s while running
+    const interval = setInterval(() => {
+      void (async () => {
+        const m = await fetchLiveMetrics(server.id);
+        if (!cancelled) {
+          setMetrics(m);
+        }
+      })();
+    }, 10_000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [server.id, server.observedState]);
 
   const handleCommand = useCallback(

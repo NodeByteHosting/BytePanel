@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
+import { sendServerDeletedEmail } from "@/lib/mail";
 import { getProviderForUser } from "@/lib/providers";
 import { requireAdmin } from "@/lib/session";
 
@@ -31,7 +32,7 @@ export const adminDeleteServer = async (
   }
 
   const server = await prisma.server.findFirst({
-    include: { user: { select: { id: true } } },
+    include: { user: { select: { email: true, id: true, name: true } } },
     where: { id: parsed.data.serverId },
   });
 
@@ -66,6 +67,13 @@ export const adminDeleteServer = async (
     // Clean up any associated records
     await prisma.serverMember.deleteMany({
       where: { serverId: parsed.data.serverId },
+    });
+
+    // Notify the server owner (fire-and-forget)
+    void sendServerDeletedEmail({
+      serverName: server.name,
+      toEmail: server.user.email,
+      userName: server.user.name,
     });
 
     revalidatePath("/admin/servers");

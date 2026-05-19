@@ -6,17 +6,16 @@ import type { Prisma } from "@prisma/client";
 import { humanId } from "human-id";
 import { revalidatePath } from "next/cache";
 import { ulid } from "ulid";
-import { start } from "workflow/api";
 import { z } from "zod";
 
 import { games, validateSettings } from "@/games";
 import { logEvent } from "@/lib/audit";
 import { prisma } from "@/lib/db";
 import { SNAPSHOT_ENVIRONMENT } from "@/lib/env";
+import { sendServerProvisionInitiatedEmail } from "@/lib/mail";
 import { getProviderForUserWithImage } from "@/lib/providers";
 import type { Catalog } from "@/lib/providers/types";
 import { requireSuperAdmin } from "@/lib/session";
-import { provisionServer } from "@/lib/workflows/provision-server";
 
 const adminCreateServerSchema = z.object({
   game: z.enum(games.map((g) => g.id) as [string, ...string[]]),
@@ -112,7 +111,7 @@ export const adminCreateServer = async (
       location: parsed.data.location,
       name: parsed.data.name,
       observedState: "pending",
-      phase: "queued",
+      phase: "pending",
       rconPassword,
       serverType: parsed.data.serverType,
       settings: settings as Prisma.InputJsonValue,
@@ -197,7 +196,16 @@ export const adminCreateServer = async (
     }
   }
 
-  await start(provisionServer, [{ serverId: server.id }]);
+  // Email user to approve and trigger provisioning
+  void sendServerProvisionInitiatedEmail({
+    approveUrl: `${process.env.BETTER_AUTH_URL}/dashboard/${server.id}/approve-provision`,
+    game: game.name,
+    location: parsed.data.location,
+    serverName: parsed.data.name,
+    serverType: parsed.data.serverType,
+    toEmail: targetUser.email,
+    userName: targetUser.name ?? targetUser.email,
+  });
 
   await logEvent({
     action: "admin.server.create",

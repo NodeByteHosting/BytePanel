@@ -16,6 +16,8 @@ export interface LiveMetrics {
   networkOut: number;
   // Seconds
   uptime: number;
+  // Disk usage percentage (if available)
+  diskPercent?: number;
   // Current players
   playerCount?: number;
   // Max players

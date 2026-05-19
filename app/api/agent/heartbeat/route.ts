@@ -28,8 +28,19 @@ export const POST = async (request: Request) => {
 
   await prisma.agent.update({
     data: {
+      cpuPercent: parsed.data.cpuPercent ?? undefined,
+      diskTotalBytes: parsed.data.diskTotalBytes ?? undefined,
+      diskUsedBytes: parsed.data.diskUsedBytes ?? undefined,
       lastCommandId: parsed.data.lastCommandId ?? undefined,
       lastHeartbeatAt: new Date(),
+      maxPlayers: parsed.data.maxPlayers ?? undefined,
+      memTotalBytes: parsed.data.memTotalBytes ?? undefined,
+      memUsedBytes: parsed.data.memUsedBytes ?? undefined,
+      networkInBps: parsed.data.networkInBps ?? undefined,
+      networkOutBps: parsed.data.networkOutBps ?? undefined,
+      playerCount: parsed.data.playerCount ?? undefined,
+      tps: parsed.data.tps ?? undefined,
+      uptimeSeconds: parsed.data.uptimeSeconds,
     },
     where: { id: verified.agentId },
   });

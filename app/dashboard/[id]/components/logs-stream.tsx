@@ -49,7 +49,7 @@ const AnsiLine = ({ text }: { text: string }) => {
     [text]
   );
   return (
-    <span className="whitespace-pre-wrap">
+    <span className="whitespace-pre-wrap wrap-anywhere">
       {parts.map((part, i) => (
         <AnsiPart key={i} part={part} />
       ))}
@@ -98,11 +98,11 @@ export const LogsStream = ({ serverId }: { serverId: string }) => {
 
   return (
     <StickToBottom
-      className="flex min-h-0 flex-1 flex-col"
+      className="flex min-h-0 flex-1 flex-col w-full overflow-hidden"
       initial="instant"
       resize="smooth"
     >
-      <StickToBottom.Content className="flex flex-col gap-1 py-8 font-mono text-xs">
+      <StickToBottom.Content className="flex flex-col gap-1 px-3 py-3 font-mono text-xs">
         {lines.length === 0 && (
           <span className="px-3 py-2 text-sm text-muted-foreground">
             Waiting for logs…
