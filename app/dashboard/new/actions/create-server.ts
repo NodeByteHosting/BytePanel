@@ -157,17 +157,18 @@ export const createServer = async (
       pricePerMonthCents
     );
 
-    console.log("[stripe] Creating checkout session", {
-      API_URL,
-      VERCEL_ENV: env.VERCEL_ENV,
-    });
-
-    // For Stripe redirects (success/cancel URLs), use your actual domain, not the Vercel preview
-    // This bypasses Vercel's deployment protection on preview deployments
     const stripeReturnUrl = env.NODEBYTE_PUBLIC_URL || API_URL;
 
+    // On preview deployments, Vercel Deployment Protection intercepts the
+    // Stripe redirect before the app runs (browser has no Vercel auth cookie
+    // after returning from checkout). Append the bypass secret as a query param
+    // so Vercel lets the redirect through automatically.
+    const bypassParam = env.VERCEL_AUTOMATION_BYPASS_SECRET
+      ? `&x-vercel-protection-bypass=${env.VERCEL_AUTOMATION_BYPASS_SECRET}`
+      : "";
+
     const session = await stripe.checkout.sessions.create({
-      cancel_url: `${stripeReturnUrl}/dashboard/new`,
+      cancel_url: `${stripeReturnUrl}/dashboard/new${bypassParam ? `?${bypassParam.slice(1)}` : ""}`,
       customer: stripeCustomerId,
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: {
@@ -182,10 +183,8 @@ export const createServer = async (
           serverType: type.name,
         },
       },
-      success_url: `${stripeReturnUrl}/dashboard/new/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${stripeReturnUrl}/dashboard/new/success?session_id={CHECKOUT_SESSION_ID}${bypassParam}`,
     });
-
-    console.log("[stripe] Checkout URL:", session.url);
 
     if (!session.url) {
       throw new Error("Stripe did not return a checkout URL");
