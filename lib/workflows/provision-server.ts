@@ -67,19 +67,19 @@ const waitForEnrollment = async (
 
 type InstallOutcome =
   | { type: "healthy" }
-  | { type: "errored" }
+  | { type: "errored"; errorMessage?: string }
   | { type: "cancelled" }
   | { type: "timeout" };
 
 const waitForInstall = async (serverId: string): Promise<InstallOutcome> => {
   const deadline = Date.now() + MAX_INSTALL_WAIT_SECONDS * 1000;
   while (Date.now() < deadline) {
-    const phase = await stepReadAgentPhase(serverId);
+    const { phase, message } = await stepReadAgentPhase(serverId);
     if (phase === "healthy" || phase === "ready") {
       return { type: "healthy" };
     }
     if (phase === "errored") {
-      return { type: "errored" };
+      return { errorMessage: message, type: "errored" };
     }
     if (await isCancelled(serverId)) {
       return { type: "cancelled" };
@@ -139,7 +139,8 @@ export const provisionServer = async (input: { serverId: string }) => {
       return;
     }
     if (installOutcome.type === "errored") {
-      await stepMarkFailed({ reason: "Agent reported error", serverId });
+      const errorMsg = installOutcome.errorMessage ?? "Agent reported error";
+      await stepMarkFailed({ reason: errorMsg, serverId });
       return;
     }
     if (installOutcome.type === "timeout") {
