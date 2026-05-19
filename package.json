@@ -1,7 +1,7 @@
 {
   "name": "@nodebyte/gsm",
   "version": "0.1.0",
-  "description": "NodeByte GSM is a game server management platform.",
+  "description": "NodeByte GSM is our custom game server management platform.",
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
