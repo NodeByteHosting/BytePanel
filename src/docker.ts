@@ -84,6 +84,59 @@ export const probeContainerState = async (): Promise<
   return "missing";
 };
 
+export interface ContainerStats {
+  cpuPercent: number;
+  memUsedBytes: number;
+  memTotalBytes: number;
+  networkInBytes: number;
+  networkOutBytes: number;
+}
+
+const parseDockerBytes = (s: string): number => {
+  const trimmed = s.trim();
+  const num = parseFloat(trimmed);
+  if (isNaN(num)) return 0;
+  const lower = trimmed.toLowerCase();
+  if (lower.endsWith("gib") || lower.endsWith("gb")) return num * 1_073_741_824;
+  if (lower.endsWith("mib") || lower.endsWith("mb")) return num * 1_048_576;
+  if (lower.endsWith("kib") || lower.endsWith("kb")) return num * 1_024;
+  return num;
+};
+
+export const getContainerStats = async (): Promise<ContainerStats | null> => {
+  try {
+    const proc = spawn({
+      cmd: [
+        "docker", "stats", "--no-stream",
+        "--format", "{{json .}}",
+        "--filter", "name=nodebyte-",
+      ],
+      stdout: "pipe",
+    });
+    const text = await new Response(proc.stdout).text();
+    await proc.exited;
+
+    const line = text.trim().split("\n").filter(Boolean)[0];
+    if (!line) return null;
+
+    const row = JSON.parse(line) as Record<string, string>;
+
+    const cpuPercent = parseFloat((row.CPUPerc ?? "0").replace("%", "")) || 0;
+
+    const [memUsedStr, memTotalStr] = (row.MemUsage ?? "0B / 0B").split(" / ");
+    const memUsedBytes = parseDockerBytes(memUsedStr ?? "0");
+    const memTotalBytes = parseDockerBytes(memTotalStr ?? "0");
+
+    const [netInStr, netOutStr] = (row.NetIO ?? "0B / 0B").split(" / ");
+    const networkInBytes = parseDockerBytes(netInStr ?? "0");
+    const networkOutBytes = parseDockerBytes(netOutStr ?? "0");
+
+    return { cpuPercent, memUsedBytes, memTotalBytes, networkInBytes, networkOutBytes };
+  } catch {
+    return null;
+  }
+};
+
 let tailProc: Subprocess | null = null;
 
 const pipeStream = async (

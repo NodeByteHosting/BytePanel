@@ -3,7 +3,7 @@ import { setTimeout as delay } from "node:timers/promises";
 
 import { heartbeatSchema } from "../../protocol";
 import type { State } from "./config";
-import { probeContainerState } from "./docker";
+import { getContainerStats, probeContainerState } from "./docker";
 import { signedFetch } from "./signing";
 
 const HEARTBEAT_MS = 20_000;
@@ -21,15 +21,46 @@ export const runHeartbeat = async (
   signal: AbortSignal
 ): Promise<void> => {
   const started = Date.now();
+
+  let prevNetIn = 0;
+  let prevNetOut = 0;
+  let prevNetAt = 0;
+
   while (!signal.aborted) {
     try {
       const dockerState = await probeContainerState();
+      const containerStats = dockerState === "running"
+        ? await getContainerStats()
+        : null;
+
+      const now = Date.now();
+      const uptimeSeconds = Math.floor((now - started) / 1000);
+
+      // Compute network bytes/sec from cumulative docker stats delta
+      let networkInBps: number | undefined;
+      let networkOutBps: number | undefined;
+      if (containerStats && prevNetAt > 0) {
+        const elapsedSec = (now - prevNetAt) / 1000;
+        if (elapsedSec > 0) {
+          networkInBps = Math.max(0, (containerStats.networkInBytes - prevNetIn) / elapsedSec);
+          networkOutBps = Math.max(0, (containerStats.networkOutBytes - prevNetOut) / elapsedSec);
+        }
+      }
+      if (containerStats) {
+        prevNetIn = containerStats.networkInBytes;
+        prevNetOut = containerStats.networkOutBytes;
+        prevNetAt = now;
+      }
+
       const body = heartbeatSchema.parse({
+        cpuPercent: containerStats?.cpuPercent,
         dockerState,
         lastCommandId: state.lastExecutedCommandId,
-        memTotalBytes: totalmem(),
-        memUsedBytes: totalmem() - freemem(),
-        uptimeSeconds: Math.floor((Date.now() - started) / 1000),
+        memTotalBytes: containerStats?.memTotalBytes ?? totalmem(),
+        memUsedBytes: containerStats?.memUsedBytes ?? (totalmem() - freemem()),
+        networkInBps,
+        networkOutBps,
+        uptimeSeconds,
       });
 
       await signedFetch({
