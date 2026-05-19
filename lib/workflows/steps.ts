@@ -384,14 +384,17 @@ export const stepReadPhase = async (
 
 export const stepReadAgentPhase = async (
   serverId: string
-): Promise<Phase | null> => {
+): Promise<{ phase: Phase | null; message?: string }> => {
   "use step";
   const event = await prisma.activityEvent.findFirst({
     orderBy: { seq: "desc" },
-    select: { phase: true },
+    select: { message: true, phase: true },
     where: { serverId, source: "agent" },
   });
-  return (event?.phase as Phase | undefined) ?? null;
+  return {
+    message: event?.message ?? undefined,
+    phase: (event?.phase as Phase | undefined) ?? null,
+  };
 };
 
 export const stepReadDesiredState = async (serverId: string) => {
