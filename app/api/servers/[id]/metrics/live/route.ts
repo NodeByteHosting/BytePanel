@@ -5,19 +5,6 @@ import { requireUser } from "@/lib/session";
 
 export const runtime = "nodejs";
 
-/**
- * GET /api/servers/[id]/metrics/live
- *
- * Returns current live server metrics (CPU, Memory, Network, etc.)
- * This endpoint would typically pull from an agent monitoring system
- * or container monitoring service.
- *
- * In a production system, this would:
- * - Query Prometheus/Grafana
- * - Call the server agent API
- * - Poll container stats (docker stats)
- * - Get game-specific metrics from the server
- */
 export const GET = async (
   _request: Request,
   context: { params: Promise<{ id: string }> }
@@ -26,12 +13,29 @@ export const GET = async (
   const { id } = await context.params;
 
   const server = await prisma.server.findFirst({
-    select: {
-      id: true,
-      lastHeartbeatAt: true,
-      observedState: true,
+    include: {
+      agent: {
+        select: {
+          cpuPercent: true,
+          diskTotalBytes: true,
+          diskUsedBytes: true,
+          lastHeartbeatAt: true,
+          maxPlayers: true,
+          memTotalBytes: true,
+          memUsedBytes: true,
+          networkInBps: true,
+          networkOutBps: true,
+          playerCount: true,
+          tps: true,
+          uptimeSeconds: true,
+        },
+      },
     },
-    where: { deletedAt: null, id, userId: user.id },
+    where: {
+      OR: [{ userId: user.id }, { members: { some: { userId: user.id } } }],
+      deletedAt: null,
+      id,
+    },
   });
 
   if (!server) {
@@ -45,32 +49,35 @@ export const GET = async (
     );
   }
 
-  // Integrate with monitoring system (Prometheus, agent API, container stats, etc.)
-  // For now, return mock data to demonstrate the API structure
+  const { agent } = server;
+  if (!agent || !agent.lastHeartbeatAt) {
+    return NextResponse.json({ metrics: null });
+  }
 
-  const uptime = (server.lastHeartbeatAt as Date | null)
-    ? Math.floor(
-        (Date.now() - (server.lastHeartbeatAt as Date).getTime()) / 1000
-      )
-    : 0;
+  // Consider metrics stale if no heartbeat in the last 60 seconds
+  const staleSec = (Date.now() - agent.lastHeartbeatAt.getTime()) / 1000;
+  if (staleSec > 60) {
+    return NextResponse.json({ metrics: null });
+  }
+
+  const memTotal = agent.memTotalBytes ?? 0;
+  const memUsed = agent.memUsedBytes ?? 0;
+  const memPercent = memTotal > 0 ? (memUsed / memTotal) * 100 : 0;
 
   return NextResponse.json({
     metrics: {
-      // System metrics (typically from container/host monitoring)
-      // cpu: value from container/host monitoring
-      // memory: value from container/host monitoring
-      // networkIn: bytes per second
-      // networkOut: bytes per second
-      cpu: Math.random() * 50 + 10,
-      memory: Math.random() * 40 + 20,
-      networkIn: Math.random() * 1_000_000,
-      networkOut: Math.random() * 500_000,
-      uptime: Math.max(uptime, 0),
-
-      // Game-specific metrics (if available)
-      // playerCount: 0,
-      // maxPlayers: 32,
-      // tps: 20,
+      cpu: agent.cpuPercent ?? 0,
+      diskPercent:
+        agent.diskTotalBytes && agent.diskTotalBytes > 0
+          ? ((agent.diskUsedBytes ?? 0) / agent.diskTotalBytes) * 100
+          : undefined,
+      maxPlayers: agent.maxPlayers ?? undefined,
+      memory: memPercent,
+      networkIn: agent.networkInBps ?? 0,
+      networkOut: agent.networkOutBps ?? 0,
+      playerCount: agent.playerCount ?? undefined,
+      tps: agent.tps ?? undefined,
+      uptime: agent.uptimeSeconds ?? 0,
     },
   });
 };

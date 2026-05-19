@@ -36,7 +36,7 @@ type PanelCardProps =
 
 export const PanelCard = ({ className, ...props }: PanelCardProps) => {
   const mergedClassName = cn(
-    "rounded-xl border border-border/60 bg-card p-4",
+    "rounded-xl border border-border/60 bg-card p-3",
     className
   );
 

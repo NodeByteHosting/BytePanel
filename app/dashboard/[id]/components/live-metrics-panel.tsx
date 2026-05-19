@@ -7,6 +7,7 @@ import {
   ArrowUpIcon,
   ClockIcon,
   CpuIcon,
+  HardDriveIcon,
   MemoryStickIcon,
   UsersIcon,
 } from "lucide-react";
@@ -67,13 +68,13 @@ const MetricItem = ({
   pct?: number;
   mono?: boolean;
 }) => (
-  <div className="flex min-w-0 flex-col gap-1">
-    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+  <div className="flex min-w-0 flex-col gap-0.5 px-2">
+    <div className="flex items-center gap-1 text-xs text-muted-foreground">
       {icon}
-      <span>{label}</span>
+      <span className="text-xs">{label}</span>
     </div>
     <span
-      className={cn("text-sm font-semibold leading-none", mono && "font-mono")}
+      className={cn("text-xs font-semibold leading-none", mono && "font-mono")}
     >
       {value}
     </span>
@@ -121,7 +122,7 @@ export const LiveMetricsPanel = ({
   }
 
   return (
-    <div className="flex flex-wrap items-start gap-x-5 gap-y-2 px-1">
+    <div className="flex flex-wrap items-start gap-x-3 gap-y-1 -mx-1">
       <MetricItem
         icon={<CpuIcon className="size-3" />}
         label="CPU"
@@ -151,8 +152,8 @@ export const LiveMetricsPanel = ({
           icon={<UsersIcon className="size-3" />}
           label="Players"
           value={
-            maxPlayers
-              ? `${metrics.playerCount}/${maxPlayers}`
+            (metrics.maxPlayers ?? maxPlayers)
+              ? `${metrics.playerCount}/${metrics.maxPlayers ?? maxPlayers}`
               : String(metrics.playerCount)
           }
         />
@@ -161,7 +162,16 @@ export const LiveMetricsPanel = ({
         <MetricItem
           icon={<ActivityIcon className="size-3" />}
           label="TPS"
+          pct={(metrics.tps / 20) * 100}
           value={metrics.tps.toFixed(1)}
+        />
+      )}
+      {metrics.diskPercent !== undefined && (
+        <MetricItem
+          icon={<HardDriveIcon className="size-3" />}
+          label="Disk"
+          pct={metrics.diskPercent}
+          value={`${metrics.diskPercent.toFixed(1)}%`}
         />
       )}
       <MetricItem

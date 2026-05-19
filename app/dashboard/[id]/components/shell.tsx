@@ -1,9 +1,17 @@
 "use client";
 import {
+  ActivityIcon,
+  ArchiveIcon,
+  BarChart2Icon,
+  FolderIcon,
+  InfoIcon,
+  LayoutDashboardIcon,
   MoreHorizontalIcon,
   PlayIcon,
   RotateCcwIcon,
+  Settings2Icon,
   SquareIcon,
+  TerminalIcon,
   Trash2Icon,
   Users2Icon,
 } from "lucide-react";
@@ -72,15 +80,60 @@ const STATE_BADGE: Record<string, string> = {
 };
 
 const ALL_TABS = [
-  { label: "Overview", minRole: "viewer" as ServerRole, value: "connect" },
-  { label: "Activity", minRole: "viewer" as ServerRole, value: "activity" },
-  { label: "Console", minRole: "viewer" as ServerRole, value: "console" },
-  { label: "Graphs", minRole: "viewer" as ServerRole, value: "graphs" },
-  { label: "Backups", minRole: "admin" as ServerRole, value: "backups" },
-  { label: "Files", minRole: "admin" as ServerRole, value: "files" },
-  { label: "Details", minRole: "member" as ServerRole, value: "details" },
-  { label: "Settings", minRole: "admin" as ServerRole, value: "settings" },
-  { label: "Team", minRole: "owner" as ServerRole, value: "team" },
+  {
+    icon: LayoutDashboardIcon,
+    label: "Overview",
+    minRole: "viewer" as ServerRole,
+    value: "connect",
+  },
+  {
+    icon: ActivityIcon,
+    label: "Activity",
+    minRole: "viewer" as ServerRole,
+    value: "activity",
+  },
+  {
+    icon: TerminalIcon,
+    label: "Console",
+    minRole: "viewer" as ServerRole,
+    value: "console",
+  },
+  {
+    icon: BarChart2Icon,
+    label: "Graphs",
+    minRole: "viewer" as ServerRole,
+    value: "graphs",
+  },
+  {
+    icon: ArchiveIcon,
+    label: "Backups",
+    minRole: "admin" as ServerRole,
+    value: "backups",
+  },
+  {
+    icon: FolderIcon,
+    label: "Files",
+    minRole: "admin" as ServerRole,
+    value: "files",
+  },
+  {
+    icon: InfoIcon,
+    label: "Details",
+    minRole: "member" as ServerRole,
+    value: "details",
+  },
+  {
+    icon: Settings2Icon,
+    label: "Settings",
+    minRole: "admin" as ServerRole,
+    value: "settings",
+  },
+  {
+    icon: Users2Icon,
+    label: "Team",
+    minRole: "owner" as ServerRole,
+    value: "team",
+  },
 ] as const;
 
 const ROLE_ORDER: Record<ServerRole, number> = {
@@ -389,14 +442,10 @@ export const ServerShell = ({
                         : `/dashboard/${server.id}/${tab.value}`
                     }
                   >
-                    {tab.value === "team" ? (
-                      <span className="flex items-center gap-1.5">
-                        <Users2Icon className="size-3.5" />
-                        Team
-                      </span>
-                    ) : (
-                      tab.label
-                    )}
+                    <span className="flex items-center gap-1.5">
+                      <tab.icon className="size-3.5" />
+                      {tab.label}
+                    </span>
                   </Link>
                 </TabsTrigger>
               ))}

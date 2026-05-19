@@ -71,7 +71,7 @@ export const AdminSidebarEnhanced = ({
       user={user}
       headerTitle="NodeByte"
       headerSubtitle="Admin Panel"
-      headerHref="/admin"
+      headerHref="/"
       showAdminLink={false}
       onSignOut={handleSignOut}
     >

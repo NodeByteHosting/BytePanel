@@ -899,3 +899,119 @@ export const sendServerProvisionFailedEmail = (
     to: toEmail,
   });
 };
+
+// ---------------------------------------------------------------------------
+// Server provision initiated email (admin creates server, user approves)
+// ---------------------------------------------------------------------------
+
+interface ServerProvisionInitiatedParams {
+  toEmail: string;
+  userName: string;
+  serverName: string;
+  serverType: string;
+  location: string;
+  game: string;
+  approveUrl: string;
+}
+
+export const sendServerProvisionInitiatedEmail = (
+  params: ServerProvisionInitiatedParams
+): Promise<boolean> => {
+  const {
+    toEmail,
+    userName,
+    serverName,
+    serverType,
+    location,
+    game,
+    approveUrl,
+  } = params;
+  const displayName = userName ?? "there";
+  const gameLabel =
+    game.charAt(0).toUpperCase() + game.slice(1).replaceAll("-", " ");
+
+  const html = baseTemplate(`
+    <h1>Admin created a server for you</h1>
+    <p>Hi <span class="hl">${displayName}</span>, an admin has created a new game server for your account. Review the settings and approve to start provisioning.</p>
+    <dl class="info-box">
+      <dt>Server name</dt><dd>${serverName}</dd>
+      <dt>Game</dt><dd>${gameLabel}</dd>
+      <dt>Server type</dt><dd>${serverType}</dd>
+      <dt>Region</dt><dd>${location}</dd>
+    </dl>
+    <a class="btn" href="${approveUrl}">Review and approve</a>
+    <p class="meta">
+      You can adjust any settings after reviewing. Once approved, provisioning will begin and the server will be ready in about 60 seconds.
+    </p>
+  `);
+
+  const text = [
+    `Admin created a server for you — NodeByte`,
+    ``,
+    `Hi ${displayName}, an admin has set up a new game server on your account.`,
+    ``,
+    `Server name: ${serverName}`,
+    `Game: ${gameLabel}`,
+    `Server type: ${serverType}`,
+    `Region: ${location}`,
+    ``,
+    `Review and approve: ${approveUrl}`,
+    ``,
+    `Once approved, provisioning will begin and your server will be ready in about 60 seconds.`,
+  ].join("\n");
+
+  return sendMail({
+    html,
+    subject: `Admin created server "${serverName}" for you`,
+    text,
+    to: toEmail,
+  });
+};
+
+// ---------------------------------------------------------------------------
+// Server member added (direct-add, no invite link)
+// ---------------------------------------------------------------------------
+
+interface ServerMemberAddedParams {
+  toEmail: string;
+  serverName: string;
+  addedByName: string;
+  role: string;
+  serverUrl: string;
+}
+
+export const sendServerMemberAddedEmail = (
+  params: ServerMemberAddedParams
+): Promise<boolean> => {
+  const { toEmail, serverName, addedByName, role, serverUrl } = params;
+  const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
+
+  const html = baseTemplate(`
+    <h1>You've been added to a server</h1>
+    <p>
+      <span class="hl">${addedByName}</span> has added you to the server
+      <span class="hl">${serverName}</span> on NodeByte Panel.
+    </p>
+    <p>You have been granted the <span class="badge">${roleLabel}</span> role.</p>
+    <a class="btn" href="${serverUrl}">View server</a>
+    <p class="meta">
+      You can manage your server access from within the panel.
+      If you believe this was a mistake, contact the server owner.
+    </p>
+  `);
+
+  const text = [
+    `You've been added to ${serverName} on NodeByte Panel by ${addedByName}.`,
+    ``,
+    `Role: ${roleLabel}`,
+    ``,
+    `View the server: ${serverUrl}`,
+  ].join("\n");
+
+  return sendMail({
+    html,
+    subject: `You've been added to ${serverName} on NodeByte`,
+    text,
+    to: toEmail,
+  });
+};

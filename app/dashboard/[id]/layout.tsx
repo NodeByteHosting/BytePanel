@@ -59,7 +59,16 @@ const ServerLayout = async ({
     user.id,
     SNAPSHOT_ENVIRONMENT
   );
-  const catalog = await provider.getCatalog(imageId);
+
+  // Fetch catalog with fallback for missing images
+  let catalog;
+  try {
+    catalog = await provider.getCatalog(imageId);
+  } catch {
+    // Image not found or catalog unavailable — use empty fallback
+    catalog = { currency: "gbp", serverTypes: [] };
+  }
+
   const serverType = catalog.serverTypes.find(
     (t) => t.name === server.serverType
   );

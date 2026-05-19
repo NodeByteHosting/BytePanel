@@ -26,8 +26,13 @@ export const heartbeatSchema = z.object({
   diskUsedBytes: z.number().int().nonnegative().optional(),
   dockerState: z.enum(["running", "stopped", "missing", "error"]),
   lastCommandId: z.string().nullable().optional(),
+  maxPlayers: z.number().int().positive().optional(),
   memTotalBytes: z.number().int().positive().optional(),
   memUsedBytes: z.number().int().nonnegative().optional(),
+  networkInBps: z.number().nonnegative().optional(),
+  networkOutBps: z.number().nonnegative().optional(),
+  playerCount: z.number().int().nonnegative().optional(),
+  tps: z.number().min(0).optional(),
   uptimeSeconds: z.number().int().nonnegative(),
 });
 export type Heartbeat = z.infer<typeof heartbeatSchema>;

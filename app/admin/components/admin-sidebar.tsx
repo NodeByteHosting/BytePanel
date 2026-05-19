@@ -109,7 +109,7 @@ export const AdminSidebar = ({ user }: { user: AdminSidebarUser }) => {
     <Sidebar collapsible="offcanvas" className="border-none">
       <SidebarHeader className="px-4 py-3">
         <Link
-          href="/admin"
+          href="/"
           className="flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80"
         >
           <Logo className="h-5 w-auto text-sidebar-foreground" />
