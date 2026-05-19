@@ -10,7 +10,7 @@ import { z } from "zod";
 
 import { games, validateSettings } from "@/games";
 import { prisma } from "@/lib/db";
-import { API_URL, SNAPSHOT_ENVIRONMENT } from "@/lib/env";
+import { API_URL, env, SNAPSHOT_ENVIRONMENT } from "@/lib/env";
 import { getProviderForUserWithImage } from "@/lib/providers";
 import { requireUser } from "@/lib/session";
 
@@ -157,8 +157,17 @@ export const createServer = async (
       pricePerMonthCents
     );
 
+    console.log("[stripe] Creating checkout session", {
+      API_URL,
+      VERCEL_ENV: env.VERCEL_ENV,
+    });
+
+    // For Stripe redirects (success/cancel URLs), use your actual domain, not the Vercel preview
+    // This bypasses Vercel's deployment protection on preview deployments
+    const stripeReturnUrl = env.NODEBYTE_PUBLIC_URL || API_URL;
+
     const session = await stripe.checkout.sessions.create({
-      cancel_url: `${API_URL}/dashboard/new`,
+      cancel_url: `${stripeReturnUrl}/dashboard/new`,
       customer: stripeCustomerId,
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: {
@@ -173,8 +182,10 @@ export const createServer = async (
           serverType: type.name,
         },
       },
-      success_url: `${API_URL}/dashboard/new/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${stripeReturnUrl}/dashboard/new/success?session_id={CHECKOUT_SESSION_ID}`,
     });
+
+    console.log("[stripe] Checkout URL:", session.url);
 
     if (!session.url) {
       throw new Error("Stripe did not return a checkout URL");
