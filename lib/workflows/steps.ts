@@ -8,6 +8,11 @@ import { prisma } from "@/lib/db";
 import { API_URL, env, SNAPSHOT_ENVIRONMENT } from "@/lib/env";
 import { emitActivity } from "@/lib/events/emit";
 import {
+  sendServerDeletedEmail,
+  sendServerProvisionFailedEmail,
+  sendServerReadyEmail,
+} from "@/lib/mail";
+import {
   getProviderForUser,
   getProviderForUserWithImage,
 } from "@/lib/providers";
@@ -285,6 +290,25 @@ export const stepMarkReady = async (serverId: string) => {
     phase: "ready",
     serverId,
   });
+  const server = await prisma.server.findUnique({
+    select: {
+      game: true,
+      location: true,
+      name: true,
+      user: { select: { email: true, name: true } },
+    },
+    where: { id: serverId },
+  });
+  if (server?.user) {
+    void sendServerReadyEmail({
+      game: server.game,
+      region: server.location,
+      serverName: server.name,
+      serverUrl: `${API_URL}/dashboard/${serverId}`,
+      toEmail: server.user.email,
+      userName: server.user.name,
+    });
+  }
 };
 
 export const stepMarkFailed = async (input: {
@@ -305,6 +329,19 @@ export const stepMarkFailed = async (input: {
     phase: "errored",
     serverId: input.serverId,
   });
+  const server = await prisma.server.findUnique({
+    select: { name: true, user: { select: { email: true, name: true } } },
+    where: { id: input.serverId },
+  });
+  if (server?.user) {
+    void sendServerProvisionFailedEmail({
+      reason: input.reason,
+      serverName: server.name,
+      supportUrl: "https://nodebyte.host/contact",
+      toEmail: server.user.email,
+      userName: server.user.name,
+    });
+  }
 };
 
 const AGENT_LIVENESS_WINDOW_MS = 60_000;
@@ -353,6 +390,10 @@ export const stepDeleteProviderServer = async (serverId: string) => {
 
 export const stepMarkDeleted = async (serverId: string) => {
   "use step";
+  const server = await prisma.server.findUnique({
+    select: { name: true, user: { select: { email: true, name: true } } },
+    where: { id: serverId },
+  });
   const { count } = await prisma.server.updateMany({
     data: {
       deletedAt: new Date(),
@@ -369,6 +410,13 @@ export const stepMarkDeleted = async (serverId: string) => {
     phase: "deleted",
     serverId,
   });
+  if (server?.user) {
+    void sendServerDeletedEmail({
+      serverName: server.name,
+      toEmail: server.user.email,
+      userName: server.user.name,
+    });
+  }
 };
 
 export const stepReadPhase = async (

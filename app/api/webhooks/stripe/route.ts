@@ -204,6 +204,7 @@ const buildSubscriptionUpsertData = (
   subscription: Stripe.Subscription,
   firstItem: Stripe.SubscriptionItem | undefined,
   serverId: string,
+  internalBillingCustomerId: string,
   promoCode: string | null,
   couponAmountOff: number | null,
   periodStart: Date | null,
@@ -220,7 +221,7 @@ const buildSubscriptionUpsertData = (
   const status = toSubscriptionStatus(subscription.status);
   return {
     create: {
-      billingCustomerId: subscription.customer as string,
+      billingCustomerId: internalBillingCustomerId,
       canceledAt,
       currency: subscription.currency.toUpperCase(),
       currentPeriodEnd: periodEnd,
@@ -260,6 +261,16 @@ const handleSubscriptionChanged = async (
     return;
   }
 
+  // Resolve internal BillingCustomer.id from the Stripe customer ID
+  const stripeCustomerId = subscription.customer as string;
+  const billingCustomer = await prisma.billingCustomer.findUnique({
+    select: { id: true },
+    where: { stripeCustomerId },
+  });
+  if (!billingCustomer) {
+    return;
+  }
+
   const { promoCode, couponAmountOff, couponPercentOff } =
     resolveSubscriptionDiscount(subscription);
   const { periodStart, periodEnd } = resolveSubscriptionPeriod(subscription);
@@ -275,6 +286,7 @@ const handleSubscriptionChanged = async (
       subscription,
       firstItem,
       serverId,
+      billingCustomer.id,
       promoCode,
       couponAmountOff,
       periodStart,
@@ -409,9 +421,21 @@ const upsertCheckoutSubscriptionAndAddons = async (
       ? firstItem.price.product
       : ((firstItem?.price.product as Stripe.Product)?.id ?? "");
 
+  // Resolve the internal BillingCustomer.id from the Stripe customer ID —
+  // billingCustomerId is a FK to BillingCustomer.id (not stripeCustomerId)
+  const billingCustomer = await prisma.billingCustomer.findUnique({
+    select: { id: true },
+    where: { stripeCustomerId: customerId },
+  });
+  if (!billingCustomer) {
+    throw new Error(
+      `BillingCustomer not found for Stripe customer ${customerId}`
+    );
+  }
+
   await prisma.subscription.upsert({
     create: {
-      billingCustomerId: customerId,
+      billingCustomerId: billingCustomer.id,
       currency: (subscription.currency ?? "gbp").toUpperCase(),
       id: subscriptionId,
       planName: subscription.metadata?.serverType ?? "unknown",

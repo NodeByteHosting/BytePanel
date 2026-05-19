@@ -797,3 +797,105 @@ export const sendSuspensionWarningEmail = (
     to: toEmail,
   });
 };
+
+// ---------------------------------------------------------------------------
+// Server ready email
+// ---------------------------------------------------------------------------
+
+interface ServerReadyParams {
+  toEmail: string;
+  userName: string | null | undefined;
+  serverName: string;
+  game: string;
+  region: string;
+  serverUrl: string;
+}
+
+export const sendServerReadyEmail = (
+  params: ServerReadyParams
+): Promise<boolean> => {
+  const { toEmail, userName, serverName, game, region, serverUrl } = params;
+  const displayName = userName ?? "there";
+  const gameLabel =
+    game.charAt(0).toUpperCase() + game.slice(1).replaceAll("-", " ");
+
+  const html = baseTemplate(`
+    <h1>Your server is ready! 🎮</h1>
+    <p>Hi <span class="hl">${displayName}</span>, your game server has finished provisioning and is ready to use.</p>
+    <dl class="info-box">
+      <dt>Server name</dt><dd>${serverName}</dd>
+      <dt>Game</dt><dd>${gameLabel}</dd>
+      <dt>Region</dt><dd>${region}</dd>
+    </dl>
+    <a class="btn" href="${serverUrl}">Go to server</a>
+    <p class="meta">
+      You'll find the connection details and server controls on your server page.
+    </p>
+  `);
+
+  const text = [
+    `Your NodeByte server "${serverName}" is ready!`,
+    ``,
+    `Game: ${gameLabel}`,
+    `Region: ${region}`,
+    ``,
+    `Go to your server: ${serverUrl}`,
+  ].join("\n");
+
+  return sendMail({
+    html,
+    subject: `Your server "${serverName}" is ready to play`,
+    text,
+    to: toEmail,
+  });
+};
+
+// ---------------------------------------------------------------------------
+// Server provision failed email
+// ---------------------------------------------------------------------------
+
+interface ServerProvisionFailedParams {
+  toEmail: string;
+  userName: string | null | undefined;
+  serverName: string;
+  reason: string;
+  supportUrl: string;
+}
+
+export const sendServerProvisionFailedEmail = (
+  params: ServerProvisionFailedParams
+): Promise<boolean> => {
+  const { toEmail, userName, serverName, reason, supportUrl } = params;
+  const displayName = userName ?? "there";
+
+  const html = baseTemplate(`
+    <h1 style="color:#dc2626">Server provisioning failed</h1>
+    <p>Hi <span class="hl">${displayName}</span>, we were unable to provision your server <span class="hl">${serverName}</span>.</p>
+    <dl class="info-box">
+      <dt>Reason</dt><dd style="color:#f87171">${reason}</dd>
+    </dl>
+    <p>Our team has been notified. Please contact support and we'll get this resolved for you.</p>
+    <a class="btn" href="${supportUrl}">Contact support</a>
+    <p class="meta">
+      Your subscription will not be charged for a server that failed to provision.
+    </p>
+  `);
+
+  const text = [
+    `Server provisioning failed — NodeByte`,
+    ``,
+    `Hi ${displayName}, we were unable to provision "${serverName}".`,
+    ``,
+    `Reason: ${reason}`,
+    ``,
+    `Please contact support: ${supportUrl}`,
+    `Your subscription will not be charged for a server that failed to provision.`,
+  ].join("\n");
+
+  return sendMail({
+    html,
+    subject: `Server "${serverName}" failed to provision`,
+    text,
+    to: toEmail,
+  });
+};
