@@ -99,14 +99,7 @@ export interface GameOption {
   name: string;
   description: string;
   image: string;
-  dockerImage:
-    | string
-    | {
-        type: "select";
-        label: string;
-        default: string;
-        options: { value: string }[];
-      };
+  dockerImage: string;
   requirements: { cpu: number; disk: number; memory: number };
   settings: SettingsSchema;
 }

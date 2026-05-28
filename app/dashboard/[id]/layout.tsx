@@ -101,11 +101,6 @@ const ServerLayout = async ({
       )
     : [];
 
-  const dockerImagetoString =
-    typeof game?.dockerImage === "string"
-      ? game.dockerImage
-      : game?.dockerImage?.default;
-
   return (
     <ServerShell
       currency={catalog.currency}
@@ -114,7 +109,7 @@ const ServerLayout = async ({
       server={{
         backupsEnabled: server.backupsEnabled,
         desiredState: server.desiredState,
-        dockerImage: dockerImagetoString ?? null,
+        dockerImage: game?.dockerImage ?? null,
         errorReason: server.errorReason,
         game: server.game,
         id: server.id,
