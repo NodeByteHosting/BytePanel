@@ -3,6 +3,8 @@ import Anser from "anser";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StickToBottom } from "use-stick-to-bottom";
 
+import { cn } from "@/lib/utils";
+
 interface LogItem {
   id: string;
   seq: number;
@@ -39,6 +41,17 @@ const AnsiPart = ({ part }: { part: Anser.AnserJsonEntry }) => {
   return <span style={style}>{part.content}</span>;
 };
 
+const getLineClass = (text: string) => {
+  if (text.includes("ERROR") || text.includes("FATAL")) {return "text-red-400";}
+  if (text.includes("WARN")) {return "text-yellow-400";}
+  if (text.includes("INFO")) {return "text-sky-400";}
+  if (text.includes("DEBUG")) {return "text-purple-400";}
+  if (text.includes("SUCCESS") || text.includes("OK"))
+    {return "text-emerald-400";}
+
+  return "text-zinc-300";
+};
+
 const AnsiLine = ({ text }: { text: string }) => {
   const parts = useMemo(
     () =>
@@ -48,8 +61,16 @@ const AnsiLine = ({ text }: { text: string }) => {
       }),
     [text]
   );
+
+  const hasAnsiColors = parts.some((p) => p.fg || p.bg);
+
   return (
-    <span className="whitespace-pre-wrap wrap-anywhere">
+    <span
+      className={cn(
+        "whitespace-pre-wrap wrap-anywhere",
+        !hasAnsiColors && getLineClass(text)
+      )}
+    >
       {parts.map((part, i) => (
         <AnsiPart key={i} part={part} />
       ))}
