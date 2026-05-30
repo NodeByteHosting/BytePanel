@@ -42,12 +42,21 @@ const AnsiPart = ({ part }: { part: Anser.AnserJsonEntry }) => {
 };
 
 const getLineClass = (text: string) => {
-  if (text.includes("ERROR") || text.includes("FATAL")) {return "text-red-400";}
-  if (text.includes("WARN")) {return "text-yellow-400";}
-  if (text.includes("INFO")) {return "text-sky-400";}
-  if (text.includes("DEBUG")) {return "text-purple-400";}
-  if (text.includes("SUCCESS") || text.includes("OK"))
-    {return "text-emerald-400";}
+  if (text.includes("ERROR") || text.includes("FATAL")) {
+    return "text-red-400";
+  }
+  if (text.includes("WARN")) {
+    return "text-yellow-400";
+  }
+  if (text.includes("INFO")) {
+    return "text-sky-400";
+  }
+  if (text.includes("DEBUG")) {
+    return "text-purple-400";
+  }
+  if (text.includes("SUCCESS") || text.includes("OK")) {
+    return "text-emerald-400";
+  }
 
   return "text-zinc-300";
 };
