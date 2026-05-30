@@ -70,6 +70,7 @@ export const compileAgentBinary = async (): Promise<{
   let sandbox: Awaited<ReturnType<typeof Sandbox.create>>;
   try {
     sandbox = await Sandbox.create({
+      projectId: process.env.VERCEL_PROJECT_ID,
       resources: { vcpus: 4 },
       runtime: "node22",
       source: {
@@ -80,7 +81,9 @@ export const compileAgentBinary = async (): Promise<{
           ? { password: git.password, username: git.username }
           : {}),
       },
+      teamId: process.env.VERCEL_TEAM_ID,
       timeout: 10 * 60 * 1000,
+      token: process.env.VERCEL_TOKEN,
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
