@@ -98,7 +98,7 @@ ufw --force enable
 mkdir -p /etc/nodebyte /var/lib/nodebyte/game
 chmod 700 /etc/nodebyte /var/lib/nodebyte
 
-retry_cmd 5 curl --retry 5 --retry-delay 5 --retry-connrefused -fsSL "${agentBinaryUrl}" -o /usr/local/bin/nodebyte-agent
+retry_cmd 5 curl --retry 5 --retry-delay 5 --retry-connrefused -A "Mozilla/5.0" -fsSL "${agentBinaryUrl}" -o /usr/local/bin/nodebyte-agent
 
 # Verify the download is a Linux ELF — guards against silently baking an HTML
 # auth-wall or sign-in redirect into the snapshot. Aborts the script (set -e)
