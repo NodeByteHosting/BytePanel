@@ -12,6 +12,7 @@ import {
   startLogTail,
   stopLogTail,
   writeCompose,
+  rconCommdn,
 } from "./docker";
 import type { EventBuffer } from "./events";
 import { deleteFile, installFromUrl, listFiles } from "./files";
@@ -141,6 +142,11 @@ export const executeCommand = async (
       case "FILES_INSTALL_FROM_URL": {
         const installed = await installFromUrl(command.payload);
         result = { destPath: command.payload.destPath, ...installed };
+        break;
+      }
+      case "RCON": {
+        const output = await rconCommdn(command.payload.command);
+        result = { output }
         break;
       }
       default: {

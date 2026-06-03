@@ -4,6 +4,7 @@ import { spawn } from "bun";
 import type { Subprocess } from "bun";
 
 import type { EventBuffer } from "./events";
+import { GAME_CONTAINER_NAME } from '../../games/compose';
 
 const COMPOSE_DIR =
   process.env.nodebyte_COMPOSE_DIR ?? "/var/lib/nodebyte/game";
@@ -202,3 +203,21 @@ export const startLogTail = (
     void pipeStream(stderr, "stderr", buffer);
   }
 };
+
+export const rconCommdn = async (
+  command: string,
+): Promise<{ output: string; exitCodde: number }> => {
+  const proc = spawn({
+    cmd: ["docker", "exec", GAME_CONTAINER_NAME, "sh", "-c", command],
+    stderr: "pipe",
+    stdout: "pipe"
+  });
+
+  const stderr = await new Response(proc.stderr).text();
+  const stdout = await new Response(proc.stdout).text(); 
+  const exitCodde = await proc.exited;
+
+  const output = stderr || stdout;
+
+  return { exitCodde, output }
+}
