@@ -206,18 +206,36 @@ export const startLogTail = (
 
 export const rconCommdn = async (
   command: string,
-): Promise<{ output: string; exitCodde: number }> => {
-  const proc = spawn({
-    cmd: ["docker", "exec", GAME_CONTAINER_NAME, "sh", "-c", command],
-    stderr: "pipe",
-    stdout: "pipe"
+): Promise<{ output: string; exitCode: number }> => {
+    return new Promise(async (resolve, reject) => {
+      const proc = spawn({
+      cmd: ["docker", "attach", GAME_CONTAINER_NAME],
+      stderr: "pipe",
+      stdout: "pipe",
+      stdin: "pipe"
+    });
+
+    let output = "";
+    let error = "";
+
+    if (proc.stderr) {
+      const stderrText = await new Response(proc.stderr).text();
+      error = stderrText;
+    }
+
+    if (proc.stdout) {
+      const stdoutText = await new Response(proc.stdout).text();
+      output = stdoutText;
+    }
+
+    if (proc.stdin) {
+      proc.stdin.write(`${command}`)
+      proc.stdin.end();
+    }
+
+    proc.exited.then((exitCode) => {
+      const finalOutput = error.trim() || output.trim();
+      resolve({ output: finalOutput, exitCode });
+    }).catch(reject);
   });
-
-  const stderr = await new Response(proc.stderr).text();
-  const stdout = await new Response(proc.stdout).text(); 
-  const exitCodde = await proc.exited;
-
-  const output = stderr || stdout;
-
-  return { exitCodde, output }
 }

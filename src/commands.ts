@@ -145,8 +145,7 @@ export const executeCommand = async (
         break;
       }
       case "RCON": {
-        const output = await rconCommdn(command.payload.command);
-        result = { output }
+        result = await rconCommdn(command.payload.command);
         break;
       }
       default: {
