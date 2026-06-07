@@ -98,19 +98,33 @@ const parseDockerBytes = (s: string): number => {
   const num = parseFloat(trimmed);
   if (isNaN(num)) return 0;
   const lower = trimmed.toLowerCase();
-  if (lower.endsWith("gib") || lower.endsWith("gb")) return num * 1_073_741_824;
-  if (lower.endsWith("mib") || lower.endsWith("mb")) return num * 1_048_576;
-  if (lower.endsWith("kib") || lower.endsWith("kb")) return num * 1_024;
-  return num;
+  if (lower.endsWith("gib") || lower.endsWith("gb")) return Math.floor(num * 1_073_741_824);
+  if (lower.endsWith("mib") || lower.endsWith("mb")) return Math.floor(num * 1_048_576);
+  if (lower.endsWith("kib") || lower.endsWith("kb")) return Math.floor(num * 1_024);
+  return Math.floor(num);
 };
 
 export const getContainerStats = async (): Promise<ContainerStats | null> => {
   try {
+
+    const psProc = spawn({
+      cmd: ["docker", "ps", "--format", "{{.Names}}"],
+      stdout: "pipe"
+    });
+
+    const psText = await new Response(psProc.stdout).text();
+
+    await psProc.exited;
+
+    const containerName = psText.trim().split("\n").find((name) => name.startsWith("nodebyte-"))
+
+    if (!containerName) return null;
+
     const proc = spawn({
       cmd: [
         "docker", "stats", "--no-stream",
         "--format", "{{json .}}",
-        "--filter", "name=nodebyte-",
+        containerName,
       ],
       stdout: "pipe",
     });
