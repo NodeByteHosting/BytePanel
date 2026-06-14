@@ -218,38 +218,38 @@ export const startLogTail = (
   }
 };
 
-export const rconCommdn = async (
-  command: string,
-): Promise<{ output: string; exitCode: number }> => {
-    return new Promise(async (resolve, reject) => {
-      const proc = spawn({
-      cmd: ["docker", "attach", GAME_CONTAINER_NAME],
-      stderr: "pipe",
-      stdout: "pipe",
-      stdin: "pipe"
-    });
+// export const rconCommdn = async (
+//   command: string,
+// ): Promise<{ output: string; exitCode: number }> => {
+//     return new Promise(async (resolve, reject) => {
+//       const proc = spawn({
+//       cmd: ["docker", "attach", GAME_CONTAINER_NAME],
+//       stderr: "pipe",
+//       stdout: "pipe",
+//       stdin: "pipe"
+//     });
 
-    let output = "";
-    let error = "";
+//     let output = "";
+//     let error = "";
 
-    if (proc.stderr) {
-      const stderrText = await new Response(proc.stderr).text();
-      error = stderrText;
-    }
+//     if (proc.stderr) {
+//       const stderrText = await new Response(proc.stderr).text();
+//       error = stderrText;
+//     }
 
-    if (proc.stdout) {
-      const stdoutText = await new Response(proc.stdout).text();
-      output = stdoutText;
-    }
+//     if (proc.stdout) {
+//       const stdoutText = await new Response(proc.stdout).text();
+//       output = stdoutText;
+//     }
 
-    if (proc.stdin) {
-      proc.stdin.write(`${command}`)
-      proc.stdin.end();
-    }
+//     if (proc.stdin) {
+//       proc.stdin.write(`${command}`)
+//       proc.stdin.end();
+//     }
 
-    proc.exited.then((exitCode) => {
-      const finalOutput = error.trim() || output.trim();
-      resolve({ output: finalOutput, exitCode });
-    }).catch(reject);
-  });
-}
+//     proc.exited.then((exitCode) => {
+//       const finalOutput = error.trim() || output.trim();
+//       resolve({ output: finalOutput, exitCode });
+//     }).catch(reject);
+//   });
+// }
