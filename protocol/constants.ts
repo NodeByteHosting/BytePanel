@@ -39,6 +39,8 @@ export const COMMAND_TYPES = [
   "UPLOAD_BACKUP",
   "FETCH_LOGS",
   "FILES_LIST",
+  "FILES_READ",
+  "FILES_WRITE",
   "FILES_DELETE",
   "FILES_INSTALL_FROM_URL",
 ] as const;

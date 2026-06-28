@@ -112,6 +112,22 @@ const filesListCommand = z.object({
   payload: z.object({ path: z.string() }),
   type: z.literal("FILES_LIST"),
 });
+const filesReadCommand = z.object({
+  id: z.string().min(1),
+  issuedAt: z.string().datetime(),
+  payload: z.object({ path: z.string().min(1) }),
+  type: z.literal("FILES_READ"),
+});
+const filesWriteCommand = z.object({
+  id: z.string().min(1),
+  issuedAt: z.string().datetime(),
+  payload: z.object({
+    content: z.string(),
+    encoding: z.enum(["utf-8", "base64"]).default("utf-8"),
+    path: z.string().min(1),
+  }),
+  type: z.literal("FILES_WRITE"),
+});
 const filesDeleteCommand = z.object({
   id: z.string().min(1),
   issuedAt: z.string().datetime(),
@@ -141,6 +157,8 @@ export const commandSchema = z.discriminatedUnion("type", [
   uploadBackupCommand,
   fetchLogsCommand,
   filesListCommand,
+  filesReadCommand,
+  filesWriteCommand,
   filesDeleteCommand,
   filesInstallFromUrlCommand,
 ]);
@@ -158,6 +176,16 @@ export const filesListResultSchema = z.object({
   path: z.string(),
 });
 export type FilesListResult = z.infer<typeof filesListResultSchema>;
+
+export const filesReadResultSchema = z.object({
+  content: z.string(),
+  encoding: z.enum(["utf-8", "base64"]),
+  path: z.string(),
+  size: z.number().int().nonnegative(),
+  truncated: z.boolean(),
+});
+export type FilesReadResult = z.infer<typeof filesReadResultSchema>;
+
 export type Command = z.infer<typeof commandSchema>;
 
 export const commandEnvelopeSchema = z.object({
