@@ -15,7 +15,7 @@ import {
   // rconCommdn,
 } from "./docker";
 import type { EventBuffer } from "./events";
-import { deleteFile, installFromUrl, listFiles } from "./files";
+import { deleteFile, installFromUrl, listFiles, readFile, writeFile } from "./files";
 import { signedFetch } from "./signing";
 
 const GAME_CONTAINER = "nodebyte-game";
@@ -132,6 +132,16 @@ export const executeCommand = async (
       }
       case "FILES_LIST": {
         result = await listFiles(command.payload.path);
+        break;
+      }
+      case "FILES_READ": {
+        result = await readFile(command.payload.path)
+        break
+      }
+      case "FILES_WRITE": {
+        const encoding = command.payload.encoding == "utf-8" ? "utf8" : command.payload.encoding;
+        await writeFile({ ...command.payload, encoding });
+        result = { path: command.payload.path }
         break;
       }
       case "FILES_DELETE": {
