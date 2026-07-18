@@ -8,7 +8,8 @@ import {
   Trash2Icon,
   UploadIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 
 import { Panel, PanelCard } from "@/components/panel";
@@ -48,6 +49,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
+  ssr: false,
+});
+
 interface FileEntry {
   name: string;
   type: "file" | "dir";
@@ -55,8 +60,21 @@ interface FileEntry {
   mtime: string;
 }
 
+interface FileReadResponse {
+  path: string;
+  content: string;
+  encoding: "utf-8" | "utf-8" | "base64";
+  size: number;
+  truncated: boolean;
+}
+
 interface Props {
   serverId: string;
+}
+
+interface pathbreadcrumbProps {
+  path: string;
+  onNavigate: (nextPath: string) => void;
 }
 
 const DEFAULT_PATH = "";
@@ -124,21 +142,22 @@ const waitForCommand = async (
 interface EntryRowProps {
   entry: FileEntry;
   onOpenDir: (name: string) => void;
+  onOpenFile: (name: string) => void;
   onDelete: (entry: FileEntry) => void;
 }
 
-const EntryRow = ({ entry, onOpenDir, onDelete }: EntryRowProps) => {
+const EntryRow = ({
+  entry,
+  onOpenDir,
+  onOpenFile,
+  onDelete,
+}: EntryRowProps) => {
   const isDir = entry.type === "dir";
   return (
     <div className="flex items-center justify-between gap-4 rounded-lg px-3 py-2">
       <button
         className="flex min-w-0 flex-1 items-center gap-3 text-left"
-        disabled={!isDir}
-        onClick={() => {
-          if (isDir) {
-            onOpenDir(entry.name);
-          }
-        }}
+        onClick={() => (isDir ? onOpenDir(entry.name) : onOpenFile(entry.name))}
         type="button"
       >
         {isDir ? (
@@ -178,6 +197,7 @@ interface EntryListProps {
   entries: FileEntry[] | null;
   loadError: string | null;
   onOpenDir: (name: string) => void;
+  onOpenFile: (name: string) => void;
   onDelete: (entry: FileEntry) => void;
 }
 
@@ -185,6 +205,7 @@ const renderEntryList = ({
   entries,
   loadError,
   onOpenDir,
+  onOpenFile,
   onDelete,
 }: EntryListProps) => {
   if (loadError) {
@@ -210,8 +231,109 @@ const renderEntryList = ({
       key={entry.name}
       onDelete={onDelete}
       onOpenDir={onOpenDir}
+      onOpenFile={onOpenFile}
     />
   ));
+};
+
+const languageFromPath = (filePath: string | null): string => {
+  if (!filePath) {
+    return "plaintext";
+  }
+
+  const ext = filePath.split(".").pop()?.toLowerCase();
+  switch (ext) {
+    case "ts":
+    case "tsx": {
+      return "typescript";
+    }
+    case "js":
+    case "jsx":
+    case "mjs":
+    case "cjs": {
+      return "javascript";
+    }
+    case "json": {
+      return "json";
+    }
+    case "yml":
+    case "yaml": {
+      return "yaml";
+    }
+    case "md": {
+      return "markdown";
+    }
+    case "toml": {
+      return "toml";
+    }
+    case "ini": {
+      return "ini";
+    }
+    case "sh": {
+      return "shell";
+    }
+    case "css": {
+      return "css";
+    }
+    case "html": {
+      return "html";
+    }
+    case "xml": {
+      return "xml";
+    }
+    default: {
+      return "plaintext";
+    }
+  }
+};
+
+const PathBreadcrumb = ({ path, onNavigate }: pathbreadcrumbProps) => {
+  const crumbs = path ? path.split("/").filter(Boolean) : [];
+
+  return (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          {path === "" ? (
+            <BreadcrumbPage>data</BreadcrumbPage>
+          ) : (
+            <BreadcrumbLink asChild>
+              <button type="button" onClick={() => onNavigate("")}>
+                data
+              </button>
+            </BreadcrumbLink>
+          )}
+        </BreadcrumbItem>
+        {crumbs.map((segment, index) => {
+          const isLast = index === crumbs.length - 1;
+          const target = crumbs.slice(0, index + 1).join("/");
+          return (
+            <span key={target} className="flex items-center gap-1.5">
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                {isLast ? (
+                  <BreadcrumbPage>{segment}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <button type="button" onClick={() => onNavigate(target)}>
+                      {segment}
+                    </button>
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </span>
+          );
+        })}
+      </BreadcrumbList>
+    </Breadcrumb>
+  );
+};
+
+const getDeletedDescription = (type: FileEntry["type"] | undefined) => {
+  if (type === "dir") {
+    return "This folder and everything inside it will be permanently removed.";
+  }
+  return "This file will be permanently removed.";
 };
 
 export const FilesPanel = ({ serverId }: Props) => {
@@ -225,6 +347,24 @@ export const FilesPanel = ({ serverId }: Props) => {
   const [installing, setInstalling] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  const [editorContent, setEditorContent] = useState("");
+  const [savedContent, setSavedContent] = useState("");
+  const [editorEncoding, setEditorEncoding] = useState<"utf-8" | "base64">(
+    "utf-8"
+  );
+  const [editorSize, setEditorSize] = useState<number | null>(null);
+  const [editorTruncated, setEditorTruncated] = useState(false);
+  const [editorLoading, setEditorLoading] = useState(false);
+  const [editorSaving, setEditorSaving] = useState(false);
+  const [editorError, setEditorError] = useState<string | null>(null);
+  const editorLanguage = useMemo(
+    () => languageFromPath(selectedFilePath),
+    [selectedFilePath]
+  );
+  const isEditorDirty =
+    selectedFilePath !== null && editorContent !== savedContent;
 
   const load = useCallback(
     async (target: string) => {
@@ -336,47 +476,147 @@ export const FilesPanel = ({ serverId }: Props) => {
     }
   };
 
-  const crumbs = path ? path.split("/").filter(Boolean) : [];
+  const openFile = useCallback(
+    async (name: string) => {
+      const fullPath = joinPath(path, name);
+      setSelectedFilePath(fullPath);
+      setEditorError(null);
+      setEditorLoading(true);
+
+      try {
+        const res = await fetch(
+          `/api/servers/${serverId}/files/content?path=${encodeURIComponent(fullPath)}`,
+          { cache: "no-store" }
+        );
+
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          throw new Error(body.error ?? "Could not read File");
+        }
+
+        const file = (await res.json()) as FileReadResponse;
+        setEditorContent(file.content);
+        setSavedContent(file.content);
+        setEditorEncoding(file.encoding === "base64" ? "base64" : "utf-8");
+        setEditorSize(file.size);
+        setEditorTruncated(file.truncated);
+      } catch (error) {
+        setEditorContent("");
+        setSavedContent("");
+        setEditorEncoding("utf-8");
+        setEditorSize(null);
+        setEditorTruncated(false);
+        setEditorError(
+          error instanceof Error ? error.message : "Could not read File"
+        );
+        toast.error(
+          error instanceof Error ? error.message : "Could not read File"
+        );
+      } finally {
+        setEditorLoading(false);
+      }
+    },
+    [path, serverId]
+  );
+
+  const closeEditorOverlay = () => {
+    setSelectedFilePath(null);
+    setEditorError(null);
+    setEditorLoading(false);
+    setEditorSaving(false);
+  };
+
+  const saveFile = useCallback(async () => {
+    if (!selectedFilePath) {
+      return;
+    }
+
+    setEditorSaving(true);
+    setEditorError(null);
+
+    try {
+      const res = await fetch(`/api/servers/${serverId}/files/content`, {
+        body: JSON.stringify({
+          content: editorContent,
+          encoding: editorEncoding === "base64" ? "base64" : "utf-8",
+          path: selectedFilePath,
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "PUT",
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? "Could not save file");
+      }
+
+      setSavedContent(editorContent);
+      setEditorSize(
+        editorEncoding === "utf-8"
+          ? new TextEncoder().encode(editorContent).length
+          : Math.floor((editorContent.length * 3) / 4)
+      );
+      toast.success(
+        `Saved ${selectedFilePath.split("/").pop() ?? selectedFilePath}`
+      );
+    } catch (error) {
+      setEditorError(
+        error instanceof Error ? error.message : "Could not save file"
+      );
+      toast.error(
+        error instanceof Error ? error.message : "Could not save file"
+      );
+    } finally {
+      setEditorSaving(false);
+    }
+  }, [editorContent, editorEncoding, selectedFilePath, serverId]);
+
+  let editorBody;
+
+  if (editorLoading) {
+    editorBody = (
+      <div className="px-3 py-4 text-muted-foreground text-sm">Loading...</div>
+    );
+  } else if (editorEncoding === "base64") {
+    editorBody = (
+      <div className="px-3 py-4 text-muted-foreground text-sm">
+        Bianary File Not supported. Editing disabled.
+      </div>
+    );
+  } else {
+    editorBody = (
+      <MonacoEditor
+        height="100%"
+        language={editorLanguage}
+        theme="vs-dark"
+        options={{
+          automaticLayout: true,
+          minimap: { enabled: false },
+          scrollBeyondLastLine: false,
+        }}
+        value={editorContent}
+        onChange={(value: string | undefined) => setEditorContent(value ?? "")}
+      />
+    );
+  }
+
+  const getSaveButtonLabel = () => {
+    if (editorSaving) {
+      return "Saving";
+    }
+    if (isEditorDirty) {
+      return "Save";
+    }
+    return "Saved";
+  };
 
   return (
     <Panel>
       <PanelCard className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2 px-3 py-1">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                {path === "" ? (
-                  <BreadcrumbPage>data</BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink asChild>
-                    <button type="button" onClick={() => setPath("")}>
-                      data
-                    </button>
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
-              {crumbs.map((segment, index) => {
-                const isLast = index === crumbs.length - 1;
-                const target = crumbs.slice(0, index + 1).join("/");
-                return (
-                  <span key={target} className="flex items-center gap-1.5">
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      {isLast ? (
-                        <BreadcrumbPage>{segment}</BreadcrumbPage>
-                      ) : (
-                        <BreadcrumbLink asChild>
-                          <button type="button" onClick={() => setPath(target)}>
-                            {segment}
-                          </button>
-                        </BreadcrumbLink>
-                      )}
-                    </BreadcrumbItem>
-                  </span>
-                );
-              })}
-            </BreadcrumbList>
-          </Breadcrumb>
+          <PathBreadcrumb path={path} onNavigate={setPath} />
         </div>
         <div className="flex items-center gap-2">
           <input
@@ -406,13 +646,13 @@ export const FilesPanel = ({ serverId }: Props) => {
           </Button>
         </div>
       </PanelCard>
-
       <PanelCard className="flex flex-col gap-1">
         {renderEntryList({
           entries,
           loadError,
           onDelete: setDeleteTarget,
           onOpenDir: (name) => setPath(joinPath(path, name)),
+          onOpenFile: openFile,
         })}
       </PanelCard>
 
@@ -455,6 +695,57 @@ export const FilesPanel = ({ serverId }: Props) => {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            closeEditorOverlay();
+          }
+        }}
+        open={selectedFilePath !== null}
+      >
+        <DialogContent className="fixed! inset-0! left-0! top-0! z-50! h-screen! w-screen! max-w-none! translate-x-0! translate-y-0! rounded-none! p-6! flex flex-col overflow-hidden">
+          <DialogHeader className="shrink-0">
+            <DialogTitle className="truncate">
+              {selectedFilePath ?? "Editor"}
+            </DialogTitle>
+            <DialogDescription>
+              {editorSize === null ? `${editorSize} bytes` : "-"} .{" "}
+              {editorEncoding}
+              {editorTruncated ? " . truncated" : ""}
+            </DialogDescription>
+          </DialogHeader>
+
+          {editorError ? (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive text-sm">
+              {editorError}
+            </div>
+          ) : null}
+
+          <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
+            {editorBody}
+          </div>
+
+          <DialogFooter className="shrink-0">
+            <Button onClick={closeEditorOverlay} type="button" variant="ghost">
+              Close
+            </Button>
+            <Button
+              disabled={
+                !selectedFilePath ||
+                editorLoading ||
+                editorSaving ||
+                !isEditorDirty ||
+                editorEncoding === "base64"
+              }
+              onClick={() => void saveFile()}
+              type="button"
+            >
+              {getSaveButtonLabel()}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         open={deleteTarget !== null}
@@ -463,9 +754,7 @@ export const FilesPanel = ({ serverId }: Props) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {deleteTarget?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteTarget?.type === "dir"
-                ? "This folder and everything inside it will be permanently removed."
-                : "This file will be permanently removed."}
+              {getDeletedDescription(deleteTarget?.type)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
