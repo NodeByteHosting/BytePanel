@@ -33,21 +33,22 @@ export interface SelectField<O extends string = string> extends BaseField<O> {
 }
 
 export type SettingField =
-  | StringField
-  | NumberField
-  | BooleanField
-  | SelectField;
+  StringField | NumberField | BooleanField | SelectField;
 
 export type SettingsSchema = Record<string, SettingField>;
 
 export type SettingsValues<S extends SettingsSchema> = {
-  [K in keyof S]: S[K] extends BooleanField ? boolean
-    : S[K] extends NumberField ? number
-    : S[K] extends SelectField<infer O> ? O
-    : string;
+  [K in keyof S]: S[K] extends BooleanField
+    ? boolean
+    : S[K] extends NumberField
+      ? number
+      : S[K] extends SelectField<infer O>
+        ? O
+        : string;
 };
 
-export const defineSettings = <S extends SettingsSchema>(schema: S): S => schema;
+export const defineSettings = <S extends SettingsSchema>(schema: S): S =>
+  schema;
 
 const validateField = (field: SettingField, value: unknown): boolean => {
   switch (field.type) {
@@ -115,8 +116,7 @@ export const resolveSettings = <S extends SettingsSchema>(
 };
 
 export type ValidateResult<S extends SettingsSchema> =
-  | { ok: true; data: Partial<SettingsValues<S>> }
-  | { ok: false; error: string };
+  { ok: true; data: Partial<SettingsValues<S>> } | { ok: false; error: string };
 
 export const validateSettings = <S extends SettingsSchema>(
   schema: S,

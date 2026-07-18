@@ -167,7 +167,7 @@ export const dockerImage = "steamcmd/proton:latest";
 
 export const buildYourServerCompose = (
   config: ComposeConfig,
-  settings: SettingsValues<typeof yourServerSettings>
+  settings: SettingsValues<typeof yourServerSettings>,
 ): string => {
   // Destructure settings passed from user
   const { server_name, difficulty, max_players } = settings;
@@ -231,7 +231,7 @@ import { buildSteamCmdInstall } from "../steam";
 
 export const buildYourServerCompose = (
   config: ComposeConfig,
-  settings: SettingsValues<typeof yourServerSettings>
+  settings: SettingsValues<typeof yourServerSettings>,
 ) => {
   const steamCmd = buildSteamCmdInstall({
     appId: 232330, // Steam App ID
@@ -390,7 +390,7 @@ export const dockerImage = "example/server:latest";
 
 export const buildExampleCompose = (
   config: ComposeConfig,
-  settings: SettingsValues<typeof exampleSettings>
+  settings: SettingsValues<typeof exampleSettings>,
 ): string => {
   return `
 version: '3'

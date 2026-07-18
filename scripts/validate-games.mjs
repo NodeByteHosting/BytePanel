@@ -53,7 +53,8 @@ const getCandidateGameDirs = () => {
 };
 
 const parseRootImports = (indexSource) => {
-  const importRegex = /import\s+\{\s*([a-zA-Z0-9_]+)\s*\}\s+from\s+"\.\/([a-z0-9-]+)";/gu;
+  const importRegex =
+    /import\s+\{\s*([a-zA-Z0-9_]+)\s*\}\s+from\s+"\.\/([a-z0-9-]+)";/gu;
   const imports = new Map();
   let match;
 
@@ -113,13 +114,11 @@ const main = () => {
   const rootSettingsPath = join(ROOT, "settings.ts");
   const rootComposePath = join(ROOT, "compose.ts");
 
-  for (
-    const requiredRootFile of [
-      rootIndexPath,
-      rootSettingsPath,
-      rootComposePath,
-    ]
-  ) {
+  for (const requiredRootFile of [
+    rootIndexPath,
+    rootSettingsPath,
+    rootComposePath,
+  ]) {
     if (!isFile(requiredRootFile)) {
       fail(`Missing required root file: ${requiredRootFile}`);
     }

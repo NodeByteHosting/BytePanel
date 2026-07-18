@@ -13,7 +13,8 @@ export interface GamePort {
 
 export const GAME_CONTAINER_NAME = "nodebyte-game";
 
-export const escapeComposeValue = (value: string): string => value.replaceAll('"', '\\"');
+export const escapeComposeValue = (value: string): string =>
+  value.replaceAll('"', '\\"');
 
 const formatRange = (port: GamePort): string =>
   port.from === port.to ? `${port.from}` : `${port.from}:${port.to}`;

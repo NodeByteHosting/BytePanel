@@ -10,7 +10,8 @@ export const buildRustCompose = (
 ): string => {
   const timezone = config.timezone ?? "UTC";
   const escape = escapeComposeValue;
-  const description = settings.description || `${config.name} - Powered by NodeByte`;
+  const description =
+    settings.description || `${config.name} - Powered by NodeByte`;
   return `services:
   init:
     image: alpine:3
