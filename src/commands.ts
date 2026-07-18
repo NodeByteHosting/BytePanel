@@ -1,7 +1,7 @@
 import { setTimeout as delay } from "node:timers/promises";
 
 import type { Command } from "../../protocol";
-import { commandEnvelopeSchema } from "../../protocol";
+import { commandEnvelopeSchema, commandSchema } from "../../protocol";
 import type { State } from "./config";
 import { saveState } from "./config";
 import {
@@ -226,9 +226,30 @@ export const pollCommands = async (
         continue;
       }
 
-      const envelope = commandEnvelopeSchema.parse(await res.json());
-      for (const command of envelope.commands) {
-        await executeCommand(state, command, buffer);
+      const payload = (await res.json()) as { commands?: unknown};
+      const commands = Array.isArray(payload.commands) ? payload.commands : [];
+
+      for (const rawCommands of commands) {
+        const parsed = commandSchema.safeParse(rawCommands);
+        
+        if (!parsed.success) {
+          const commandId = typeof rawCommands === "object" && rawCommands !== null && "id" in rawCommands && typeof (rawCommands as { id?: unknown }).id === "string" ? (rawCommands as { id: string }).id : null;
+          const commandType = typeof rawCommands === "object" && rawCommands !== null && "id" in rawCommands && typeof (rawCommands as { id?: unknown }).id === "string" ? (rawCommands as { id: string }).id : null;
+          const reason = `Unsupported or invalid command payload: ${commandType}`;
+
+          console.warn("Poll invalid command", {
+            commandId,
+            commandType,
+            issues: parsed.error.issues
+          })
+
+          if (commandId) {
+            await ackCommand(state, commandId, "failed", 0, reason)
+          }
+          continue;
+        }
+
+        await executeCommand(state, parsed.data, buffer)
       }
     } catch (error) {
       if (signal.aborted) {
