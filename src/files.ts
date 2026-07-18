@@ -83,7 +83,7 @@ export const listFiles = async (
 export const readFile = async (relativePath: string): Promise<{
   path: string;
   content: string;
-  encoding: "utf8" | "base64";
+  encoding: "utf-8" | "base64";
   size: number;
   truncated: boolean;
 }> => {
@@ -109,7 +109,7 @@ export const readFile = async (relativePath: string): Promise<{
     if (utf8 !== null) {
       return {
         content: utf8,
-        encoding: "utf8",
+        encoding: "utf-8",
         path: normalizedPath,
         size,
         truncated
