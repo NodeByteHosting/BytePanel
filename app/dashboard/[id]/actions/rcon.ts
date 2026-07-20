@@ -2,7 +2,6 @@
 
 import { z } from "zod";
 
-import { checkSubscriptionForServer } from "@/lib/billing/subscription-check";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
@@ -45,19 +44,6 @@ export const sendRconCommand = async (
 
   if (server.observedState !== "running") {
     return { error: "Server is not running", ok: false };
-  }
-
-  // ⚠️ BILLING: Verify subscription is active
-  const subscriptionCheck = await checkSubscriptionForServer(
-    parsed.data.serverId
-  );
-  if (!subscriptionCheck.isValid) {
-    return {
-      error:
-        subscriptionCheck.message ??
-        "Subscription is not active for this server",
-      ok: false,
-    };
   }
 
   try {
