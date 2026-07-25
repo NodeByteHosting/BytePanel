@@ -96,7 +96,7 @@ ufw allow 22/tcp
 ufw --force enable
 
 mkdir -p /etc/nodebyte /var/lib/nodebyte/game
-chmod 700 /etc/nodebyte /var/lib/nodebyte
+chmod 777 /etc/nodebyte /var/lib/nodebyte
 
 retry_cmd 5 curl --retry 5 --retry-delay 5 --retry-connrefused -A "Mozilla/5.0" -fsSL "${agentBinaryUrl}" -o /usr/local/bin/nodebyte-agent
 
@@ -129,12 +129,12 @@ shutdown -h now
 write_files:
   - path: /etc/systemd/system/nodebyte-agent.service
     owner: root:root
-    permissions: '0644'
+    permissions: '0777'
     content: |
 ${indent(SYSTEMD_UNIT, 6)}
   - path: /root/build-image.sh
     owner: root:root
-    permissions: '0755'
+    permissions: '0777'
     content: |
 ${indent(buildScript, 6)}
 runcmd:
