@@ -703,7 +703,7 @@ export const FilesPanel = ({ serverId }: Props) => {
         }}
         open={selectedFilePath !== null}
       >
-        <DialogContent className="fixed! inset-0! left-0! top-0! z-50! h-screen! w-screen! max-w-none! translate-x-0! translate-y-0! rounded-none! p-6! flex flex-col overflow-hidden">
+        <DialogContent className="z-50! flex h-[85vh]! w-[95vw]! max-w-6xl! flex-col overflow-hidden rounded-lg p-4 sm:p-6">
           <DialogHeader className="shrink-0">
             <DialogTitle className="truncate">
               {selectedFilePath ?? "Editor"}
