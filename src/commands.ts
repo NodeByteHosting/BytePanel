@@ -234,13 +234,14 @@ export const pollCommands = async (
         
         if (!parsed.success) {
           const commandId = typeof rawCommands === "object" && rawCommands !== null && "id" in rawCommands && typeof (rawCommands as { id?: unknown }).id === "string" ? (rawCommands as { id: string }).id : null;
-          const commandType = typeof rawCommands === "object" && rawCommands !== null && "id" in rawCommands && typeof (rawCommands as { id?: unknown }).id === "string" ? (rawCommands as { id: string }).id : null;
+          const commandType = typeof rawCommands === "object" && rawCommands !== null && "type" in rawCommands && typeof (rawCommands as { type?: unknown }).type === "string" ? (rawCommands as { type: string }).type : null;
           const reason = `Unsupported or invalid command payload: ${commandType}`;
 
           console.warn("Poll invalid command", {
             commandId,
             commandType,
-            issues: parsed.error.issues
+            issues: parsed.error.issues,
+            raw: rawCommands,
           })
 
           if (commandId) {
