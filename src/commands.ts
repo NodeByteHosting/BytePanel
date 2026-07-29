@@ -256,7 +256,7 @@ export const pollCommands = async (
       if (signal.aborted) {
         return;
       }
-      console.warn("poll error", error);
+      console.error("poll error (commands)", error);
       await sleep(5000, signal);
     }
   }
