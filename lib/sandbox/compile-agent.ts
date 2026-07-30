@@ -26,20 +26,135 @@ interface GitSource {
   password?: string;
 }
 
+interface GitHubRepo {
+  owner: string;
+  repo: string;
+}
+
 const sha256 = (buf: Buffer): string =>
   crypto.createHash("sha256").update(buf).digest("hex");
 
-const resolveGitSource = (): GitSource => {
+const parseGitHubRepoFromUrl = (url: string): GitHubRepo | null => {
+  try {
+    const normalized = url.replace(/\.git$/iu, "");
+    const parsed = new URL(normalized);
+    if (parsed.hostname !== "github.com") {
+      return null;
+    }
+
+    const [owner, repo] = parsed.pathname
+      .replace(/^\//u, "")
+      .split("/")
+      .filter(Boolean);
+    if (!owner || !repo) {
+      return null;
+    }
+
+    return { owner, repo };
+  } catch {
+    return null;
+  }
+};
+
+const resolveLatestCommitSha = async (input: {
+  owner: string;
+  repo: string;
+  ref: string;
+  token?: string;
+}): Promise<string> => {
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+  };
+  if (input.token) {
+    headers.Authorization = `Bearer ${input.token}`;
+  }
+
+  const response = await fetch(
+    `https://api.github.com/repos/${input.owner}/${input.repo}/commits/${encodeURIComponent(input.ref)}`,
+    { headers }
+  );
+  if (!response.ok) {
+    throw new Error(
+      `GitHub commit lookup failed for ${input.owner}/${input.repo}@${input.ref} (HTTP ${response.status})`
+    );
+  }
+
+  const payload: unknown = await response.json();
+  const sha =
+    payload && typeof payload === "object" && "sha" in payload
+      ? (payload.sha as unknown)
+      : undefined;
+  if (typeof sha !== "string" || sha.length === 0) {
+    throw new Error(
+      `GitHub commit lookup for ${input.owner}/${input.repo}@${input.ref} returned no sha`
+    );
+  }
+  return sha;
+};
+
+const resolveRevisionFromRef = async (input: {
+  ref: string;
+  repoInfo: GitHubRepo | null;
+  token?: string;
+}): Promise<string> => {
+  if (!input.repoInfo) {
+    return input.ref;
+  }
+  return await resolveLatestCommitSha({
+    owner: input.repoInfo.owner,
+    ref: input.ref,
+    repo: input.repoInfo.repo,
+    token: input.token,
+  });
+};
+
+const resolveRequestedRevision = async (input: {
+  devBranchRef: string;
+  isDev: boolean;
+  isProd: boolean;
+  prodFallbackRef: string;
+  repoInfo: GitHubRepo | null;
+  sha?: string;
+  token?: string;
+}): Promise<string> => {
+  if (input.isDev) {
+    return await resolveRevisionFromRef({
+      ref: input.devBranchRef,
+      repoInfo: input.repoInfo,
+      token: input.token,
+    });
+  }
+
+  if (input.sha) {
+    return input.sha;
+  }
+
+  if (input.isProd) {
+    return await resolveRevisionFromRef({
+      ref: input.prodFallbackRef,
+      repoInfo: input.repoInfo,
+      token: input.token,
+    });
+  }
+
+  throw new Error(
+    "No git revision available. Set VERCEL_GIT_COMMIT_SHA or NBP_GIT_REVISION."
+  );
+};
+
+const resolveGitSource = async (): Promise<GitSource> => {
   const explicitUrl = process.env.NBP_GIT_REPO_URL;
   const owner = process.env.VERCEL_GIT_REPO_OWNER;
   const slug = process.env.VERCEL_GIT_REPO_SLUG;
+  const isDev =
+    process.env.NODE_ENV === "development" ||
+    process.env.VERCEL_ENV === "development" ||
+    !process.env.VERCEL_ENV;
+  const isProd = process.env.VERCEL_ENV === "production";
   const sha = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.NBP_GIT_REVISION;
-
-  if (!sha) {
-    throw new Error(
-      "No git revision available. Set VERCEL_GIT_COMMIT_SHA (Vercel injects this) or NBP_GIT_REVISION for local dev."
-    );
-  }
+  const devBranchRef =
+    process.env.VERCEL_GIT_COMMIT_REF ?? process.env.NBP_GIT_REF ?? "develop";
+  const prodFallbackRef = process.env.NBP_GIT_PROD_REF ?? "main";
 
   const url =
     explicitUrl ??
@@ -55,17 +170,43 @@ const resolveGitSource = (): GitSource => {
     process.env.GIT_AUTH_TOKEN ??
     process.env.VERCEL_SANDBOX_GIT_TOKEN ??
     process.env.GITHUB_TOKEN;
-  if (token) {
-    return { password: token, revision: sha, url, username: "x-access-token" };
+
+  const repoInfo =
+    owner && slug ? { owner, repo: slug } : parseGitHubRepoFromUrl(url);
+
+  const revision = await resolveRequestedRevision({
+    devBranchRef,
+    isDev,
+    isProd,
+    prodFallbackRef,
+    repoInfo,
+    sha: sha ?? undefined,
+    token,
+  });
+
+  if (!revision) {
+    throw new Error(
+      isProd
+        ? "No git revision available. Set VERCEL_GIT_COMMIT_SHA (preferred) or ensure NBP_GIT_PROD_REF can be resolved (default: main)."
+        : "No git revision available. Set NBP_GIT_REF for local dev (default: develop)."
+    );
   }
-  return { revision: sha, url };
+  if (token) {
+    return {
+      password: token,
+      revision,
+      url,
+      username: "x-access-token",
+    };
+  }
+  return { revision, url };
 };
 
 export const compileAgentBinary = async (): Promise<{
   bytes: Buffer;
   sha: string;
 }> => {
-  const git = resolveGitSource();
+  const git = await resolveGitSource();
 
   let sandbox: Awaited<ReturnType<typeof Sandbox.create>>;
   try {
