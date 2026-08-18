@@ -157,6 +157,7 @@ model Server {
   joinPassword     String?
   settings         Json              @default("{}")
   backupsEnabled   Boolean           @default(false)
+  poweredOff       Boolean           @default(false)
   lastSuspendedAt  DateTime?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt

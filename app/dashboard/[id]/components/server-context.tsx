@@ -33,6 +33,7 @@ export interface ServerView {
   lastHeartbeatAt: string | null;
   serverType: string;
   backupsEnabled: boolean;
+  poweredOff: boolean;
   specs: Specs | null;
   location: ServerLocation | null;
   settings: Record<string, unknown>;

@@ -8,6 +8,8 @@ import {
   LayoutDashboardIcon,
   MoreHorizontalIcon,
   PlayIcon,
+  PowerIcon,
+  PowerOffIcon,
   RotateCcwIcon,
   Settings2Icon,
   SquareIcon,
@@ -50,6 +52,7 @@ import { cn } from "@/lib/utils";
 import { PageBody, PageHeader } from "../../components/page-header";
 import { runServerCommand } from "../actions/commands";
 import { deleteServer } from "../actions/delete";
+import { powerOnServer, powerOffServer } from "../actions/power";
 import { ProvisioningStatus } from "./provisioning-status";
 import { ServerProvider } from "./server-context";
 import type { ServerView } from "./server-context";
@@ -71,6 +74,8 @@ const STATE_BADGE: Record<string, string> = {
   failed:
     "border-red-500/40 bg-red-500/10 text-red-600 dark:bg-red-500/15 dark:text-red-400",
   lost: "border-red-500/40 bg-red-500/10 text-red-600 dark:bg-red-500/15 dark:text-red-400",
+  "powered-off":
+    "border-zinc-500/40 bg-zinc-500/10 text-zinc-500 dark:bg-zinc-500/15 dark:text-zinc-400",
   running:
     "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400",
   stopped:
@@ -167,6 +172,122 @@ const getStatusDotColor = (key: string) => {
   return "bg-zinc-400";
 };
 
+interface ServerActionsProps {
+  canControl: boolean;
+  canDelete: boolean;
+  deleting: boolean;
+  pending: string | null;
+  poweredOff: boolean;
+  observedState: string;
+  onDelete: () => void;
+  onPowerOff: () => void;
+  onPowerOn: () => void;
+  onCommand: (type: "START" | "STOP" | "RESTART") => void;
+}
+
+const ServerActions = ({
+  canControl,
+  canDelete,
+  deleting,
+  pending,
+  poweredOff,
+  observedState,
+  onDelete,
+  onPowerOff,
+  onPowerOn,
+  onCommand,
+}: ServerActionsProps) => (
+  <div className="flex items-center gap-1.5">
+    {canControl && poweredOff && (
+      <Button
+        className="gap-1.5"
+        disabled={pending !== null}
+        size="sm"
+        onClick={onPowerOn}
+      >
+        <PowerIcon className="size-3.5" />
+        <span className="hidden sm:inline">Power on</span>
+      </Button>
+    )}
+    {canControl && !poweredOff && observedState === "stopped" && (
+      <>
+        <Button
+          className="gap-1.5"
+          disabled={pending !== null}
+          size="sm"
+          onClick={() => onCommand("START")}
+        >
+          <PlayIcon className="size-3.5" />
+          <span className="hidden sm:inline">Start</span>
+        </Button>
+        <Button
+          className="gap-1.5"
+          disabled={pending !== null}
+          size="sm"
+          variant="outline"
+          onClick={onPowerOff}
+        >
+          <PowerOffIcon className="size-3.5" />
+          <span className="hidden sm:inline">Shut down</span>
+        </Button>
+      </>
+    )}
+    {canControl && observedState === "running" && (
+      <>
+        <Button
+          className="gap-1.5"
+          disabled={pending !== null}
+          size="sm"
+          variant="outline"
+          onClick={() => onCommand("RESTART")}
+        >
+          <RotateCcwIcon className="size-3.5" />
+          <span className="hidden sm:inline">Restart</span>
+        </Button>
+        <Button
+          className="gap-1.5"
+          disabled={pending !== null}
+          size="sm"
+          variant="outline"
+          onClick={() => onCommand("STOP")}
+        >
+          <SquareIcon className="size-3.5" />
+          <span className="hidden sm:inline">Stop</span>
+        </Button>
+      </>
+    )}
+    {pending && (
+      <span className="text-xs text-muted-foreground capitalize">
+        {pending.toLowerCase().replace("_", " ")}…
+      </span>
+    )}
+    {canDelete && (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            aria-label="Server options"
+            className="size-8"
+            size="icon"
+            variant="ghost"
+          >
+            <MoreHorizontalIcon className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            disabled={pending !== null || deleting}
+            onSelect={onDelete}
+            variant="destructive"
+          >
+            <Trash2Icon />
+            Delete server
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )}
+  </div>
+);
+
 export const ServerShell = ({
   server: initial,
   eligibleTypes,
@@ -188,6 +309,9 @@ export const ServerShell = ({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
 
+  const updateServer = (patch: Partial<ServerView>) =>
+    setServer((prev) => ({ ...prev, ...patch }));
+
   useEffect(() => {
     const t = setInterval(async () => {
       const res = await fetch(`/api/servers/${initial.id}`);
@@ -208,6 +332,7 @@ export const ServerShell = ({
           name: fresh.name,
           observedState: fresh.observedState,
           phase: fresh.phase,
+          poweredOff: fresh.poweredOff ?? prev.poweredOff,
           serverType: fresh.serverType ?? prev.serverType,
         }));
       }
@@ -226,6 +351,30 @@ export const ServerShell = ({
     }
   };
 
+  const runPowerOff = async () => {
+    setPending("POWER_OFF");
+    const result = await powerOffServer({ serverId: server.id });
+    setPending(null);
+    if (result.ok) {
+      updateServer({ poweredOff: true });
+      toast.success("Server Powering Off");
+    } else {
+      toast.error(result.error);
+    }
+  };
+
+  const runPowerOn = async () => {
+    setPending("POWER_ON");
+    const result = await powerOnServer({ serverId: server.id });
+    setPending(null);
+    if (result.ok) {
+      updateServer({ poweredOff: false });
+      toast.success("Server powering on");
+    } else {
+      toast.error(result.error);
+    }
+  };
+
   const runDelete = async () => {
     setPending("DELETE");
     const result = await deleteServer({ serverId: server.id });
@@ -236,9 +385,6 @@ export const ServerShell = ({
       toast.error(result.error);
     }
   };
-
-  const updateServer = (patch: Partial<ServerView>) =>
-    setServer((prev) => ({ ...prev, ...patch }));
 
   const handleDeleteOpenChange = (open: boolean) => {
     setDeleteOpen(open);
@@ -255,8 +401,13 @@ export const ServerShell = ({
   }
 
   const deleting = server.desiredState === "deleted";
-  const statusKey = deleting ? "deleting" : server.observedState;
-  const statusLabel = statusKey.charAt(0).toUpperCase() + statusKey.slice(1);
+  const statusKey =
+    (deleting ? "deleting" : null) ??
+    (server.poweredOff ? "powered-off" : server.observedState);
+  const statusLabel =
+    statusKey === "powered-off"
+      ? "Powered off"
+      : statusKey.charAt(0).toUpperCase() + statusKey.slice(1);
 
   const meta = (
     <Badge
@@ -278,72 +429,18 @@ export const ServerShell = ({
   );
 
   const actions = (
-    <div className="flex items-center gap-1.5">
-      {canControl && server.observedState === "stopped" && (
-        <Button
-          className="gap-1.5"
-          disabled={pending !== null}
-          size="sm"
-          onClick={() => sendCommand("START")}
-        >
-          <PlayIcon className="size-3.5" />
-          <span className="hidden sm:inline">Start</span>
-        </Button>
-      )}
-      {canControl && server.observedState === "running" && (
-        <>
-          <Button
-            className="gap-1.5"
-            disabled={pending !== null}
-            size="sm"
-            variant="outline"
-            onClick={() => sendCommand("RESTART")}
-          >
-            <RotateCcwIcon className="size-3.5" />
-            <span className="hidden sm:inline">Restart</span>
-          </Button>
-          <Button
-            className="gap-1.5"
-            disabled={pending !== null}
-            size="sm"
-            variant="outline"
-            onClick={() => sendCommand("STOP")}
-          >
-            <SquareIcon className="size-3.5" />
-            <span className="hidden sm:inline">Stop</span>
-          </Button>
-        </>
-      )}
-      {pending && (
-        <span className="text-xs text-muted-foreground capitalize">
-          {pending.toLowerCase()}…
-        </span>
-      )}
-      {canDelete && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              aria-label="Server options"
-              className="size-8"
-              size="icon"
-              variant="ghost"
-            >
-              <MoreHorizontalIcon className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              disabled={pending !== null || deleting}
-              onSelect={() => setDeleteOpen(true)}
-              variant="destructive"
-            >
-              <Trash2Icon />
-              Delete server
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-    </div>
+    <ServerActions
+      canControl={canControl}
+      canDelete={canDelete}
+      deleting={deleting}
+      observedState={server.observedState}
+      pending={pending}
+      poweredOff={server.poweredOff}
+      onCommand={sendCommand}
+      onDelete={() => setDeleteOpen(true)}
+      onPowerOff={runPowerOff}
+      onPowerOn={runPowerOn}
+    />
   );
 
   const deleteDialog = (
