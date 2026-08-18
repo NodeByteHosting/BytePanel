@@ -122,6 +122,26 @@ export const createServerOps = (client: HetznerClient) => ({
     }
   },
 
+  powerOffServer: async (id: ServerResourceId): Promise<void> => {
+    const { error, response } = await client.POST(
+      "/servers/{id}/actions/poweroff",
+      { params: { path: { id: Number(id) } } },
+    );
+    if (!response.ok) {
+      throwIfHetznerError(error, response);
+    }
+  },
+
+  powerOnServer: async (id: ServerResourceId): Promise<void> => {
+    const { error, response } = await client.POST(
+      "/servers/{id}/actions/poweron",
+      { params: { path: { id: Number(id) } } },
+    );
+    if (!response.ok) {
+      throwIfHetznerError(error, response);
+    }
+  },
+
   setBackupsEnabled: async (
     id: ServerResourceId,
     enabled: boolean,

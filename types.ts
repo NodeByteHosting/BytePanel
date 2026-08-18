@@ -104,6 +104,8 @@ export interface Provider {
   getServer(id: ServerResourceId): Promise<ProviderServer | null>;
   deleteServer(id: ServerResourceId): Promise<{ deleted: boolean }>;
   rescaleServer(id: ServerResourceId, serverType: string): Promise<void>;
+  powerOffServer(id: ServerResourceId): Promise<void>;
+  powerOnServer(id: ServerResourceId): Promise<void>;
   getMetrics(
     id: ServerResourceId,
     query: MetricsQuery,
