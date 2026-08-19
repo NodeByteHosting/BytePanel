@@ -48,7 +48,7 @@ export const signedFetch = async (input: {
 
   const sig = await signAsync(
     new TextEncoder().encode(message),
-    fromBase64Url(input.privateKey)
+    fromBase64Url(input.privateKey),
   );
 
   const headers: Record<string, string> = {

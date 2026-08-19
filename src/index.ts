@@ -51,20 +51,28 @@ const main = async () => {
     const state = await loadState();
 
     if (state) {
-      await writeLog(`Loaded state for server ${state.serverId}, agent ${state.agentId}`);
+      await writeLog(
+        `Loaded state for server ${state.serverId}, agent ${state.agentId}`,
+      );
       console.log(`[nodebyte-agent] loaded state for ${state.serverId}`);
     } else {
       await writeLog("No state found, attempting enrollment");
       const bootstrap = await loadBootstrap();
       if (!bootstrap) {
-        await writeLog("ERROR: No bootstrap config found at /etc/nodebyte/bootstrap.json");
+        await writeLog(
+          "ERROR: No bootstrap config found at /etc/nodebyte/bootstrap.json",
+        );
         console.error("[nodebyte-agent] no bootstrap config found");
         process.exit(1);
       }
-      await writeLog(`Bootstrap config detected for server ${bootstrap.serverId}`);
+      await writeLog(
+        `Bootstrap config detected for server ${bootstrap.serverId}`,
+      );
       console.log(`[nodebyte-agent] enrolling server ${bootstrap.serverId}`);
       const enrolled = await enroll(bootstrap);
-      await writeLog(`Successfully enrolled as agent ${enrolled.agentId} for server ${enrolled.serverId}`);
+      await writeLog(
+        `Successfully enrolled as agent ${enrolled.agentId} for server ${enrolled.serverId}`,
+      );
       console.log(`[nodebyte-agent] enrolled as ${enrolled.agentId}`);
       return run(enrolled);
     }

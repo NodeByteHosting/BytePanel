@@ -41,7 +41,7 @@ export class EventBuffer {
     > & {
       clientEventId?: string;
       occurredAt?: string;
-    }
+    },
   ) {
     this.state.agentSeq += 1;
     this.activity.push({
@@ -130,11 +130,7 @@ export class EventBuffer {
     errorCode: string;
     errorMessage: string;
     phase:
-      | "provisioning"
-      | "baking"
-      | "agent_bootstrap"
-      | "install"
-      | "unknown";
+      "provisioning" | "baking" | "agent_bootstrap" | "install" | "unknown";
     details?: Record<string, unknown>;
     timestamp?: number;
   }): Promise<void> {

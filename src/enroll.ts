@@ -26,7 +26,9 @@ export const enroll = async (bootstrap: Bootstrap): Promise<State> => {
     await writeLog("Enrollment: Keypair generated successfully");
 
     const enrollUrl = new URL("/api/agent/enroll", bootstrap.apiBaseUrl);
-    await writeLog(`Enrollment: Sending enrollment request to ${enrollUrl.toString()}`);
+    await writeLog(
+      `Enrollment: Sending enrollment request to ${enrollUrl.toString()}`,
+    );
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -72,7 +74,9 @@ export const enroll = async (bootstrap: Bootstrap): Promise<State> => {
     await saveState(state);
     await writeLog(`Enrollment: Deleting bootstrap config`);
     await deleteBootstrap();
-    await writeLog(`Enrollment: Successfully completed for agent ${parsed.agentId}`);
+    await writeLog(
+      `Enrollment: Successfully completed for agent ${parsed.agentId}`,
+    );
 
     return state;
   } catch (error) {

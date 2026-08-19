@@ -15,7 +15,13 @@ import {
   // rconCommdn,
 } from "./docker";
 import type { EventBuffer } from "./events";
-import { deleteFile, installFromUrl, listFiles, readFile, writeFile } from "./files";
+import {
+  deleteFile,
+  installFromUrl,
+  listFiles,
+  readFile,
+  writeFile,
+} from "./files";
 import { signedFetch } from "./signing";
 
 const GAME_CONTAINER = "nodebyte-game";
@@ -34,7 +40,7 @@ const ackCommand = async (
   status: "succeeded" | "failed",
   durationMs: number,
   error?: string,
-  result?: Record<string, unknown>
+  result?: Record<string, unknown>,
 ): Promise<void> => {
   const res = await signedFetch({
     agentId: state.agentId,
@@ -44,7 +50,7 @@ const ackCommand = async (
     protectionBypass: state.vercelProtectionBypass,
     url: new URL(
       `/api/agent/commands/${commandId}/ack`,
-      state.apiBaseUrl
+      state.apiBaseUrl,
     ).toString(),
   });
   if (!res.ok) {
@@ -55,11 +61,11 @@ const ackCommand = async (
 export const executeCommand = async (
   state: State,
   command: Command,
-  buffer: EventBuffer
+  buffer: EventBuffer,
 ): Promise<void> => {
   if (state.lastExecutedCommandId === command.id) {
     console.log(
-      `[cmd] ${command.type} ${command.id} already executed; ack-only`
+      `[cmd] ${command.type} ${command.id} already executed; ack-only`,
     );
     await ackCommand(state, command.id, "succeeded", 0);
     return;
@@ -135,13 +141,16 @@ export const executeCommand = async (
         break;
       }
       case "FILES_READ": {
-        result = await readFile(command.payload.path)
-        break
+        result = await readFile(command.payload.path);
+        break;
       }
       case "FILES_WRITE": {
-        const encoding = command.payload.encoding == "utf-8" ? "utf8" : command.payload.encoding;
+        const encoding =
+          command.payload.encoding == "utf-8"
+            ? "utf8"
+            : command.payload.encoding;
         await writeFile({ ...command.payload, encoding });
-        result = { path: command.payload.path }
+        result = { path: command.payload.path };
         break;
       }
       case "FILES_DELETE": {
@@ -167,7 +176,7 @@ export const executeCommand = async (
     await saveState(state);
     const durationMs = Date.now() - started;
     console.log(
-      `[cmd] ${command.type} ${command.id} succeeded in ${durationMs}ms`
+      `[cmd] ${command.type} ${command.id} succeeded in ${durationMs}ms`,
     );
     await ackCommand(
       state,
@@ -175,13 +184,13 @@ export const executeCommand = async (
       "succeeded",
       durationMs,
       undefined,
-      result
+      result,
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     const durationMs = Date.now() - started;
     console.error(
-      `[cmd] ${command.type} ${command.id} failed after ${durationMs}ms: ${message}`
+      `[cmd] ${command.type} ${command.id} failed after ${durationMs}ms: ${message}`,
     );
     buffer.enqueueActivity({
       message: `Command ${command.type} failed: ${message}`,
@@ -201,7 +210,7 @@ export const executeCommand = async (
 export const pollCommands = async (
   state: State,
   buffer: EventBuffer,
-  signal: AbortSignal
+  signal: AbortSignal,
 ): Promise<void> => {
   while (!signal.aborted) {
     try {
@@ -213,7 +222,7 @@ export const pollCommands = async (
         signal,
         url: new URL(
           "/api/agent/commands?wait=25",
-          state.apiBaseUrl
+          state.apiBaseUrl,
         ).toString(),
       });
 
@@ -226,15 +235,27 @@ export const pollCommands = async (
         continue;
       }
 
-      const payload = (await res.json()) as { commands?: unknown};
+      const payload = (await res.json()) as { commands?: unknown };
       const commands = Array.isArray(payload.commands) ? payload.commands : [];
 
       for (const rawCommands of commands) {
         const parsed = commandSchema.safeParse(rawCommands);
-        
+
         if (!parsed.success) {
-          const commandId = typeof rawCommands === "object" && rawCommands !== null && "id" in rawCommands && typeof (rawCommands as { id?: unknown }).id === "string" ? (rawCommands as { id: string }).id : null;
-          const commandType = typeof rawCommands === "object" && rawCommands !== null && "type" in rawCommands && typeof (rawCommands as { type?: unknown }).type === "string" ? (rawCommands as { type: string }).type : null;
+          const commandId =
+            typeof rawCommands === "object" &&
+            rawCommands !== null &&
+            "id" in rawCommands &&
+            typeof (rawCommands as { id?: unknown }).id === "string"
+              ? (rawCommands as { id: string }).id
+              : null;
+          const commandType =
+            typeof rawCommands === "object" &&
+            rawCommands !== null &&
+            "type" in rawCommands &&
+            typeof (rawCommands as { type?: unknown }).type === "string"
+              ? (rawCommands as { type: string }).type
+              : null;
           const reason = `Unsupported or invalid command payload: ${commandType}`;
 
           console.warn("Poll invalid command", {
@@ -242,15 +263,15 @@ export const pollCommands = async (
             commandType,
             issues: parsed.error.issues,
             raw: rawCommands,
-          })
+          });
 
           if (commandId) {
-            await ackCommand(state, commandId, "failed", 0, reason)
+            await ackCommand(state, commandId, "failed", 0, reason);
           }
           continue;
         }
 
-        await executeCommand(state, parsed.data, buffer)
+        await executeCommand(state, parsed.data, buffer);
       }
     } catch (error) {
       if (signal.aborted) {

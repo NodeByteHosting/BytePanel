@@ -4,7 +4,7 @@ import { spawn } from "bun";
 import type { Subprocess } from "bun";
 
 import type { EventBuffer } from "./events";
-import { GAME_CONTAINER_NAME } from '../../games/compose';
+import { GAME_CONTAINER_NAME } from "../../games/compose";
 
 const COMPOSE_DIR =
   process.env.nodebyte_COMPOSE_DIR ?? "/var/lib/nodebyte/game";
@@ -98,32 +98,40 @@ const parseDockerBytes = (s: string): number => {
   const num = parseFloat(trimmed);
   if (isNaN(num)) return 0;
   const lower = trimmed.toLowerCase();
-  if (lower.endsWith("gib") || lower.endsWith("gb")) return Math.floor(num * 1_073_741_824);
-  if (lower.endsWith("mib") || lower.endsWith("mb")) return Math.floor(num * 1_048_576);
-  if (lower.endsWith("kib") || lower.endsWith("kb")) return Math.floor(num * 1_024);
+  if (lower.endsWith("gib") || lower.endsWith("gb"))
+    return Math.floor(num * 1_073_741_824);
+  if (lower.endsWith("mib") || lower.endsWith("mb"))
+    return Math.floor(num * 1_048_576);
+  if (lower.endsWith("kib") || lower.endsWith("kb"))
+    return Math.floor(num * 1_024);
   return Math.floor(num);
 };
 
 export const getContainerStats = async (): Promise<ContainerStats | null> => {
   try {
-
     const psProc = spawn({
       cmd: ["docker", "ps", "--format", "{{.Names}}"],
-      stdout: "pipe"
+      stdout: "pipe",
     });
 
     const psText = await new Response(psProc.stdout).text();
 
     await psProc.exited;
 
-    const containerName = psText.trim().split("\n").find((name) => name.startsWith("nodebyte-"))
+    const containerName = psText
+      .trim()
+      .split("\n")
+      .find((name) => name.startsWith("nodebyte-"));
 
     if (!containerName) return null;
 
     const proc = spawn({
       cmd: [
-        "docker", "stats", "--no-stream",
-        "--format", "{{json .}}",
+        "docker",
+        "stats",
+        "--no-stream",
+        "--format",
+        "{{json .}}",
         containerName,
       ],
       stdout: "pipe",
@@ -146,7 +154,13 @@ export const getContainerStats = async (): Promise<ContainerStats | null> => {
     const networkInBytes = parseDockerBytes(netInStr ?? "0");
     const networkOutBytes = parseDockerBytes(netOutStr ?? "0");
 
-    return { cpuPercent, memUsedBytes, memTotalBytes, networkInBytes, networkOutBytes };
+    return {
+      cpuPercent,
+      memUsedBytes,
+      memTotalBytes,
+      networkInBytes,
+      networkOutBytes,
+    };
   } catch {
     return null;
   }
@@ -157,7 +171,7 @@ let tailProc: Subprocess | null = null;
 const pipeStream = async (
   readable: ReadableStream<Uint8Array> | undefined,
   stream: "stdout" | "stderr",
-  buffer: EventBuffer
+  buffer: EventBuffer,
 ): Promise<void> => {
   if (!readable) {
     return;
@@ -198,7 +212,7 @@ export const stopLogTail = (): void => {
 
 export const startLogTail = (
   containerName: string,
-  buffer: EventBuffer
+  buffer: EventBuffer,
 ): void => {
   stopLogTail();
 

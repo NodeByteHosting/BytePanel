@@ -1,6 +1,15 @@
 import { createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
-import { mkdir, readdir, rename, rm, stat, unlink, open, writeFile as writeFileFs } from "node:fs/promises";
+import {
+  mkdir,
+  readdir,
+  rename,
+  rm,
+  stat,
+  unlink,
+  open,
+  writeFile as writeFileFs,
+} from "node:fs/promises";
 import { dirname, join, normalize, resolve, sep } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -24,34 +33,35 @@ const resolveInRoot = (relative: string): string => {
   return resolved;
 };
 
-const normalizeRelativePath = (relativePath: string): string => normalize(`/${relativePath}`).replace(/^\/+/u, "");
+const normalizeRelativePath = (relativePath: string): string =>
+  normalize(`/${relativePath}`).replace(/^\/+/u, "");
 
 const tryDecodeUtf8 = (bytes: Buffer, trucated: boolean): string | null => {
   try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(bytes)
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   } catch {
     if (!trucated) {
       return null;
     }
   }
 
-  for (let trim = 1; trim <= 3; trim +=1) {
+  for (let trim = 1; trim <= 3; trim += 1) {
     if (bytes.length <= trim) {
       break;
     }
 
     try {
-      return new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, bytes.length - trim))
-    } catch {
-
-    }
+      return new TextDecoder("utf-8", { fatal: true }).decode(
+        bytes.subarray(0, bytes.length - trim),
+      );
+    } catch {}
   }
 
   return null;
-}
+};
 
 export const listFiles = async (
-  relativePath: string
+  relativePath: string,
 ): Promise<{ path: string; entries: FileEntry[] }> => {
   const abs = resolveInRoot(relativePath);
   await mkdir(abs, { recursive: true });
@@ -80,7 +90,9 @@ export const listFiles = async (
   return { entries, path: normalized };
 };
 
-export const readFile = async (relativePath: string): Promise<{
+export const readFile = async (
+  relativePath: string,
+): Promise<{
   path: string;
   content: string;
   encoding: "utf-8" | "base64";
@@ -91,18 +103,19 @@ export const readFile = async (relativePath: string): Promise<{
   const info = await stat(abs);
 
   if (!info.isFile()) {
-    throw new Error("Path is not a file")
+    throw new Error("Path is not a file");
   }
 
   const size = info.size;
   const truncated = size > MAX_READ_BYTES;
   const bytesToRead = Math.min(size, MAX_READ_BYTES);
-  const handle = await open(abs, "r")
+  const handle = await open(abs, "r");
 
   try {
     const buffer = Buffer.alloc(bytesToRead);
     const { bytesRead } = await handle.read(buffer, 0, bytesToRead, 0);
-    const chunk = bytesRead == buffer.length ? buffer : buffer.subarray(0, bytesRead);
+    const chunk =
+      bytesRead == buffer.length ? buffer : buffer.subarray(0, bytesRead);
     const utf8 = tryDecodeUtf8(chunk, truncated);
     const normalizedPath = normalizeRelativePath(relativePath);
 
@@ -112,34 +125,43 @@ export const readFile = async (relativePath: string): Promise<{
         encoding: "utf-8",
         path: normalizedPath,
         size,
-        truncated
-      }
+        truncated,
+      };
     }
 
     return {
-        content: chunk.toString("base64"),
-        encoding: "base64",
-        path: normalizedPath,
-        size,
-        truncated
-      }
+      content: chunk.toString("base64"),
+      encoding: "base64",
+      path: normalizedPath,
+      size,
+      truncated,
+    };
   } finally {
-    await handle.close()
+    await handle.close();
   }
-}
+};
 
-export const writeFile = async (input: {path: string, content: string, encoding?: "utf8" | "base64"}): Promise<void> => {
+export const writeFile = async (input: {
+  path: string;
+  content: string;
+  encoding?: "utf8" | "base64";
+}): Promise<void> => {
   const abs = resolveInRoot(input.path);
 
   if (abs == DATA_ROOT) {
-    throw new Error("Cannot write data root")
+    throw new Error("Cannot write data root");
   }
 
   const encoding = input.encoding ?? "utf8";
-  const contentBytes = encoding == "base64" ? Buffer.from(input.content, "base64") : Buffer.from(input.content, "utf8");
+  const contentBytes =
+    encoding == "base64"
+      ? Buffer.from(input.content, "base64")
+      : Buffer.from(input.content, "utf8");
 
   if (contentBytes.byteLength > MAX_READ_BYTES) {
-    throw new Error(`Contant too big (You know You know ;) ) ${MAX_READ_BYTES} bytes`)
+    throw new Error(
+      `Contant too big (You know You know ;) ) ${MAX_READ_BYTES} bytes`,
+    );
   }
 
   await mkdir(dirname(abs), { recursive: true });
@@ -154,7 +176,7 @@ export const writeFile = async (input: {path: string, content: string, encoding?
     await unlink(tempPath).catch(ignore);
     throw error;
   }
-}
+};
 
 export const deleteFile = async (relativePath: string): Promise<void> => {
   const abs = resolveInRoot(relativePath);

@@ -18,7 +18,7 @@ const sleep = async (ms: number, signal: AbortSignal): Promise<void> => {
 
 export const runHeartbeat = async (
   state: State,
-  signal: AbortSignal
+  signal: AbortSignal,
 ): Promise<void> => {
   const started = Date.now();
 
@@ -29,9 +29,8 @@ export const runHeartbeat = async (
   while (!signal.aborted) {
     try {
       const dockerState = await probeContainerState();
-      const containerStats = dockerState === "running"
-        ? await getContainerStats()
-        : null;
+      const containerStats =
+        dockerState === "running" ? await getContainerStats() : null;
 
       const now = Date.now();
       const uptimeSeconds = Math.floor((now - started) / 1000);
@@ -42,8 +41,14 @@ export const runHeartbeat = async (
       if (containerStats && prevNetAt > 0) {
         const elapsedSec = (now - prevNetAt) / 1000;
         if (elapsedSec > 0) {
-          networkInBps = Math.max(0, (containerStats.networkInBytes - prevNetIn) / elapsedSec);
-          networkOutBps = Math.max(0, (containerStats.networkOutBytes - prevNetOut) / elapsedSec);
+          networkInBps = Math.max(
+            0,
+            (containerStats.networkInBytes - prevNetIn) / elapsedSec,
+          );
+          networkOutBps = Math.max(
+            0,
+            (containerStats.networkOutBytes - prevNetOut) / elapsedSec,
+          );
         }
       }
       if (containerStats) {
@@ -57,7 +62,7 @@ export const runHeartbeat = async (
         dockerState,
         lastCommandId: state.lastExecutedCommandId,
         memTotalBytes: containerStats?.memTotalBytes ?? totalmem(),
-        memUsedBytes: containerStats?.memUsedBytes ?? (totalmem() - freemem()),
+        memUsedBytes: containerStats?.memUsedBytes ?? totalmem() - freemem(),
         networkInBps,
         networkOutBps,
         uptimeSeconds,
