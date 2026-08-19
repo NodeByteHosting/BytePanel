@@ -22,7 +22,9 @@ const SERVER_STATUSES: readonly ServerStatus[] = [
 ];
 
 const toServerStatus = (status: string): ServerStatus =>
-  (SERVER_STATUSES as readonly string[]).includes(status) ? (status as ServerStatus) : "unknown";
+  (SERVER_STATUSES as readonly string[]).includes(status)
+    ? (status as ServerStatus)
+    : "unknown";
 
 export const createServerOps = (client: HetznerClient) => ({
   createServer: async (input: CreateServerInput): Promise<ProviderServer> => {

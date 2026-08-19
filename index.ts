@@ -19,11 +19,13 @@ const buildProvider = (provider: ProviderId, token: string): Provider => {
 };
 
 // NodeByte's system-level Hetzner provider — no per-user token needed.
-const getSystemProvider = (): Provider => buildProvider("hetzner", env.HETZNER_API_TOKEN);
+const getSystemProvider = (): Provider =>
+  buildProvider("hetzner", env.HETZNER_API_TOKEN);
 
 // Returns the NodeByte system provider. The userId parameter is kept for
 // API compatibility but is no longer used for credential loading.
-export const getProviderForUser = (_userId: string): Provider => getSystemProvider();
+export const getProviderForUser = (_userId: string): Provider =>
+  getSystemProvider();
 
 // Returns the system provider + the system-level golden image ID.
 // Falls back to env.HETZNER_SNAPSHOT_IMAGE_ID for static configuration.
@@ -55,7 +57,11 @@ export const getProviderForUserWithImage = async (
   };
 };
 
-export { formatProviderError, MissingProviderCredentialsError, ProviderApiError } from "./errors";
+export {
+  formatProviderError,
+  MissingProviderCredentialsError,
+  ProviderApiError,
+} from "./errors";
 export type {
   Catalog,
   CatalogLocation,

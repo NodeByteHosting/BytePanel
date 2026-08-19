@@ -30,12 +30,14 @@ const toImageStatus = (status: string): ProviderImageStatus => {
   return "unavailable";
 };
 
-const toImageType = (type: string): ProviderImageType => type === "backup" ? "backup" : "snapshot";
+const toImageType = (type: string): ProviderImageType =>
+  type === "backup" ? "backup" : "snapshot";
 
 export const mapHetznerImage = (image: HetznerImage): ProviderImage => ({
   boundToServerId: image.bound_to === null ? null : String(image.bound_to),
   createdAt: image.created,
-  createdFromServerId: image.created_from === null ? null : String(image.created_from.id),
+  createdFromServerId:
+    image.created_from === null ? null : String(image.created_from.id),
   description: image.description,
   diskSizeGb: image.disk_size,
   id: String(image.id),

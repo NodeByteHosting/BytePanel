@@ -22,8 +22,7 @@ export const throwIfHetznerError = (
     return;
   }
   const body = error as
-    | { error?: { code?: string; message?: string } }
-    | undefined;
+    { error?: { code?: string; message?: string } } | undefined;
   const code = body?.error?.code ?? String(response.status);
   const message = body?.error?.message ?? response.statusText;
   throw new ProviderApiError(response.status, code, message);

@@ -1,6 +1,10 @@
 import "server-only";
 import process from "node:process";
-import type { BuilderProfile, CredentialValidationResult, Provider } from "../types";
+import type {
+  BuilderProfile,
+  CredentialValidationResult,
+  Provider,
+} from "../types";
 import { getHetznerCatalog } from "./catalog";
 import { createHetznerClient } from "./client";
 import { createImageOps } from "./images";
@@ -21,7 +25,8 @@ export const createHetznerProvider = (token: string): Provider => {
     id: "hetzner",
     ...servers,
     ...images,
-    getCatalog: (referenceImageId) => getHetznerCatalog(client, referenceImageId ?? null),
+    getCatalog: (referenceImageId) =>
+      getHetznerCatalog(client, referenceImageId ?? null),
     validateCredentials: async (): Promise<CredentialValidationResult> => {
       const { response } = await client.GET("/locations", {
         params: { query: { per_page: 1 } },

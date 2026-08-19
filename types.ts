@@ -88,8 +88,7 @@ export interface Catalog {
 }
 
 export type CredentialValidationResult =
-  | { ok: true }
-  | { ok: false; reason: "unauthorized" | "unreachable" };
+  { ok: true } | { ok: false; reason: "unauthorized" | "unreachable" };
 
 export interface BuilderProfile {
   serverType: string;

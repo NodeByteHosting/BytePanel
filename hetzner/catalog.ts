@@ -40,15 +40,13 @@ export const getHetznerCatalog = async (
 
   const imageRequest = imageId
     ? client.GET("/images/{id}", {
-      next: { revalidate: 3600 },
-      params: { path: { id: Number(imageId) } },
-    })
+        next: { revalidate: 3600 },
+        params: { path: { id: Number(imageId) } },
+      })
     : Promise.resolve(null);
 
-  const [serverTypesRes, datacentersRes, pricingRes, imageRes] = await Promise.all([
-    ...baseRequests,
-    imageRequest,
-  ]);
+  const [serverTypesRes, datacentersRes, pricingRes, imageRes] =
+    await Promise.all([...baseRequests, imageRequest]);
 
   throwIfHetznerError(serverTypesRes.error, serverTypesRes.response);
   throwIfHetznerError(datacentersRes.error, datacentersRes.response);
@@ -110,7 +108,10 @@ export const getHetznerCatalog = async (
         }
 
         const hetznerBaseEur = hetznerByLocation.get(locName) ?? 0;
-        const hourlyPriceCents = calculateHourlyPriceCents(hetznerBaseEur, t.cpu_type);
+        const hourlyPriceCents = calculateHourlyPriceCents(
+          hetznerBaseEur,
+          t.cpu_type,
+        );
 
         locations.push({
           available: info.available.has(t.id),

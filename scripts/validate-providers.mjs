@@ -42,7 +42,8 @@ const getProviderDirs = () => {
 };
 
 const parseProviderImports = (indexSource) => {
-  const importRegex = /import\s+\{\s*([a-zA-Z0-9_]+)\s*\}\s+from\s+"\.\/([a-z0-9-]+)";/gu;
+  const importRegex =
+    /import\s+\{\s*([a-zA-Z0-9_]+)\s*\}\s+from\s+"\.\/([a-z0-9-]+)";/gu;
   const imports = new Map();
   let match;
 
@@ -58,7 +59,9 @@ const parseProviderImports = (indexSource) => {
 };
 
 const parseProviderCases = (indexSource) => {
-  const switchMatch = indexSource.match(/switch \(provider\) \{([\s\S]*?)default:/mu);
+  const switchMatch = indexSource.match(
+    /switch \(provider\) \{([\s\S]*?)default:/mu,
+  );
   if (!switchMatch) {
     fail("index.ts must contain a switch(provider) with a default branch.");
     return new Map();
@@ -95,9 +98,10 @@ const parseProviderIds = (typesSource) => {
 };
 
 const validateProviderFactory = (providerDir, providerSource) => {
-  const expectedFactoryName = `create${
-    providerDir.replace(/(^|-)([a-z])/gu, (_, __, char) => char.toUpperCase())
-  }Provider`;
+  const expectedFactoryName = `create${providerDir.replace(
+    /(^|-)([a-z])/gu,
+    (_, __, char) => char.toUpperCase(),
+  )}Provider`;
 
   const hasFactory = new RegExp(
     `export\\s+const\\s+${expectedFactoryName}\\s*=`,
@@ -110,11 +114,15 @@ const validateProviderFactory = (providerDir, providerSource) => {
     );
   }
 
-  const hasProviderIdLiteral = new RegExp(`\\bid\\s*:\\s*"${providerDir}"`, "u")
-    .test(providerSource);
+  const hasProviderIdLiteral = new RegExp(
+    `\\bid\\s*:\\s*"${providerDir}"`,
+    "u",
+  ).test(providerSource);
 
   if (!hasProviderIdLiteral) {
-    fail(`${providerDir}/index.ts must set provider id literal to '${providerDir}'.`);
+    fail(
+      `${providerDir}/index.ts must set provider id literal to '${providerDir}'.`,
+    );
   }
 
   return expectedFactoryName;
@@ -143,7 +151,10 @@ const main = () => {
 
   for (const providerDir of providerDirs) {
     const providerSource = read(join(ROOT, providerDir, "index.ts"));
-    const expectedFactory = validateProviderFactory(providerDir, providerSource);
+    const expectedFactory = validateProviderFactory(
+      providerDir,
+      providerSource,
+    );
 
     const importedFactory = imports.get(providerDir);
     if (!importedFactory) {
