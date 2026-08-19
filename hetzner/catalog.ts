@@ -1,5 +1,5 @@
 import "server-only";
-import { applyMarkup } from "@/lib/pricing";
+import { calculateHourlyPriceCents } from "@/lib/pricing";
 
 import type { Catalog, CatalogLocation, CatalogServerType } from "../types";
 import { throwIfHetznerError } from "./client";
@@ -100,7 +100,7 @@ export const getHetznerCatalog = async (
     .map<CatalogServerType>((t) => {
       // Hetzner per-location monthly gross EUR prices
       const hetznerByLocation = new Map(
-        t.prices.map((p) => [p.location, Number(p.price_monthly.gross)]),
+        t.prices.map((p) => [p.location, Number(p.price_hourly.gross)]),
       );
 
       const locations: CatalogLocation[] = [];
@@ -110,7 +110,7 @@ export const getHetznerCatalog = async (
         }
 
         const hetznerBaseEur = hetznerByLocation.get(locName) ?? 0;
-        const locationPriceCents = applyMarkup(hetznerBaseEur, t.cpu_type);
+        const hourlyPriceCents = calculateHourlyPriceCents(hetznerBaseEur, t.cpu_type);
 
         locations.push({
           available: info.available.has(t.id),
@@ -119,7 +119,7 @@ export const getHetznerCatalog = async (
           latitude: info.latitude,
           longitude: info.longitude,
           name: locName,
-          pricePerMonth: locationPriceCents / 100,
+          hourlyPriceCents,
           supported: true,
         });
       }
@@ -134,10 +134,10 @@ export const getHetznerCatalog = async (
       // Use the cheapest available location as the headline price
       const availablePrices = locations
         .filter((l) => l.available)
-        .map((l) => l.pricePerMonth);
+        .map((l) => l.hourlyPriceCents);
       const lowestPrice = availablePrices.length
         ? Math.min(...availablePrices)
-        : (locations[0]?.pricePerMonth ?? 0);
+        : (locations[0]?.hourlyPriceCents ?? 0);
 
       return {
         architecture: t.architecture,
@@ -148,14 +148,14 @@ export const getHetznerCatalog = async (
         locations,
         memory: t.memory,
         name: t.name,
-        pricePerMonth: lowestPrice,
+        hourlyPriceCents: lowestPrice,
         tier: toTier(t.name, t.cpu_type),
       };
     })
     .filter((t) => t.locations.length > 0)
     .toSorted(
       (a, b) =>
-        a.pricePerMonth - b.pricePerMonth ||
+        a.hourlyPriceCents - b.hourlyPriceCents ||
         a.memory - b.memory ||
         a.cores - b.cores,
     );
