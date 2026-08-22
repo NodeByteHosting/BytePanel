@@ -1,5 +1,5 @@
 import "server-only";
-import { calculateHourlyPriceCents } from "@/lib/pricing";
+import { applyHourlyMarkupMilliCents, applyMarkup } from "@/lib/pricing";
 
 import type { Catalog, CatalogLocation, CatalogServerType } from "../types";
 import { throwIfHetznerError } from "./client";
@@ -98,7 +98,13 @@ export const getHetznerCatalog = async (
     .map<CatalogServerType>((t) => {
       // Hetzner per-location monthly gross EUR prices
       const hetznerByLocation = new Map(
-        t.prices.map((p) => [p.location, Number(p.price_hourly.gross)]),
+        t.prices.map((p) => [
+          p.location,
+          {
+            hourly: Number(p.price_hourly?.gross ?? 0),
+            monthly: Number(p.price_monthly?.gross ?? 0),
+          },
+        ]),
       );
 
       const locations: CatalogLocation[] = [];
@@ -107,9 +113,12 @@ export const getHetznerCatalog = async (
           continue;
         }
 
-        const hetznerBaseEur = hetznerByLocation.get(locName) ?? 0;
-        const hourlyPriceCents = calculateHourlyPriceCents(
-          hetznerBaseEur,
+        const hetznerPrice = hetznerByLocation.get(locName) ?? {
+          hourly: 0,
+          monthly: 0,
+        };
+        const locationPriceCents = applyMarkup(
+          hetznerPrice.monthly,
           t.cpu_type,
         );
 
@@ -120,7 +129,11 @@ export const getHetznerCatalog = async (
           latitude: info.latitude,
           longitude: info.longitude,
           name: locName,
-          hourlyPriceCents,
+          hourlyPriceMilliCents: applyHourlyMarkupMilliCents(
+            hetznerPrice.hourly,
+            t.cpu_type,
+          ),
+          pricePerMonth: locationPriceCents / 100,
           supported: true,
         });
       }
@@ -133,12 +146,19 @@ export const getHetznerCatalog = async (
       });
 
       // Use the cheapest available location as the headline price
-      const availablePrices = locations
+      const availableMonthlyPrices = locations
         .filter((l) => l.available)
-        .map((l) => l.hourlyPriceCents);
-      const lowestPrice = availablePrices.length
-        ? Math.min(...availablePrices)
-        : (locations[0]?.hourlyPriceCents ?? 0);
+        .map((l) => l.pricePerMonth);
+      const lowestPrice = availableMonthlyPrices.length
+        ? Math.min(...availableMonthlyPrices)
+        : (locations[0]?.pricePerMonth ?? 0);
+
+      const availableHourlyRates = locations
+        .filter((l) => l.available)
+        .map((l) => l.hourlyPriceMilliCents);
+      const lowestHourlyRate = availableHourlyRates.length
+        ? Math.min(...availableHourlyRates)
+        : (locations[0]?.hourlyPriceMilliCents ?? 0);
 
       return {
         architecture: t.architecture,
@@ -146,17 +166,18 @@ export const getHetznerCatalog = async (
         cpuType: t.cpu_type,
         description: t.description,
         disk: t.disk,
+        hourlyPriceMilliCents: lowestHourlyRate,
         locations,
         memory: t.memory,
         name: t.name,
-        hourlyPriceCents: lowestPrice,
+        pricePerMonth: lowestPrice,
         tier: toTier(t.name, t.cpu_type),
       };
     })
     .filter((t) => t.locations.length > 0)
     .toSorted(
       (a, b) =>
-        a.hourlyPriceCents - b.hourlyPriceCents ||
+        a.pricePerMonth - b.pricePerMonth ||
         a.memory - b.memory ||
         a.cores - b.cores,
     );

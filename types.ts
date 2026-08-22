@@ -63,7 +63,8 @@ export interface CatalogLocation {
   available: boolean;
   supported: boolean;
   /** NodeByte price for this server type at this specific location (GBP, £/mo) */
-  hourlyPriceCents: number;
+  pricePerMonth: number;
+  hourlyPriceMilliCents: number;
 }
 
 export interface CatalogServerType {
@@ -77,7 +78,8 @@ export interface CatalogServerType {
   tier: "shared-standard" | "shared-optimised" | "dedicated";
   architecture: "x86" | "arm";
   /** Lowest price across all locations (GBP, £/mo) — used for display/sorting */
-  hourlyPriceCents: number;
+  pricePerMonth: number;
+  hourlyPriceMilliCents: number;
   locations: CatalogLocation[];
 }
 
