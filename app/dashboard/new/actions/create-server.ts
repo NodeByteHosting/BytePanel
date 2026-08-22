@@ -39,30 +39,52 @@ export type CreateServerResult =
  * Get or create a Stripe Price for a given server type and monthly GBP pence amount.
  * Uses a stable lookup_key so repeated calls are idempotent.
  */
-const getOrCreateStripePrice = async (
+const getOrCreateStripePrices = async (
   stripe: Stripe,
   serverTypeName: string,
   pricePerMonthCents: number
-): Promise<string> => {
-  const lookupKey = `nodebyte-${serverTypeName.toLowerCase()}-monthly`;
-  const existing = await stripe.prices.list({ lookup_keys: [lookupKey] });
-  if (existing.data.length > 0) {
-    return existing.data[0].id;
+): Promise<{
+  introductoryPriceId: string;
+  usageSubscriptionPriceId: string;
+}> => {
+  const priceKey = `nodebyte-${serverTypeName.toLowerCase()}-${pricePerMonthCents}`;
+  const [introductoryPrices, usagePrices] = await Promise.all([
+    stripe.prices.list({ lookup_keys: [`${priceKey}-first-month`] }),
+    stripe.prices.list({ lookup_keys: [`${priceKey}-usage-base`] }),
+  ]);
+  if (introductoryPrices.data[0] && usagePrices.data[0]) {
+    return {
+      introductoryPriceId: introductoryPrices.data[0].id,
+      usageSubscriptionPriceId: usagePrices.data[0].id,
+    };
   }
-  // Create a recurring product + price for this server type
   const product = await stripe.products.create({
     metadata: { serverType: serverTypeName },
     name: `NodeByte — ${serverTypeName} Game Server`,
   });
-  const price = await stripe.prices.create({
-    currency: "gbp",
-    lookup_key: lookupKey,
-    product: product.id,
-    recurring: { interval: "month" },
-    transfer_lookup_key: true,
-    unit_amount: pricePerMonthCents,
-  });
-  return price.id;
+  const [introductoryPrice, usageSubscriptionPrice] = await Promise.all([
+    introductoryPrices.data[0] ??
+      stripe.prices.create({
+        currency: "gbp",
+        lookup_key: `${priceKey}-first-month`,
+        product: product.id,
+        transfer_lookup_key: true,
+        unit_amount: pricePerMonthCents,
+      }),
+    usagePrices.data[0] ??
+      stripe.prices.create({
+        currency: "gbp",
+        lookup_key: `${priceKey}-usage-base`,
+        product: product.id,
+        recurring: { interval: "month" },
+        transfer_lookup_key: true,
+        unit_amount: 0,
+      }),
+  ]);
+  return {
+    introductoryPriceId: introductoryPrice.id,
+    usageSubscriptionPriceId: usageSubscriptionPrice.id,
+  };
 };
 
 export const createServer = async (
@@ -151,7 +173,7 @@ export const createServer = async (
     );
 
     const pricePerMonthCents = Math.round(type.pricePerMonth * 100);
-    const priceId = await getOrCreateStripePrice(
+    const prices = await getOrCreateStripePrices(
       stripe,
       type.name,
       pricePerMonthCents
@@ -170,16 +192,23 @@ export const createServer = async (
     const session = await stripe.checkout.sessions.create({
       cancel_url: `${stripeReturnUrl}/dashboard/new${bypassParam ? `?${bypassParam.slice(1)}` : ""}`,
       customer: stripeCustomerId,
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [
+        { price: prices.introductoryPriceId, quantity: 1 },
+        { price: prices.usageSubscriptionPriceId, quantity: 1 },
+      ],
       metadata: {
+        hourlyRateMilliCents: String(location.hourlyPriceMilliCents),
         nodebyteServerId: server.id,
         nodebyteUserId: user.id,
+        pricePerMonthCents: String(pricePerMonthCents),
       },
       mode: "subscription",
       subscription_data: {
         metadata: {
+          hourlyRateMilliCents: String(location.hourlyPriceMilliCents),
           nodebyteServerId: server.id,
           nodebyteUserId: user.id,
+          pricePerMonthCents: String(pricePerMonthCents),
           serverType: type.name,
         },
       },
