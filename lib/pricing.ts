@@ -43,6 +43,14 @@ export const applyMarkup = (
   return Math.max(rounded, MIN_PRICE_CENTS);
 };
 
+export const applyHourlyMarkupMilliCents = (
+  hetznerHourlyPriceEur: number,
+  cpuType: "shared" | "dedicated"
+): number => {
+  const gbp = hetznerHourlyPriceEur * EUR_TO_GBP_RATE;
+  return Math.max(0, Math.round(gbp * (1 + MARKUP[cpuType]) * 100_000));
+};
+
 /**
  * Format a price in pence to a GBP display string.
  */

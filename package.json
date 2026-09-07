@@ -34,7 +34,9 @@
     "submodules:status": "node scripts/submodules.mjs status",
     "submodules:update": "node scripts/submodules.mjs update",
     "submodules:push": "node scripts/submodules.mjs push",
-    "bump-deps": "npx npm-check-updates -u -x zod && bun install"
+    "bump-deps": "npx npm-check-updates -u -x zod && bun install",
+    "prettier:check": "bunx prettier . --check",
+    "prettier:run": "bunx prettier . --write"
   },
   "dependencies": {
     "@better-auth/passkey": "^1.6.9",
@@ -111,6 +113,7 @@
     "oxfmt": "^0.48.0",
     "oxlint": "^1.63.0",
     "postcss": "^8.5.14",
+    "prettier": "3.9.6",
     "prisma": "^7.8.0",
     "tailwindcss": "^4.2.4",
     "tailwindcss-animate": "^1.0.7",
