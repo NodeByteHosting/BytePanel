@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:stripe": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
-    "build": "bun run submodules:setup && bunx --bun prisma migrate deploy && bunx --bun prisma generate && next build",
+    "build": "bun run submodules:setup && bunx --bun prisma migrate deploy && bunx --bun prisma generate && next build --webpack",
     "start": "next start",
     "analyze": "ANALYZE=true bun run build",
     "db:deploy": "bunx --bun prisma migrate deploy",
