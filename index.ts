@@ -56,3 +56,45 @@ export {
   type SettingsValues,
   validateSettings,
 } from "./settings";
+
+// ─── Eggs (Pterodactyl-style definitions synced into the panel) ─────────────
+
+import { cs2Egg } from "./cs2/egg";
+import { dontStarveTogetherEgg } from "./dontstarvetogether/egg";
+import { enshroudedEgg } from "./enshrouded/egg";
+import { fivemEgg } from "./fivem/egg";
+import { gmodEgg } from "./gmod/egg";
+import { hytaleEgg } from "./hytale/egg";
+import { l4d2Egg } from "./l4d2/egg";
+import { minecraftEgg } from "./minecraft/egg";
+import { palworldEgg } from "./palworld/egg";
+import { redmEgg } from "./redm/egg";
+import { rustEgg } from "./rust/egg";
+import { satisfactoryEgg } from "./satisfactory/egg";
+import { terrariaEgg } from "./terraria/egg";
+import { valheimEgg } from "./valheim/egg";
+import { vrisingEgg } from "./vrising/egg";
+
+export const eggs = [
+  cs2Egg,
+  minecraftEgg,
+  rustEgg,
+  l4d2Egg,
+  hytaleEgg,
+  fivemEgg,
+  redmEgg,
+  gmodEgg,
+  terrariaEgg,
+  palworldEgg,
+  satisfactoryEgg,
+  dontStarveTogetherEgg,
+  enshroudedEgg,
+  valheimEgg,
+  vrisingEgg,
+];
+
+export type {
+  EggConfigFile,
+  EggDefinition,
+  EggVariable,
+} from "./egg";

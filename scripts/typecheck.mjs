@@ -5,8 +5,8 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = process.cwd();
-const ROOT_TS = ["index.ts", "compose.ts", "settings.ts", "steam.ts"];
-const RECIPE_FILES = ["index.ts", "install.ts", "settings.ts"];
+const ROOT_TS = ["index.ts", "compose.ts", "egg.ts", "settings.ts", "steam.ts"];
+const RECIPE_FILES = ["egg.ts", "index.ts", "install.ts", "settings.ts"];
 const IGNORE = new Set([".git", ".github", "scripts"]);
 
 const isFile = (path) => {
