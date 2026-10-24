@@ -1,0 +1,54 @@
+import { NextResponse } from "next/server";
+
+import { prisma } from "@/lib/db";
+import { emitActivity } from "@/lib/events/emit";
+import { parseJson, remoteHandler } from "@/lib/remote/handler";
+import { daemonActivityBatchSchema } from "@/protocol";
+
+export const runtime = "nodejs";
+
+const describe = (
+  event: string,
+  metadata?: Record<string, unknown>
+): string => {
+  if (event === "server:console.command") {
+    return `Ran console command: ${String(metadata?.command ?? "").slice(0, 200)}`;
+  }
+  const power = /^server:power\.(\w+)$/u.exec(event);
+  if (power) {
+    return `Sent power action: ${power[1]}`;
+  }
+  return event;
+};
+
+// User-attributed events captured by the daemon (websocket power / console).
+export const POST = remoteHandler(async ({ node, request }) => {
+  const body = await parseJson(request, daemonActivityBatchSchema);
+  if ("response" in body) {
+    return body.response;
+  }
+  const uuids = [...new Set(body.data.data.map((e) => e.serverUuid))];
+  const servers = await prisma.server.findMany({
+    select: { id: true, uuid: true },
+    where: { nodeId: node.id, uuid: { in: uuids } },
+  });
+  const byUuid = new Map(servers.map((s) => [s.uuid, s.id]));
+
+  for (const entry of body.data.data) {
+    const serverId = byUuid.get(entry.serverUuid);
+    if (!serverId) {
+      continue;
+    }
+    await emitActivity({
+      actorId: entry.userUuid ?? null,
+      ip: entry.ip ?? null,
+      message: describe(entry.event, entry.metadata),
+      metadata: entry.metadata,
+      occurredAt: new Date(entry.timestamp),
+      phase: entry.event,
+      serverId,
+      source: "daemon",
+    });
+  }
+  return new NextResponse(null, { status: 204 });
+});

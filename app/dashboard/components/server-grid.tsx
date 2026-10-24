@@ -4,24 +4,12 @@ import { SearchIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
-import { games } from "@/games";
 
 import { ServerCard } from "./server-card";
-
-interface Server {
-  id: string;
-  name: string;
-  game: string;
-  observedState: string;
-  desiredState: string;
-  phase: string;
-  ipv4: string | null;
-  serverType: string;
-  location: string;
-}
+import type { ServerCardData } from "./server-card";
 
 interface Props {
-  servers: Server[];
+  servers: ServerCardData[];
 }
 
 export const ServerGrid = ({ servers }: Props) => {
@@ -35,8 +23,8 @@ export const ServerGrid = ({ servers }: Props) => {
     return servers.filter(
       (s) =>
         s.name.toLowerCase().includes(q) ||
-        s.game.toLowerCase().includes(q) ||
-        s.location.toLowerCase().includes(q)
+        (s.game?.name.toLowerCase().includes(q) ?? false) ||
+        (s.nodeName?.toLowerCase().includes(q) ?? false)
     );
   }, [servers, search]);
 
@@ -59,13 +47,9 @@ export const ServerGrid = ({ servers }: Props) => {
         </p>
       )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((server) => {
-          const fullGame = games.find((g) => g.id === server.game);
-          const game = fullGame
-            ? { id: fullGame.id, image: fullGame.image, name: fullGame.name }
-            : undefined;
-          return <ServerCard key={server.id} game={game} server={server} />;
-        })}
+        {filtered.map((server) => (
+          <ServerCard key={server.id} server={server} />
+        ))}
       </div>
     </div>
   );

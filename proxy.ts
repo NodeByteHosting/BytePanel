@@ -22,10 +22,8 @@ const PUBLIC_PATHS = [
   "/robots.txt",
   "/sitemap.xml",
   "/api/auth",
-  "/api/agent",
-  "/api/snapshot",
+  "/api/remote",
   "/monitoring",
-  "/.well-known/workflow",
 ];
 
 const isPublic = (pathname: string) =>

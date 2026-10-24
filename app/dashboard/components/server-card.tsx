@@ -25,30 +25,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
+import type { PowerAction, ResourceUsage } from "@/protocol";
 
-import { runServerCommand } from "../[id]/actions/commands";
+import { sendPowerAction } from "../[id]/actions/power";
 
-interface Server {
+export interface ServerCardData {
   id: string;
   name: string;
-  game: string;
-  observedState: string;
-  desiredState: string;
-  phase: string;
-  ipv4: string | null;
-  serverType: string;
-  location: string;
-}
-
-interface GameInfo {
-  id: string;
-  name: string;
-  image: string;
+  status: string | null;
+  deployed: boolean;
+  address: string | null;
+  nodeName: string | null;
+  memory: number;
+  cpu: number;
+  game: { name: string; image: string | null } | null;
 }
 
 interface Props {
-  server: Server;
-  game: GameInfo | undefined;
+  server: ServerCardData;
 }
 
 interface Metrics {
@@ -94,26 +88,41 @@ const statusConfig = {
   },
 };
 
-const fetchLiveMetrics = async (serverId: string): Promise<Metrics> => {
+const fetchResources = async (
+  serverId: string
+): Promise<ResourceUsage | null> => {
   try {
-    const response = await fetch(`/api/servers/${serverId}/metrics/live`, {
+    const response = await fetch(`/api/servers/${serverId}/resources`, {
       cache: "no-store",
     });
     if (!response.ok) {
-      return {};
+      return null;
     }
-    const data = await response.json();
-    const m = data.metrics;
-    if (!m) {
-      return {};
-    }
-    return {
-      cpu: typeof m.cpu === "number" ? m.cpu : undefined,
-      memory: typeof m.memory === "number" ? m.memory : undefined,
-    };
+    return ((await response.json()) as { resources: ResourceUsage }).resources;
   } catch {
-    return {};
+    return null;
   }
+};
+
+// Panel-side status first; otherwise the daemon's live power state.
+const statusKey = (
+  server: ServerCardData,
+  state: ResourceUsage["state"] | null
+): keyof typeof statusConfig => {
+  if (
+    !server.deployed ||
+    server.status === "installing" ||
+    server.status === "restoring_backup"
+  ) {
+    return "unhealthy";
+  }
+  if (server.status) {
+    return "failed";
+  }
+  if (state === "running" || state === "starting" || state === "stopping") {
+    return "running";
+  }
+  return "stopped";
 };
 
 const getMetricColor = (value: number) => {
@@ -146,71 +155,96 @@ const MetricBar = ({ label, value }: { label: string; value: number }) => (
   </div>
 );
 
-export const ServerCard = ({ server, game }: Props) => {
+const statusLabel = (
+  server: ServerCardData,
+  state: ResourceUsage["state"] | null,
+  key: keyof typeof statusConfig
+): string => {
+  if (!server.deployed) {
+    return "Deploying";
+  }
+  if (server.status) {
+    return server.status.replaceAll("_", " ");
+  }
+  return state ?? statusConfig[key].label;
+};
+
+// CPU as a share of the server's limit; memory as a share of the container limit.
+const toMetrics = (usage: ResourceUsage, cpuLimit: number): Metrics => {
+  if (usage.state === "offline") {
+    return {};
+  }
+  return {
+    cpu:
+      cpuLimit > 0 ? (usage.cpuAbsolute / cpuLimit) * 100 : usage.cpuAbsolute,
+    memory:
+      usage.memoryLimitBytes > 0
+        ? (usage.memoryBytes / usage.memoryLimitBytes) * 100
+        : undefined,
+  };
+};
+
+export const ServerCard = ({ server }: Props) => {
+  const { game } = server;
   const [metrics, setMetrics] = useState<Metrics>({});
-  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [powerState, setPowerState] = useState<ResourceUsage["state"] | null>(
+    null
+  );
+  const [metricsLoading, setMetricsLoading] = useState(server.deployed);
   const [actionPending, setActionPending] = useState<string | null>(null);
   const [copiedIP, setCopiedIP] = useState(false);
 
-  const deleting = server.desiredState === "deleted";
-  const isRunning = server.observedState === "running";
-  const isStopped = server.observedState === "stopped";
-  const canControl = !deleting;
+  const key = statusKey(server, powerState);
+  const isRunning = key === "running";
+  const isStopped = key === "stopped";
+  const canControl = server.deployed && !server.status;
 
-  const status =
-    statusConfig[server.observedState as keyof typeof statusConfig] ??
-    statusConfig.stopped;
+  const status = {
+    ...statusConfig[key],
+    label: statusLabel(server, powerState, key),
+  };
 
   useEffect(() => {
-    if (server.observedState !== "running") {
-      setMetrics({});
-      setMetricsLoading(false);
+    if (!server.deployed) {
       return;
     }
-
-    setMetricsLoading(true);
     let cancelled = false;
-
     const load = async () => {
-      const m = await fetchLiveMetrics(server.id);
-      if (!cancelled) {
-        setMetrics(m);
-        setMetricsLoading(false);
+      const usage = await fetchResources(server.id);
+      if (cancelled) {
+        return;
       }
+      setMetricsLoading(false);
+      if (!usage) {
+        return;
+      }
+      setPowerState(usage.state);
+      setMetrics(toMetrics(usage, server.cpu));
     };
     void load();
-
-    // Poll every 10s while running
-    const interval = setInterval(() => {
-      void (async () => {
-        const m = await fetchLiveMetrics(server.id);
-        if (!cancelled) {
-          setMetrics(m);
-        }
-      })();
-    }, 10_000);
-
+    // Poll every 10s, like Pterodactyl's server list.
+    const interval = setInterval(() => void load(), 10_000);
     return () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [server.id, server.observedState]);
+  }, [server.id, server.deployed, server.cpu]);
 
   const handleCommand = useCallback(
-    async (type: "START" | "STOP" | "RESTART") => {
+    async (action: PowerAction) => {
       if (!canControl) {
         return;
       }
-      setActionPending(type);
+      setActionPending(action);
       try {
-        const result = await runServerCommand({ serverId: server.id, type });
+        const result = await sendPowerAction({ action, serverId: server.id });
         if (result.ok) {
-          toast.success(`${type.toLowerCase()} queued`);
+          toast.success(`Sent ${action}`);
         } else {
-          toast.error(result.error || "Failed to queue command");
+          toast.error(result.error || "Power action failed");
         }
       } catch {
-        toast.error("Failed to queue command");
+        toast.error("Power action failed");
       } finally {
         setActionPending(null);
       }
@@ -219,8 +253,8 @@ export const ServerCard = ({ server, game }: Props) => {
   );
 
   const handleCopyIP = () => {
-    if (server.ipv4) {
-      navigator.clipboard.writeText(server.ipv4);
+    if (server.address) {
+      navigator.clipboard.writeText(server.address);
       setCopiedIP(true);
       setTimeout(() => setCopiedIP(false), 2000);
     }
@@ -236,7 +270,7 @@ export const ServerCard = ({ server, game }: Props) => {
     >
       {/* Game image banner */}
       <div className="relative h-28 w-full overflow-hidden bg-muted">
-        {game ? (
+        {game?.image ? (
           <Image
             src={game.image}
             alt={game.name}
@@ -283,25 +317,21 @@ export const ServerCard = ({ server, game }: Props) => {
             {server.name}
           </h3>
           <div className="flex items-center gap-1.5 mt-1">
-            <span className="text-xs text-muted-foreground font-mono uppercase">
-              {server.location}
-            </span>
-            <span className="text-muted-foreground/40">·</span>
             <span className="text-xs text-muted-foreground">
-              {server.serverType}
+              {server.nodeName ?? "Awaiting deployment"}
             </span>
           </div>
         </div>
 
         {/* IP address */}
-        {server.ipv4 ? (
+        {server.address ? (
           <button
             type="button"
             onClick={handleCopyIP}
             className="group/ip flex items-center justify-between rounded-lg border border-border/50 bg-muted/40 px-3 py-2 transition-colors hover:bg-muted/70 hover:border-border"
           >
             <code className="text-xs font-mono text-foreground/70 truncate">
-              {server.ipv4}
+              {server.address}
             </code>
             <span className="ml-2 shrink-0 text-muted-foreground transition-colors group-hover/ip:text-foreground">
               {copiedIP ? (
@@ -314,7 +344,7 @@ export const ServerCard = ({ server, game }: Props) => {
         ) : (
           <div className="flex items-center rounded-lg border border-dashed border-border/40 bg-muted/20 px-3 py-2">
             <code className="text-xs font-mono text-muted-foreground/50">
-              No IP assigned
+              No address yet
             </code>
           </div>
         )}
@@ -371,7 +401,7 @@ export const ServerCard = ({ server, game }: Props) => {
             <DropdownMenuContent align="end" className="w-40">
               {isStopped && (
                 <DropdownMenuItem
-                  onClick={() => handleCommand("START")}
+                  onClick={() => handleCommand("start")}
                   disabled={actionPending !== null}
                   className="cursor-pointer gap-2"
                 >
@@ -382,7 +412,7 @@ export const ServerCard = ({ server, game }: Props) => {
               {isRunning && (
                 <>
                   <DropdownMenuItem
-                    onClick={() => handleCommand("RESTART")}
+                    onClick={() => handleCommand("restart")}
                     disabled={actionPending !== null}
                     className="cursor-pointer gap-2"
                   >
@@ -391,7 +421,7 @@ export const ServerCard = ({ server, game }: Props) => {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => handleCommand("STOP")}
+                    onClick={() => handleCommand("stop")}
                     disabled={actionPending !== null}
                     className="cursor-pointer gap-2"
                   >

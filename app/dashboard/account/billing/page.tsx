@@ -83,7 +83,11 @@ const BillingPage = async () => {
   const billingCustomer = await prisma.billingCustomer.findUnique({
     include: {
       subscriptions: {
-        include: { server: { select: { game: true, id: true, name: true } } },
+        include: {
+          server: {
+            select: { egg: { select: { name: true } }, id: true, name: true },
+          },
+        },
         orderBy: { createdAt: "desc" },
       },
     },
@@ -166,7 +170,7 @@ const BillingPage = async () => {
                         </p>
                         <p className="text-muted-foreground text-xs capitalize mt-0.5">
                           {sub.planName}
-                          {sub.server?.game && ` · ${sub.server.game}`}
+                          {sub.server?.egg && ` · ${sub.server.egg.name}`}
                         </p>
                       </div>
                     </div>

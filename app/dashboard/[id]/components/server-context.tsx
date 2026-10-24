@@ -2,47 +2,59 @@
 import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 
-import type { CatalogServerType } from "@/lib/providers/types";
+import type { ServerStatus } from "@/protocol";
 
-export interface Specs {
-  typeName: string;
-  cores: number;
-  memory: number;
-  disk: number;
-  cpuType: "shared" | "dedicated";
-  architecture: "x86" | "arm";
+export interface AllocationView {
+  id: string;
+  ip: string;
+  alias: string | null;
+  port: number;
+  primary: boolean;
 }
 
-export interface ServerLocation {
+export interface VariableView {
   name: string;
-  city: string | null;
-  country: string | null;
+  description: string;
+  envVariable: string;
+  value: string;
+  defaultValue: string;
+  rules: string;
+  editable: boolean;
 }
 
 export interface ServerView {
   id: string;
+  uuid: string;
   name: string;
-  game: string;
-  dockerImage: string | null;
-  ipv4: string | null;
-  joinPassword: string | null;
-  phase: string;
-  observedState: string;
-  desiredState: string;
+  description: string | null;
+  status: ServerStatus | null;
   errorReason: string | null;
-  lastHeartbeatAt: string | null;
-  serverType: string;
-  backupsEnabled: boolean;
-  poweredOff: boolean;
-  specs: Specs | null;
-  location: ServerLocation | null;
-  settings: Record<string, unknown>;
+  // Not yet placed on a node (awaiting payment / deployment, or a legacy VPS).
+  deployed: boolean;
+  game: {
+    slug: string | null;
+    name: string;
+    image: string | null;
+    dockerImages: Record<string, string>;
+  } | null;
+  image: string;
+  startup: string;
+  node: { name: string; location: string | null } | null;
+  allocations: AllocationView[];
+  limits: {
+    memory: number;
+    swap: number;
+    disk: number;
+    cpu: number;
+    backupLimit: number;
+    allocationLimit: number;
+  };
+  planName: string | null;
+  variables: VariableView[];
 }
 
 interface Value {
   server: ServerView;
-  eligibleTypes: CatalogServerType[];
-  currency: string;
   updateServer: (patch: Partial<ServerView>) => void;
 }
 
@@ -63,3 +75,8 @@ export const ServerProvider = ({
   value: Value;
   children: ReactNode;
 }) => <ServerContext.Provider value={value}>{children}</ServerContext.Provider>;
+
+export const primaryAddress = (server: ServerView): string | null => {
+  const primary = server.allocations.find((a) => a.primary);
+  return primary ? `${primary.alias ?? primary.ip}:${primary.port}` : null;
+};

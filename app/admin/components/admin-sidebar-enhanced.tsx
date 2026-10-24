@@ -3,11 +3,14 @@
 import {
   ArrowLeftIcon,
   DollarSign,
+  Egg,
   HardDrive,
   LayoutDashboard,
   Lock,
   Mail,
+  MapPin,
   Monitor,
+  Package,
   ScrollText,
   Server,
   Users,
@@ -41,10 +44,13 @@ interface AdminSidebarEnhancedProps {
 
 const ICON_MAP: Record<string, LucideIcon> = {
   DollarSign,
+  Egg,
   HardDrive,
   LayoutDashboard,
   Mail,
+  MapPin,
   Monitor,
+  Package,
   ScrollText,
   Server,
   Users,

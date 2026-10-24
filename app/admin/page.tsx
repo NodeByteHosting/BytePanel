@@ -11,7 +11,6 @@ import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { games } from "@/games";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -46,6 +45,7 @@ const AdminOverviewPage = async () => {
     recentUsers,
     recentServers,
     serversByGame,
+    eggList,
   ] = await Promise.all([
     // User stats
     prisma.user.count(),
@@ -67,12 +67,12 @@ const AdminOverviewPage = async () => {
     // Server stats
     prisma.server.count({ where: { deletedAt: null } }),
     prisma.server.count({
-      where: { deletedAt: null, observedState: "running" },
+      where: { deletedAt: null, nodeId: { not: null }, status: null },
     }),
     prisma.server.count({
       where: {
         deletedAt: null,
-        observedState: { in: ["failed", "unhealthy"] },
+        status: { in: ["install_failed", "reinstall_failed", "suspended"] },
       },
     }),
     // Subscription stats
@@ -106,10 +106,11 @@ const AdminOverviewPage = async () => {
       orderBy: { createdAt: "desc" },
       select: {
         createdAt: true,
-        game: true,
+        egg: { select: { image: true, name: true } },
         id: true,
         name: true,
-        observedState: true,
+        nodeId: true,
+        status: true,
         user: {
           select: {
             email: true,
@@ -123,10 +124,11 @@ const AdminOverviewPage = async () => {
     // Servers by game
     prisma.server.groupBy({
       _count: true,
-      by: ["game"],
-      orderBy: { _count: { game: "desc" } },
-      where: { deletedAt: null },
+      by: ["eggId"],
+      orderBy: { _count: { eggId: "desc" } },
+      where: { deletedAt: null, eggId: { not: null } },
     }),
+    prisma.egg.findMany({ select: { id: true, name: true } }),
   ]);
 
   const revenue = (
@@ -150,8 +152,9 @@ const AdminOverviewPage = async () => {
   const healthPct =
     totalServers > 0 ? Math.round((activeServers / totalServers) * 100) : 0;
 
+  const eggNames = new Map(eggList.map((e) => [e.id, e.name]));
   const gameData = serversByGame.slice(0, 6).map((g) => ({
-    label: g.game.charAt(0).toUpperCase() + g.game.slice(1),
+    label: eggNames.get(g.eggId ?? "") ?? "Unknown",
     value: g._count,
   }));
 
@@ -166,17 +169,17 @@ const AdminOverviewPage = async () => {
     },
     running: {
       dot: "bg-emerald-500",
-      label: "Running",
+      label: "Installed",
       text: "text-emerald-600 dark:text-emerald-400",
     },
     stopped: {
       dot: "bg-zinc-400",
-      label: "Stopped",
+      label: "Not deployed",
       text: "text-zinc-500 dark:text-zinc-400",
     },
     unhealthy: {
       dot: "bg-amber-500",
-      label: "Unhealthy",
+      label: "Installing",
       text: "text-amber-600 dark:text-amber-400",
     },
   };
@@ -413,16 +416,24 @@ const AdminOverviewPage = async () => {
               ) : (
                 <div className="divide-y divide-border/50">
                   {recentServers.map((server) => {
-                    const game = games.find((g) => g.id === server.game);
+                    const game = server.egg;
+                    let stateKey = "stopped";
+                    if (server.status === null && server.nodeId) {
+                      stateKey = "running";
+                    } else if (server.status === "installing") {
+                      stateKey = "unhealthy";
+                    } else if (server.status) {
+                      stateKey = "failed";
+                    }
                     const stateConf =
-                      SERVER_STATE_CONFIG[server.observedState] ??
+                      SERVER_STATE_CONFIG[stateKey] ??
                       SERVER_STATE_CONFIG.stopped;
                     return (
                       <div
                         key={server.id}
                         className="flex items-center gap-3 px-5 py-3"
                       >
-                        {game ? (
+                        {game?.image ? (
                           <Image
                             src={game.image}
                             alt={game.name}

@@ -25,16 +25,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { games } from "@/games";
 import { prisma } from "@/lib/db";
-import { SNAPSHOT_ENVIRONMENT } from "@/lib/env";
-import {
-  getProviderForUserWithImage,
-  MissingProviderCredentialsError,
-} from "@/lib/providers";
-import type { CatalogServerType } from "@/lib/providers/types";
+import { formatMib } from "@/lib/format";
 import { getSession } from "@/lib/session";
 
 import HeroGraphic from "./components/hero-graphic";
 import { PricingSection } from "./components/pricing-section";
+import type { PricingPlan } from "./components/pricing-section";
 
 const FAQS = [
   {
@@ -148,22 +144,22 @@ const HomePage = async () => {
     .count({ where: { deletedAt: null } })
     .catch(() => 0);
 
-  // Fetch live pricing catalog — silently skip if not yet configured.
-  let serverTypes: CatalogServerType[] = [];
-  let currency = "GBP";
-  try {
-    const { provider, imageId } = await getProviderForUserWithImage(
-      "public",
-      SNAPSHOT_ENVIRONMENT
-    );
-    const catalog = await provider.getCatalog(imageId);
-    ({ serverTypes } = catalog);
-    ({ currency } = catalog);
-  } catch (error) {
-    if (!(error instanceof MissingProviderCredentialsError)) {
-      console.error("[home] catalog fetch failed", error);
-    }
-  }
+  // Active plans for the pricing section — skipped if none are configured.
+  const plans = await prisma.plan
+    .findMany({
+      orderBy: [{ sort: "asc" }, { priceMonthCents: "asc" }],
+      where: { active: true },
+    })
+    .catch(() => []);
+  const currency = plans[0]?.currency ?? "GBP";
+  const serverTypes: PricingPlan[] = plans.map((plan) => ({
+    backups: plan.backupLimit,
+    cores: plan.cpu > 0 ? (plan.cpu / 100).toFixed(1) : "∞",
+    disk: formatMib(plan.disk),
+    memory: formatMib(plan.memory),
+    name: plan.name,
+    pricePerMonth: plan.priceMonthCents / 100,
+  }));
 
   const stats = [
     ...BASE_STATS,

@@ -1,208 +1,205 @@
 "use client";
-import { CopyIcon, HistoryIcon, SendIcon, TerminalIcon } from "lucide-react";
+import {
+  CpuIcon,
+  HardDriveIcon,
+  MemoryStickIcon,
+  SendIcon,
+  TerminalIcon,
+  TimerIcon,
+} from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
+import type { ComponentType } from "react";
 
 import { Panel, PanelCard } from "@/components/panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { formatBytes, formatUptime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-import { sendRconCommand } from "../actions/rcon";
-import { LiveMetricsPanel } from "../components/live-metrics-panel";
-import { LogsStream } from "../components/logs-stream";
+import { ConsoleOutput } from "../components/console-output";
+import { useDaemonSocket } from "../components/daemon-socket";
 import { useServer } from "../components/server-context";
+
+const Stat = ({
+  icon: Icon,
+  label,
+  value,
+  limit,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  limit?: string;
+}) => (
+  <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-card px-3 py-2">
+    <Icon className="size-4 shrink-0 text-muted-foreground" />
+    <div className="flex min-w-0 flex-col">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="truncate font-mono text-sm">
+        {value}
+        {limit && <span className="text-muted-foreground"> / {limit}</span>}
+      </span>
+    </div>
+  </div>
+);
 
 const ConsoleTab = () => {
   const { server } = useServer();
-  const [commandInput, setCommandInput] = useState("");
-  const [commandHistory, setCommandHistory] = useState<string[]>([]);
-  const [_historyIndex, setHistoryIndex] = useState<number>(-1);
-  const [isSending, setIsSending] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const socket = useDaemonSocket();
+  const [input, setInput] = useState("");
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
-  const handleSendCommand = async () => {
-    if (!commandInput.trim() || server.observedState !== "running") {
+  const state = socket.state ?? "offline";
+  const canSend =
+    socket.status === "connected" &&
+    (state === "running" || state === "starting");
+  const { stats } = socket;
+  const mib = 1024 * 1024;
+
+  const submit = () => {
+    const command = input.trim();
+    if (!command || !canSend) {
       return;
     }
-
-    const command = commandInput.trim();
-    setCommandInput("");
+    socket.sendCommand(command);
+    setHistory((prev) =>
+      [command, ...prev.filter((c) => c !== command)].slice(0, 50)
+    );
     setHistoryIndex(-1);
-
-    setCommandHistory((prev) => [command, ...prev].slice(0, 50));
-
-    setIsSending(true);
-    try {
-      const result = await sendRconCommand({ command, serverId: server.id });
-      if (result.ok) {
-        toast.success("Command sent");
-      } else {
-        toast.error(result.error);
-      }
-    } catch (error) {
-      toast.error("Failed to send command");
-      console.error(error);
-    } finally {
-      setIsSending(false);
-    }
+    setInput("");
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      void handleSendCommand();
+      submit();
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setShowHistory(true);
-      setHistoryIndex((prev) => {
-        const next = prev + 1;
-        if (next < commandHistory.length) {
-          setCommandInput(commandHistory[next]);
-          return next;
-        }
-        return prev;
-      });
+      const next = Math.min(historyIndex + 1, history.length - 1);
+      if (next >= 0) {
+        setHistoryIndex(next);
+        setInput(history[next] ?? "");
+      }
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
-      setHistoryIndex((prev) => {
-        if (prev > 0) {
-          const next = prev - 1;
-          setCommandInput(commandHistory[next]);
-          return next;
-        } else if (prev === 0) {
-          setCommandInput("");
-          setShowHistory(false);
-          return -1;
-        }
-        return prev;
-      });
+      const next = historyIndex - 1;
+      setHistoryIndex(Math.max(next, -1));
+      setInput(next >= 0 ? (history[next] ?? "") : "");
     }
   };
 
-  const isRunning = server.observedState === "running";
-
   return (
-    <div className="flex flex-col h-full gap-4 p-4 md:p-6">
-      {/* Live metrics */}
-      {isRunning && (
-        <Panel title="Live Metrics" className="shrink-0">
-          <PanelCard>
-            <LiveMetricsPanel
-              maxPlayers={(server.settings?.maxPlayers as number) || undefined}
-              observedState={server.observedState}
-              serverId={server.id}
-            />
-          </PanelCard>
-        </Panel>
-      )}
+    <div className="flex h-full flex-col gap-4 p-4 md:p-6">
+      <div className="grid shrink-0 grid-cols-2 gap-2 lg:grid-cols-4">
+        <Stat
+          icon={CpuIcon}
+          label="CPU"
+          limit={server.limits.cpu > 0 ? `${server.limits.cpu}%` : undefined}
+          value={
+            stats && state !== "offline"
+              ? `${stats.cpuAbsolute.toFixed(1)}%`
+              : "—"
+          }
+        />
+        <Stat
+          icon={MemoryStickIcon}
+          label="Memory"
+          limit={
+            server.limits.memory > 0
+              ? formatBytes(server.limits.memory * mib)
+              : undefined
+          }
+          value={
+            stats && state !== "offline" ? formatBytes(stats.memoryBytes) : "—"
+          }
+        />
+        <Stat
+          icon={HardDriveIcon}
+          label="Disk"
+          limit={
+            server.limits.disk > 0
+              ? formatBytes(server.limits.disk * mib)
+              : undefined
+          }
+          value={stats ? formatBytes(stats.diskBytes) : "—"}
+        />
+        <Stat
+          icon={TimerIcon}
+          label="Uptime"
+          value={
+            stats && state !== "offline"
+              ? formatUptime(stats.uptimeMs)
+              : "Offline"
+          }
+        />
+      </div>
 
-      {/* Terminal */}
-      <Panel title="Console" className="flex-1 min-h-0">
-        <PanelCard className="overflow-hidden p-0 flex-1 min-h-0 flex flex-col">
-          {/* Title bar */}
-          <div className="shrink-0 flex items-center justify-between gap-2 border-b border-border/60 bg-muted/40 px-4 py-2">
-            <div className="flex items-center gap-2 min-w-0">
+      <Panel className="min-h-0 flex-1" title="Console">
+        <PanelCard className="flex min-h-[24rem] flex-1 flex-col overflow-hidden p-0">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 bg-muted/40 px-4 py-2">
+            <div className="flex min-w-0 items-center gap-2">
               <TerminalIcon className="size-3.5 shrink-0 text-muted-foreground" />
-              <span className="font-mono text-xs text-muted-foreground truncate">
+              <span className="truncate font-mono text-xs text-muted-foreground">
                 {server.name}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <div
                 className={cn(
-                  "size-2 rounded-full shrink-0",
-                  isRunning ? "bg-emerald-500" : "bg-muted-foreground/40"
+                  "size-2 shrink-0 rounded-full",
+                  socket.status === "connected"
+                    ? "bg-emerald-500"
+                    : "bg-muted-foreground/40"
                 )}
               />
               <span className="font-mono text-xs text-muted-foreground">
-                {isRunning ? "live" : server.observedState}
+                {socket.status === "connected" ? state : socket.status}
               </span>
             </div>
           </div>
 
-          {/* Log output — fills remaining height */}
-          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-            <LogsStream serverId={server.id} />
+          <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-zinc-950">
+            <ConsoleOutput
+              lines={socket.lines}
+              placeholder={
+                socket.status === "connected"
+                  ? "Waiting for output…"
+                  : (socket.error ?? "Connecting to the node…")
+              }
+            />
           </div>
 
-          {/* History dropdown */}
-          {showHistory && commandHistory.length > 0 && (
-            <div className="shrink-0 border-t border-border/60 bg-muted/20 max-h-32 overflow-y-auto">
-              <div className="flex items-center gap-1 px-4 py-2 text-xs text-muted-foreground">
-                <HistoryIcon className="size-3" />
-                Recent Commands
-              </div>
-              <ul className="divide-y divide-border/40">
-                {commandHistory.slice(0, 10).map((cmd, idx) => (
-                  <li key={idx}>
-                    <button
-                      className="w-full px-4 py-1.5 text-left font-mono text-xs hover:bg-muted/40 transition-colors text-foreground/80"
-                      onClick={() => {
-                        setCommandInput(cmd);
-                        setShowHistory(false);
-                        setHistoryIndex(-1);
-                      }}
-                    >
-                      {cmd}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Command input */}
-          {isRunning ? (
-            <div className="shrink-0 flex flex-row items-center gap-2 border-t border-border/60 bg-muted/20 px-3 py-2">
-              <span className="select-none font-mono text-sm text-emerald-500 shrink-0">
-                $
-              </span>
-              <Input
-                className="flex-1 h-8 border-0 bg-transparent font-mono text-sm shadow-none placeholder:text-muted-foreground/50 focus-visible:ring-0 overflow-hidden"
-                disabled={isSending}
-                placeholder="Command (↑↓ history, Enter to send)"
-                value={commandInput}
-                onChange={(e) => {
-                  setCommandInput(e.target.value);
-                  setHistoryIndex(-1);
-                }}
-                onKeyDown={handleKeyDown}
-              />
-              <div className="flex gap-1">
-                {commandInput && (
-                  <Button
-                    className="size-8 shrink-0"
-                    disabled={isSending}
-                    size="icon"
-                    variant="ghost"
-                    onClick={async () => {
-                      await navigator.clipboard.writeText(commandInput);
-                      toast.success("Copied");
-                    }}
-                  >
-                    <CopyIcon className="size-3.5" />
-                  </Button>
-                )}
-                <Button
-                  className="size-8 shrink-0"
-                  disabled={!commandInput.trim() || isSending}
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => void handleSendCommand()}
-                >
-                  <SendIcon className="size-3.5" />
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="shrink-0 border-t border-border/60 px-4 py-3 bg-muted/10">
-              <p className="font-mono text-xs text-muted-foreground">
-                Server is {server.observedState}. Start the server to send
-                commands.
-              </p>
-            </div>
-          )}
+          <div className="flex shrink-0 flex-row items-center gap-2 border-t border-border/60 bg-muted/20 px-3 py-2">
+            <span className="shrink-0 select-none font-mono text-sm text-emerald-500">
+              $
+            </span>
+            <Input
+              className="h-8 flex-1 overflow-hidden border-0 bg-transparent font-mono text-sm shadow-none placeholder:text-muted-foreground/50 focus-visible:ring-0"
+              disabled={!canSend}
+              placeholder={
+                canSend
+                  ? "Type a command… (↑↓ history)"
+                  : `Server is ${state}. Start it to send commands.`
+              }
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                setHistoryIndex(-1);
+              }}
+              onKeyDown={onKeyDown}
+            />
+            <Button
+              aria-label="Send command"
+              className="size-8 shrink-0"
+              disabled={!canSend || !input.trim()}
+              size="icon"
+              variant="ghost"
+              onClick={submit}
+            >
+              <SendIcon className="size-3.5" />
+            </Button>
+          </div>
         </PanelCard>
       </Panel>
     </div>

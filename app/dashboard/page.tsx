@@ -11,7 +11,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { games } from "@/games";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -21,9 +20,36 @@ import { ServerGrid } from "./components/server-grid";
 
 const DashboardPage = async () => {
   const user = await requireUser();
-  const servers = await prisma.server.findMany({
+  // Owned servers plus servers the user was invited to (sub-users).
+  const rows = await prisma.server.findMany({
+    include: {
+      allocation: { select: { ip: true, ipAlias: true, port: true } },
+      egg: { select: { image: true, name: true } },
+      node: { select: { name: true } },
+    },
     orderBy: { createdAt: "desc" },
-    where: { deletedAt: null, userId: user.id },
+    where: {
+      OR: [{ userId: user.id }, { members: { some: { userId: user.id } } }],
+      deletedAt: null,
+    },
+  });
+  const servers = rows.map((s) => ({
+    address: s.allocation
+      ? `${s.allocation.ipAlias ?? s.allocation.ip}:${s.allocation.port}`
+      : null,
+    cpu: s.cpu,
+    deployed: s.nodeId !== null,
+    game: s.egg ? { image: s.egg.image, name: s.egg.name } : null,
+    id: s.id,
+    memory: s.memory,
+    name: s.name,
+    nodeName: s.node?.name ?? null,
+    status: s.status,
+  }));
+  const showcase = await prisma.egg.findMany({
+    select: { id: true, image: true, name: true },
+    take: 6,
+    where: { enabled: true, image: { not: null } },
   });
 
   const newServerAction = (
@@ -43,10 +69,10 @@ const DashboardPage = async () => {
           <Empty>
             <EmptyHeader>
               <EmptyMedia className="flex -space-x-2">
-                {games.slice(0, 6).map((game, i) => (
+                {showcase.map((game, i) => (
                   <Image
                     key={game.id}
-                    src={game.image}
+                    src={game.image ?? ""}
                     alt={game.name}
                     width={40}
                     height={40}

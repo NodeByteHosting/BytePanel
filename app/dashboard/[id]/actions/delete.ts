@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { start } from "workflow/api";
 import { z } from "zod";
 
-import { prisma } from "@/lib/db";
+import { logEvent } from "@/lib/audit";
+import { DaemonError } from "@/lib/daemon/client";
 import { sendServerDeletedEmail } from "@/lib/mail";
-import { requireUser } from "@/lib/session";
-import { teardownServer } from "@/lib/workflows/teardown-server";
+import { getServerAccess } from "@/lib/servers/access";
+import { destroyServer } from "@/lib/servers/service";
 
 const inputSchema = z.object({ serverId: z.string().min(1) });
 
@@ -18,41 +18,42 @@ export type DeleteServerResult = { ok: true } | { error: string; ok: false };
 export const deleteServer = async (
   input: DeleteServerInput
 ): Promise<DeleteServerResult> => {
-  const user = await requireUser();
-
   const parsed = inputSchema.safeParse(input);
   if (!parsed.success) {
     return { error: "Invalid input", ok: false };
   }
-
-  const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id: parsed.data.serverId, userId: user.id },
-  });
-  if (!server) {
+  const access = await getServerAccess(parsed.data.serverId, "owner");
+  if (!access) {
     return { error: "Not found", ok: false };
   }
+  const { server, user } = access;
 
-  await prisma.server.update({
-    data: { desiredState: "deleted" },
-    where: { id: parsed.data.serverId },
+  try {
+    await destroyServer(server.id);
+  } catch (error) {
+    if (error instanceof DaemonError) {
+      return {
+        error: `Could not remove the server from its node: ${error.message}`,
+        ok: false,
+      };
+    }
+    throw error;
+  }
+
+  await logEvent({
+    action: "server.delete",
+    actorEmail: user.email,
+    actorId: user.id,
+    targetId: server.id,
+    targetType: "server",
   });
 
-  await start(teardownServer, [{ serverId: parsed.data.serverId }]);
-
-  // Non-blocking notification
-  void (async () => {
-    try {
-      await sendServerDeletedEmail({
-        serverName: server.name,
-        toEmail: user.email,
-        userName: user.name,
-      });
-    } catch {
-      /* ignore */
-    }
-  })();
+  void sendServerDeletedEmail({
+    serverName: server.name,
+    toEmail: user.email,
+    userName: user.name,
+  });
 
   revalidatePath("/dashboard", "layout");
-
   return { ok: true };
 };

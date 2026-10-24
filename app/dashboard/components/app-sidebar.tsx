@@ -38,16 +38,19 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { games } from "@/games";
 import { signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
+
+// Panel-side health only; live power state comes from the node on the
+// server page.
+export type SidebarHealth = "ready" | "pending" | "issue";
 
 export interface SidebarServer {
   id: string;
   name: string;
-  game: string;
-  observedState: string;
-  desiredState: string;
+  gameName: string | null;
+  gameImage: string | null;
+  health: SidebarHealth;
 }
 
 export interface SidebarUser {
@@ -58,12 +61,10 @@ export interface SidebarUser {
   superAdmin: boolean;
 }
 
-const statusDot: Record<string, string> = {
-  failed: "bg-red-500",
-  lost: "bg-red-500",
-  running: "bg-emerald-500",
-  stopped: "bg-zinc-400",
-  unhealthy: "bg-amber-500",
+const statusDot: Record<SidebarHealth, string> = {
+  issue: "bg-red-500",
+  pending: "bg-amber-500",
+  ready: "bg-emerald-500",
 };
 
 const StatPill = ({
@@ -108,15 +109,9 @@ export const AppSidebar = ({
   const initial = (user.name ?? user.email ?? "?").charAt(0).toUpperCase();
   const isAdmin = user.superAdmin || user.role === "admin";
 
-  const runningCount = servers.filter(
-    (s) => s.observedState === "running"
-  ).length;
-  const stoppedCount = servers.filter(
-    (s) => s.observedState === "stopped"
-  ).length;
-  const issueCount = servers.filter(
-    (s) => s.observedState === "unhealthy" || s.observedState === "failed"
-  ).length;
+  const readyCount = servers.filter((s) => s.health === "ready").length;
+  const pendingCount = servers.filter((s) => s.health === "pending").length;
+  const issueCount = servers.filter((s) => s.health === "issue").length;
 
   return (
     <Sidebar collapsible="offcanvas" className="border-none">
@@ -176,9 +171,9 @@ export const AppSidebar = ({
         {servers.length > 0 && (
           <div className="px-3 py-3 border-b border-sidebar-border">
             <div className="grid grid-cols-3 gap-1.5 text-xs">
-              <StatPill label="Running" value={runningCount} color="emerald" />
+              <StatPill label="Ready" value={readyCount} color="emerald" />
               <StatPill label="Issues" value={issueCount} color="amber" />
-              <StatPill label="Stopped" value={stoppedCount} color="muted" />
+              <StatPill label="Pending" value={pendingCount} color="muted" />
             </div>
           </div>
         )}
@@ -214,11 +209,7 @@ export const AppSidebar = ({
               ) : (
                 servers.map((server) => {
                   const href = `/dashboard/${server.id}`;
-                  const game = games.find((g) => g.id === server.game);
-                  const deleting = server.desiredState === "deleted";
-                  const dotColor =
-                    statusDot[deleting ? "stopped" : server.observedState] ??
-                    "bg-zinc-400";
+                  const dotColor = statusDot[server.health];
                   const isActive = pathname.startsWith(href);
 
                   return (
@@ -231,10 +222,10 @@ export const AppSidebar = ({
                       >
                         <Link href={href} className="flex items-center gap-2.5">
                           <div className="relative h-7 w-7 rounded-md overflow-hidden ring-1 ring-border/50 shrink-0">
-                            {game ? (
+                            {server.gameImage ? (
                               <Image
-                                src={game.image}
-                                alt={game.name}
+                                src={server.gameImage}
+                                alt={server.gameName ?? server.name}
                                 width={28}
                                 height={28}
                                 className="object-cover"
@@ -257,7 +248,7 @@ export const AppSidebar = ({
                               {server.name}
                             </p>
                             <p className="text-[11px] text-muted-foreground truncate">
-                              {game?.name ?? server.game}
+                              {server.gameName ?? "Unknown game"}
                             </p>
                           </div>
                         </Link>

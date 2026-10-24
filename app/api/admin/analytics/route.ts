@@ -27,11 +27,12 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
     });
     const mrr = (mrrResult._sum.pricePerMonthCents ?? 0) / 100;
 
-    // 2. Active Servers (running state)
+    // 2. Active Servers (installed on a node and not suspended/failed)
     const activeServersCount = await prisma.server.count({
       where: {
         deletedAt: null,
-        observedState: "running",
+        nodeId: { not: null },
+        status: null,
       },
     });
 
@@ -107,32 +108,45 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
 
     // 7. Server Count by Game
     // Top 10 games
-    const serversByGameRaw = await prisma.server.groupBy({
-      _count: true,
-      by: ["game"],
-      orderBy: { _count: { id: "desc" } },
-      take: 10,
-      where: { deletedAt: null },
-    });
+    const [serversByGameRaw, eggList] = await Promise.all([
+      prisma.server.groupBy({
+        _count: true,
+        by: ["eggId"],
+        orderBy: { _count: { id: "desc" } },
+        take: 10,
+        where: { deletedAt: null, eggId: { not: null } },
+      }),
+      prisma.egg.findMany({ select: { id: true, name: true } }),
+    ]);
+    const eggNames = new Map(eggList.map((e) => [e.id, e.name]));
 
     const serversByGame = serversByGameRaw.map((item) => ({
       count: item._count,
-      game: item.game.charAt(0).toUpperCase() + item.game.slice(1),
+      game: eggNames.get(item.eggId ?? "") ?? "Unknown",
     }));
 
     // 8. Server Status Breakdown
-    const serverStatusRaw = await prisma.server.groupBy({
-      _count: true,
-      by: ["observedState"],
-      where: { deletedAt: null },
-    });
+    const [serverStatusRaw, undeployed] = await Promise.all([
+      prisma.server.groupBy({
+        _count: true,
+        by: ["status"],
+        where: { deletedAt: null, nodeId: { not: null } },
+      }),
+      prisma.server.count({ where: { deletedAt: null, nodeId: null } }),
+    ]);
 
-    const serverStatus = serverStatusRaw.map((item) => ({
-      count: item._count,
-      status:
-        item.observedState.charAt(0).toUpperCase() +
-        item.observedState.slice(1),
-    }));
+    const serverStatus = [
+      ...serverStatusRaw.map((item) => ({
+        count: item._count,
+        status: item.status
+          ? item.status.charAt(0).toUpperCase() +
+            item.status.slice(1).replaceAll("_", " ")
+          : "Installed",
+      })),
+      ...(undeployed > 0
+        ? [{ count: undeployed, status: "Not deployed" }]
+        : []),
+    ];
 
     // 9. New Signups Trend
     const signupsTrendRaw = await prisma.user.findMany({

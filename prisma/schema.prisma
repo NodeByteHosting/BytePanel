@@ -122,60 +122,265 @@ model Passkey {
   @@map("passkeys")
 }
 
-enum DesiredState {
-  running
-  stopped
-  deleted
+// Panel-side lifecycle of a server. NULL = installed and usable; the live
+// power state (offline/starting/running/stopping) is owned by the daemon.
+enum ServerStatus {
+  installing
+  install_failed
+  reinstall_failed
+  suspended
+  restoring_backup
 }
 
-enum ObservedState {
-  pending
-  provisioning
-  running
-  unhealthy
-  lost
-  stopped
-  failed
-  deleted
+// ─── Infrastructure (Pterodactyl-style locations → nodes → allocations) ──────
+
+model Location {
+  id        String   @id
+  short     String   @unique // e.g. "uk-lon"
+  long      String? // e.g. "London, United Kingdom"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  nodes     Node[]
+  plans     Plan[]
+
+  @@map("locations")
+}
+
+// A host running the NodeByte daemon. Many servers share one node.
+model Node {
+  id                 String       @id
+  uuid               String       @unique
+  name               String
+  description        String?
+  locationId         String
+  public             Boolean      @default(true) // eligible for automatic deployment
+  fqdn               String
+  scheme             String       @default("https") // "https" | "http"
+  behindProxy        Boolean      @default(false)
+  daemonListen       Int          @default(8080)
+  daemonBase         String       @default("/var/lib/nodebyte/volumes")
+  memory             Int // MiB
+  memoryOverallocate Int          @default(0) // percent; -1 = unlimited
+  disk               Int // MiB
+  diskOverallocate   Int          @default(0) // percent; -1 = unlimited
+  uploadSize         Int          @default(100) // MiB
+  maintenanceMode    Boolean      @default(false)
+  daemonTokenId      String       @unique
+  daemonToken        String // AES-GCM encrypted (lib/crypto.ts)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  location           Location     @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  allocations        Allocation[]
+  servers            Server[]
+
+  @@index([locationId])
+  @@map("nodes")
+}
+
+// An ip:port on a node. `serverId` set = assigned to that server.
+model Allocation {
+  id        String   @id
+  nodeId    String
+  ip        String
+  ipAlias   String?
+  port      Int
+  notes     String?
+  serverId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  node      Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  server    Server?  @relation("ServerAllocations", fields: [serverId], references: [id], onDelete: SetNull)
+  primaryOf Server?  @relation("ServerPrimaryAllocation")
+
+  @@unique([nodeId, ip, port])
+  @@index([serverId])
+  @@map("allocations")
+}
+
+// ─── Game definitions (Nests → Eggs → Variables) ─────────────────────────────
+
+model Nest {
+  id          String   @id
+  name        String   @unique
+  description String?
+  author      String   @default("support@nodebyte.co.uk")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  eggs        Egg[]
+
+  @@map("nests")
+}
+
+model Egg {
+  id                String        @id
+  nestId            String
+  // Stable identifier for built-in eggs (e.g. "minecraft"); NULL for imports.
+  slug              String?       @unique
+  name              String
+  description       String?
+  author            String        @default("support@nodebyte.co.uk")
+  image             String? // card artwork shown in the dashboard
+  dockerImages      Json // { "Label": "registry/image:tag" }
+  startup           String        @default("") // empty = image entrypoint
+  configStartupDone Json          @default("[]") // string[]
+  configStop        String        @default("^C") // "^C"/"^SIGTERM" = signal, "native" = docker stop, else console command
+  configFiles       Json          @default("[]") // protocol ConfigFile[] with placeholders
+  fileDenylist      Json          @default("[]")
+  features          Json          @default("[]")
+  mountPath         String        @default("/home/container")
+  extraMounts       Json          @default("[]") // { source, target }[]
+  containerUser     String        @default("daemon") // "daemon" | "image"
+  volumeOwner       String? // "uid:gid" the volume is chowned to when containerUser = "image"
+  invocationMode    String        @default("env") // "env" | "args" | "shell" (see protocol)
+  // One entry per allocation the server needs: the container port it maps
+  // to, or 0 for "same as the allocation port". Empty = one allocation.
+  containerPorts    Json          @default("[]")
+  stripAnsi         Boolean       @default(false)
+  scriptContainer   String        @default("ghcr.io/pterodactyl/installers:debian")
+  scriptEntry       String        @default("bash")
+  scriptInstall     String        @default("")
+  // Advisory minimums shown to customers when picking a plan.
+  minMemory         Int           @default(0) // MiB
+  minDisk           Int           @default(0) // MiB
+  enabled           Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  nest              Nest          @relation(fields: [nestId], references: [id], onDelete: Restrict)
+  variables         EggVariable[]
+  servers           Server[]
+
+  @@index([nestId])
+  @@map("eggs")
+}
+
+model EggVariable {
+  id           String           @id
+  eggId        String
+  name         String
+  description  String           @default("")
+  envVariable  String
+  defaultValue String           @default("")
+  userViewable Boolean          @default(true)
+  userEditable Boolean          @default(true)
+  // Laravel-style rule string, e.g. "required|string|max:20" or "in:a,b,c".
+  rules        String           @default("nullable|string")
+  sort         Int              @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  egg          Egg              @relation(fields: [eggId], references: [id], onDelete: Cascade)
+  values       ServerVariable[]
+
+  @@unique([eggId, envVariable])
+  @@map("egg_variables")
+}
+
+model ServerVariable {
+  id         String      @id
+  serverId   String
+  variableId String
+  value      String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  server     Server      @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  variable   EggVariable @relation(fields: [variableId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, variableId])
+  @@map("server_variables")
+}
+
+// A purchasable resource bundle. Replaces the per-VPS server type.
+model Plan {
+  id              String    @id
+  name            String    @unique
+  description     String?
+  memory          Int // MiB
+  disk            Int // MiB
+  cpu             Int // percent of one core (100 = 1 core)
+  swap            Int       @default(0)
+  io              Int       @default(500)
+  backupLimit     Int       @default(2)
+  allocationLimit Int       @default(1)
+  priceMonthCents Int
+  currency        String    @default("GBP")
+  locationId      String? // NULL = any location
+  active          Boolean   @default(true)
+  sort            Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  location        Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  servers         Server[]
+
+  @@map("plans")
 }
 
 model Server {
-  id               String            @id
-  userId           String
-  name             String
-  game             String
-  location         String
-  serverType       String
-  provider         String            @default("hetzner")
-  providerServerId String?           @unique
-  ipv4             String?
-  desiredState     DesiredState      @default(running)
-  observedState    ObservedState     @default(pending)
-  phase            String            @default("queued")
-  errorReason      String?
-  rconPassword     String
-  joinPassword     String?
-  settings         Json              @default("{}")
-  backupsEnabled   Boolean           @default(false)
-  poweredOff       Boolean           @default(false)
-  lastSuspendedAt  DateTime?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  deletedAt        DateTime?
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agent            Agent?
-  commands         Command[]
-  activityEvents   ActivityEvent[]
-  logChunks        LogChunk[]
-  enrollments      AgentEnrollment[]
-  agentErrors      AgentError[]
-  subscription     Subscription?
-  members          ServerMember[]
-  invites          ServerInvite[]
+  id              String           @id
+  uuid            String           @unique // id used by the daemon (container + volume name)
+  userId          String
+  name            String
+  description     String?
+  status          ServerStatus? // NULL = installed
+  nodeId          String?
+  eggId           String?
+  planId          String?
+  allocationId    String?          @unique // primary allocation
+  // Build configuration (limits enforced by the daemon)
+  memory          Int // MiB, 0 = unlimited
+  swap            Int              @default(0)
+  disk            Int // MiB, 0 = unlimited
+  io              Int              @default(500)
+  cpu             Int // percent, 0 = unlimited
+  threads         String?
+  oomDisabled     Boolean          @default(true)
+  backupLimit     Int              @default(0)
+  allocationLimit Int              @default(1)
+  // Startup configuration
+  startup         String
+  image           String
+  skipScripts     Boolean          @default(false)
+  installedAt     DateTime?
+  errorReason     String?
+  lastSuspendedAt DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  node            Node?            @relation(fields: [nodeId], references: [id], onDelete: Restrict)
+  egg             Egg?             @relation(fields: [eggId], references: [id], onDelete: Restrict)
+  plan            Plan?            @relation(fields: [planId], references: [id], onDelete: SetNull)
+  allocation      Allocation?      @relation("ServerPrimaryAllocation", fields: [allocationId], references: [id], onDelete: SetNull)
+  allocations     Allocation[]     @relation("ServerAllocations")
+  variables       ServerVariable[]
+  backups         Backup[]
+  activityEvents  ActivityEvent[]
+  subscription    Subscription?
+  members         ServerMember[]
+  invites         ServerInvite[]
 
   @@index([userId])
-  @@index([desiredState, observedState])
+  @@index([nodeId])
   @@map("servers")
+}
+
+// Local backup stored on the server's node.
+model Backup {
+  id           String    @id
+  uuid         String    @unique
+  serverId     String
+  name         String
+  ignoredFiles String    @default("")
+  isSuccessful Boolean   @default(false)
+  isLocked     Boolean   @default(false)
+  checksum     String?
+  bytes        BigInt    @default(0)
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+  server       Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId])
+  @@map("backups")
 }
 
 // A user who has been invited to co-manage a server.
@@ -216,82 +421,6 @@ model ServerInvite {
   @@map("server_invites")
 }
 
-model Agent {
-  id              String       @id
-  serverId        String       @unique
-  publicKey       String
-  sessionVersion  Int          @default(0)
-  lastHeartbeatAt DateTime?
-  lastCommandId   String?
-  // Live metrics — updated on each heartbeat
-  cpuPercent      Float?
-  memTotalBytes   Float?
-  memUsedBytes    Float?
-  diskTotalBytes  Float?
-  diskUsedBytes   Float?
-  networkInBps    Float?
-  networkOutBps   Float?
-  uptimeSeconds   Int?
-  playerCount     Int?
-  maxPlayers      Int?
-  tps             Float?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  server          Server       @relation(fields: [serverId], references: [id], onDelete: Cascade)
-  errors          AgentError[]
-
-  @@map("agents")
-}
-
-model AgentError {
-  id           String   @id
-  agentId      String
-  serverId     String
-  errorCode    String
-  errorMessage String
-  phase        String
-  details      Json     @default("{}")
-  reportedAt   DateTime @default(now())
-  recordedAt   DateTime @default(now())
-  agent        Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  server       Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
-
-  @@index([serverId, phase])
-  @@index([agentId])
-  @@index([recordedAt])
-  @@map("agent_errors")
-}
-
-model AgentEnrollment {
-  jti       String    @id
-  serverId  String
-  expiresAt DateTime
-  burnedAt  DateTime?
-  createdAt DateTime  @default(now())
-  server    Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
-
-  @@index([serverId])
-  @@map("agent_enrollments")
-}
-
-model Command {
-  id          String    @id
-  serverId    String
-  type        String
-  payload     Json
-  status      String    @default("pending")
-  issuedAt    DateTime  @default(now())
-  deliveredAt DateTime?
-  ackedAt     DateTime?
-  error       String?
-  result      Json?
-  durationMs  Int?
-  server      Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
-
-  @@index([serverId, status])
-  @@map("commands")
-}
-
 model ActivityEvent {
   id         String   @id
   serverId   String
@@ -300,26 +429,16 @@ model ActivityEvent {
   message    String
   metadata   Json?
   occurredAt DateTime @default(now())
-  source     String   @default("server") // "server" | "agent"
+  source     String   @default("server") // "server" | "daemon"
+  // User who triggered the event (NULL for system events). Not a relation so
+  // history survives user deletion.
+  actorId    String?
+  ip         String?
   server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   @@unique([serverId, seq])
   @@index([serverId, occurredAt])
   @@map("activity_events")
-}
-
-model LogChunk {
-  id       String   @id
-  serverId String
-  seq      Int
-  stream   String
-  line     String
-  ts       DateTime @default(now())
-  server   Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
-
-  @@unique([serverId, seq])
-  @@index([serverId, ts])
-  @@map("log_chunks")
 }
 
 enum SnapshotBuildStatus {
@@ -515,4 +634,26 @@ model AuditLog {
   @@index([targetId, targetType])
   @@index([createdAt(sort: Desc)])
   @@map("audit_logs")
+}
+
+// Snapshot of servers created under the old one-VPS-per-server model, taken by
+// the nodes/eggs migration. Used to find and clean up leftover provider VMs.
+model LegacyVpsServer {
+  id               String    @id
+  userId           String?
+  name             String?
+  game             String?
+  location         String?
+  serverType       String?
+  provider         String?
+  providerServerId String?
+  ipv4             String?
+  rconPassword     String?
+  joinPassword     String?
+  settings         Json?
+  observedState    String?
+  createdAt        DateTime?
+  deletedAt        DateTime?
+
+  @@map("legacy_vps_servers")
 }

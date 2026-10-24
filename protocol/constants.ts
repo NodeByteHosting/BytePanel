@@ -1,79 +1,76 @@
-export const PHASES = [
-  "queued",
-  "provisioning",
-  "booting",
-  "agent_connected",
-  "installing",
+// Shared constants for the panel <-> daemon contract. The design mirrors
+// Pterodactyl Panel + Wings: the panel owns configuration and permissions, the
+// daemon (one per node) owns containers, files and the live console.
+
+export const POWER_STATES = [
+  "offline",
   "starting",
-  "healthy",
-  "ready",
-  "stopping",
-  "stopped",
-  "errored",
-  "deleting",
-  "deleted",
-] as const;
-export type Phase = (typeof PHASES)[number];
-
-export const DESIRED_STATES = ["running", "stopped", "deleted"] as const;
-export type DesiredState = (typeof DESIRED_STATES)[number];
-
-export const OBSERVED_STATES = [
-  "pending",
-  "provisioning",
   "running",
-  "unhealthy",
-  "lost",
-  "stopped",
-  "failed",
-  "deleted",
+  "stopping",
 ] as const;
-export type ObservedState = (typeof OBSERVED_STATES)[number];
+export type PowerState = (typeof POWER_STATES)[number];
 
-export const COMMAND_TYPES = [
-  "START",
-  "STOP",
-  "RESTART",
-  "DELETE",
-  "UPDATE_CONFIG",
-  "UPLOAD_BACKUP",
-  "FETCH_LOGS",
-  "FILES_LIST",
-  "FILES_READ",
-  "FILES_WRITE",
-  "FILES_DELETE",
-  "FILES_INSTALL_FROM_URL",
+export const POWER_ACTIONS = ["start", "stop", "restart", "kill"] as const;
+export type PowerAction = (typeof POWER_ACTIONS)[number];
+
+// Panel-side lifecycle of a server record. `null` in the database means the
+// server is installed and usable.
+export const SERVER_STATUSES = [
+  "installing",
+  "install_failed",
+  "reinstall_failed",
+  "suspended",
+  "restoring_backup",
 ] as const;
-export type CommandType = (typeof COMMAND_TYPES)[number];
+export type ServerStatus = (typeof SERVER_STATUSES)[number];
 
-export const COMMAND_STATUSES = [
-  "pending",
-  "delivered",
-  "succeeded",
-  "failed",
+// Permissions embedded in the websocket / transfer JWTs the panel issues and
+// the daemon enforces.
+export const DAEMON_PERMISSIONS = [
+  "websocket.connect",
+  "control.console",
+  "control.start",
+  "control.stop",
+  "control.restart",
+  "admin.websocket.errors",
+  "admin.websocket.install",
 ] as const;
-export type CommandStatus = (typeof COMMAND_STATUSES)[number];
+export type DaemonPermission = (typeof DAEMON_PERMISSIONS)[number];
 
-export const LOG_STREAMS = ["stdout", "stderr"] as const;
-export type LogStream = (typeof LOG_STREAMS)[number];
-
-export const AGENT_HEADERS = {
-  AGENT: "x-nodebyte-agent",
-  BATCH: "x-nodebyte-batch-id",
-  NONCE: "x-nodebyte-nonce",
-  SIGNATURE: "x-nodebyte-sig",
-  TIMESTAMP: "x-nodebyte-ts",
+// Websocket event names (same vocabulary as Wings so clients feel familiar).
+export const WS_EVENTS = {
+  AUTH: "auth",
+  AUTH_SUCCESS: "auth success",
+  BACKUP_COMPLETED: "backup completed",
+  CONSOLE_OUTPUT: "console output",
+  DAEMON_ERROR: "daemon error",
+  DAEMON_MESSAGE: "daemon message",
+  INSTALL_COMPLETED: "install completed",
+  INSTALL_OUTPUT: "install output",
+  INSTALL_STARTED: "install started",
+  JWT_ERROR: "jwt error",
+  SEND_COMMAND: "send command",
+  SEND_LOGS: "send logs",
+  SEND_STATS: "send stats",
+  SET_STATE: "set state",
+  STATS: "stats",
+  STATUS: "status",
+  TOKEN_EXPIRED: "token expired",
+  TOKEN_EXPIRING: "token expiring",
 } as const;
 
-export const TIMESTAMP_SKEW_MS = 60_000;
-export const NONCE_TTL_SECONDS = 300;
-export const BOOTSTRAP_TTL_SECONDS = 600;
+export const DAEMON_TOKEN_ID_LENGTH = 16;
+export const DAEMON_TOKEN_LENGTH = 64;
+
+export const WEBSOCKET_TOKEN_TTL_SECONDS = 10 * 60;
+export const TRANSFER_TOKEN_TTL_SECONDS = 15 * 60;
+
+// Default mount point inside game containers (Pterodactyl convention).
+export const DEFAULT_MOUNT_PATH = "/home/container";
+export const DEFAULT_INSTALL_CONTAINER =
+  "ghcr.io/pterodactyl/installers:debian";
 
 export const REDIS_KEYS = {
   activityChannel: (serverId: string) => `activity:${serverId}`,
   activitySeq: (serverId: string) => `activity-seq:${serverId}`,
-  commandList: (serverId: string) => `cmd:${serverId}`,
-  logsChannel: (serverId: string) => `logs:${serverId}`,
-  logsSeq: (serverId: string) => `logs-seq:${serverId}`,
-  nonce: (agentId: string, nonce: string) => `nonce:${agentId}:${nonce}`,
 } as const;

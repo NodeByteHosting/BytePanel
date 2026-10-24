@@ -16,7 +16,7 @@ const InvitePage = async ({
   const invite = await prisma.serverInvite.findUnique({
     include: {
       invitedBy: { select: { email: true, name: true } },
-      server: { select: { game: true, id: true, name: true } },
+      server: { select: { id: true, name: true } },
     },
     where: { token },
   });

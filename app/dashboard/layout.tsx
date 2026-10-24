@@ -6,7 +6,30 @@ import { requireUser } from "@/lib/session";
 
 import { AppContainer } from "./components/app-container";
 import { AppSidebar } from "./components/app-sidebar";
+import type { SidebarHealth, SidebarServer } from "./components/app-sidebar";
 import { ImpersonationBanner } from "./components/impersonation-banner";
+
+const serverSelect = {
+  egg: { select: { image: true, name: true } },
+  id: true,
+  name: true,
+  nodeId: true,
+  status: true,
+} as const;
+
+const healthOf = (server: {
+  nodeId: string | null;
+  status: string | null;
+}): SidebarHealth => {
+  if (
+    !server.nodeId ||
+    server.status === "installing" ||
+    server.status === "restoring_backup"
+  ) {
+    return "pending";
+  }
+  return server.status ? "issue" : "ready";
+};
 
 const DashboardLayout = async ({ children }: { children: ReactNode }) => {
   const user = await requireUser();
@@ -20,13 +43,7 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
   // Owned servers
   const ownedServers = await prisma.server.findMany({
     orderBy: { createdAt: "desc" },
-    select: {
-      desiredState: true,
-      game: true,
-      id: true,
-      name: true,
-      observedState: true,
-    },
+    select: serverSelect,
     where: { deletedAt: null, userId: user.id },
   });
 
@@ -34,14 +51,7 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
   const memberships = await prisma.serverMember.findMany({
     include: {
       server: {
-        select: {
-          deletedAt: true,
-          desiredState: true,
-          game: true,
-          id: true,
-          name: true,
-          observedState: true,
-        },
+        select: { ...serverSelect, deletedAt: true },
       },
     },
     where: { userId: user.id },
@@ -53,10 +63,16 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
 
   // Deduplicate (edge case: owner somehow also a member)
   const ownedIds = new Set(ownedServers.map((s) => s.id));
-  const servers = [
+  const servers: SidebarServer[] = [
     ...ownedServers,
     ...memberServers.filter((s) => !ownedIds.has(s.id)),
-  ];
+  ].map((s) => ({
+    gameImage: s.egg?.image ?? null,
+    gameName: s.egg?.name ?? null,
+    health: healthOf(s),
+    id: s.id,
+    name: s.name,
+  }));
 
   return (
     <SidebarProvider className="h-svh bg-sidebar">

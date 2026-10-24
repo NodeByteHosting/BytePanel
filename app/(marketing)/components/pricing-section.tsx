@@ -11,7 +11,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import type { CatalogServerType } from "@/lib/providers/types";
 import { cn } from "@/lib/utils";
 
 const formatPrice = (amount: number, currency: string) =>
@@ -21,11 +20,20 @@ const formatPrice = (amount: number, currency: string) =>
     style: "currency",
   }).format(amount);
 
+export interface PricingPlan {
+  name: string;
+  cores: string;
+  memory: string;
+  disk: string;
+  backups: number;
+  pricePerMonth: number;
+}
+
 // The 2nd plan (index 1) in the featured set is highlighted as best value.
 const HIGHLIGHT_INDEX = 1;
 
 interface PlanCardProps {
-  type: CatalogServerType;
+  type: PricingPlan;
   currency: string;
   highlight?: boolean;
   isAuthenticated: boolean;
@@ -64,22 +72,22 @@ const PlanCard = ({
         <MemoryStick className="size-3.5 shrink-0 text-primary" />
         <div className="flex flex-col">
           <span className="text-xs text-muted-foreground">RAM</span>
-          <span className="text-sm font-semibold">{type.memory} GB</span>
+          <span className="text-sm font-semibold">{type.memory}</span>
         </div>
       </div>
       <div className="flex items-center gap-2 rounded-xl border border-border/40 bg-muted/30 px-3 py-2">
         <HardDrive className="size-3.5 shrink-0 text-primary" />
         <div className="flex flex-col">
           <span className="text-xs text-muted-foreground">SSD</span>
-          <span className="text-sm font-semibold">{type.disk} GB</span>
+          <span className="text-sm font-semibold">{type.disk}</span>
         </div>
       </div>
       <div className="flex items-center gap-2 rounded-xl border border-border/40 bg-muted/30 px-3 py-2">
         <Server className="size-3.5 shrink-0 text-primary" />
         <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground">Arch</span>
+          <span className="text-xs text-muted-foreground">Backups</span>
           <span className="text-sm font-semibold uppercase">
-            {type.architecture}
+            {type.backups}
           </span>
         </div>
       </div>
@@ -111,7 +119,7 @@ const PlanCard = ({
 );
 
 interface PricingSectionProps {
-  serverTypes: CatalogServerType[];
+  serverTypes: PricingPlan[];
   currency: string;
   isAuthenticated: boolean;
 }

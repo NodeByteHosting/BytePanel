@@ -14,10 +14,9 @@
     "db:generate": "bunx --bun prisma generate",
     "db:studio": "bunx --bun prisma studio",
     "migrate": "bunx --bun prisma migrate dev && bunx --bun prisma generate",
-    "agent:build": "node --eval \"require('fs').mkdirSync(require('os').homedir()+'/.bun/install/cache',{recursive:true})\" && cd agent && bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile ../dist/ghost-agent",
+    "agent:build": "node --eval \"const fs=require('fs');fs.mkdirSync(require('os').homedir()+'/.bun/install/cache',{recursive:true});fs.mkdirSync('dist',{recursive:true})\" && cd agent && bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile ../dist/nodebyte-daemon",
     "agent:dev": "cd agent && bun run src/index.ts",
     "codegen": "openapi-typescript https://docs.hetzner.cloud/cloud.spec.json -o lib/providers/hetzner/schema.ts",
-    "workflow:ui": "workflow inspect runs --web",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "types": "next typegen && tsgo --noEmit",
@@ -58,7 +57,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "cobe": "^2.0.1",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "geist": "^1.7.0",
@@ -90,7 +88,6 @@
     "ulid": "^3.0.2",
     "use-stick-to-bottom": "^1.1.4",
     "vaul": "^1.1.2",
-    "workflow": "^4.2.4",
     "zod": "4.3.6"
   },
   "devDependencies": {

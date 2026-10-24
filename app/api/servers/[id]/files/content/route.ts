@@ -1,128 +1,45 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { enqueueCommand, waitForCommand } from "@/lib/agent/commands";
-import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
-import { filesReadResultSchema } from "@/protocol";
+import { emitActivity } from "@/lib/events/emit";
+import { requestIp } from "@/lib/servers/access";
+import { daemonRoute } from "@/lib/servers/route";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 60;
 
-const MAX_CONTENT_CHARS = 2_000_000;
+const MAX_CONTENT_CHARS = 4_000_000;
 
-const writeBodySchema = z.object({
-  content: z.string().max(MAX_CONTENT_CHARS),
-  encoding: z.enum(["utf-8", "base64"]).default("utf-8"),
-  path: z.string().min(1),
+export const GET = daemonRoute("admin", async ({ access, daemon, request }) => {
+  const file = new URL(request.url).searchParams.get("file");
+  if (!file) {
+    return NextResponse.json({ error: "file is required" }, { status: 400 });
+  }
+  const content = await daemon.getFileContents(access.server.uuid, file);
+  return NextResponse.json({ content, file });
 });
 
-const requireOwnedServer = async (id: string) => {
-  const user = await requireUser();
-  const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id, userId: user.id },
-  });
+const writeSchema = z.object({
+  content: z.string().max(MAX_CONTENT_CHARS),
+  file: z.string().min(1),
+});
 
-  if (!server) {
-    return {
-      error: NextResponse.json({ error: "Not Found" }, { status: 404 }),
-    } as const;
-  }
-
-  return { server } as const;
-};
-
-export const GET = async (
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) => {
-  const { id } = await context.params;
-  const owned = await requireOwnedServer(id);
-
-  if ("error" in owned) {
-    return owned.error;
-  }
-
-  const url = new URL(request.url);
-  const path = url.searchParams.get("path");
-
-  if (!path) {
-    return NextResponse.json({ error: "Path Required" }, { status: 400 });
-  }
-
-  const command = await enqueueCommand({
-    payload: { path },
-    serverId: id,
-    type: "FILES_READ",
-  });
-
-  const outcome = await waitForCommand(command.id, 110_000);
-
-  if (outcome.status === "timeout") {
-    return NextResponse.json(
-      { error: "Agent did not respond. Is the server online?" },
-      { status: 504 }
-    );
-  }
-
-  if (outcome.status === "failed") {
-    return NextResponse.json(
-      { error: outcome.error ?? "Read Failed" },
-      { status: 500 }
-    );
-  }
-
-  const parsed = filesReadResultSchema.safeParse(outcome.result);
-
+export const PUT = daemonRoute("admin", async ({ access, daemon, request }) => {
+  const parsed = writeSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid result" }, { status: 500 });
+    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
-
-  return NextResponse.json(parsed.data);
-};
-
-export const PUT = async (
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) => {
-  const { id } = await context.params;
-  const owned = await requireOwnedServer(id);
-
-  if ("error" in owned) {
-    return owned.error;
-  }
-
-  const json = await request.json().catch(() => null);
-  const parsedBody = writeBodySchema.safeParse(json);
-
-  if (!parsedBody.success) {
-    return NextResponse.json(
-      { details: parsedBody.error.flatten(), error: "Invalid body" },
-      { status: 400 }
-    );
-  }
-
-  const command = await enqueueCommand({
-    payload: parsedBody.data,
-    serverId: id,
-    type: "FILES_WRITE",
+  await daemon.writeFile(
+    access.server.uuid,
+    parsed.data.file,
+    parsed.data.content
+  );
+  await emitActivity({
+    actorId: access.user.id,
+    ip: requestIp(request.headers),
+    message: `Edited ${parsed.data.file}`,
+    phase: "server:file.write",
+    serverId: access.server.id,
   });
-
-  const outcome = await waitForCommand(command.id, 110_000);
-
-  if (outcome.status === "timeout") {
-    return NextResponse.json(
-      { error: "Agent did not respond. Is the server online?" },
-      { status: 504 }
-    );
-  }
-
-  if (outcome.status === "failed") {
-    return NextResponse.json(
-      { error: outcome.error ?? "Write Failed" },
-      { status: 500 }
-    );
-  }
-
   return NextResponse.json({ ok: true });
-};
+});
