@@ -7,7 +7,7 @@ import { z } from "zod";
 export const CONFIG_PATH =
   process.env.NODEBYTE_CONFIG_PATH ?? "/etc/nodebyte/daemon.json";
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.0.1-dev";
 
 // Node configuration. The panel renders this file for each node (admin →
 // nodes → configuration) and `nodebyte-daemon configure` can fetch it.
