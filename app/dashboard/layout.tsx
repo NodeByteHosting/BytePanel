@@ -75,7 +75,7 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
   }));
 
   return (
-    <SidebarProvider className="h-svh bg-sidebar">
+    <SidebarProvider className="bg-sidebar h-svh">
       <AppSidebar
         servers={servers}
         user={{

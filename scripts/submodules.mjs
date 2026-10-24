@@ -2,7 +2,7 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import path from "node:path";
 
 const colors = {
   blue: "\u001B[34m",
@@ -131,7 +131,7 @@ const getConfiguredBranch = (repoRoot, submodulePath) => {
 const redactRemote = (url) =>
   url.replace(/https:\/\/[^@\s]+@github\.com\//u, "https://***@github.com/");
 
-const normalizePath = (path) => resolve(path).replaceAll("\\", "/");
+const normalizePath = (target) => path.resolve(target).replaceAll("\\", "/");
 
 const getRequiredMarker = (submodule) => {
   if (submodule === "games") {

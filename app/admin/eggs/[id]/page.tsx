@@ -53,7 +53,7 @@ const AdminEggPage = async ({
         <div className="flex flex-col gap-4">
           {egg.slug && (
             <Panel>
-              <PanelCard className="text-sm text-muted-foreground">
+              <PanelCard className="text-muted-foreground text-sm">
                 Built-in egg <code>{egg.slug}</code>. Edits here are overwritten
                 the next time built-in games are synced; change the definition
                 in the GSG repo instead.

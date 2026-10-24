@@ -177,7 +177,6 @@ export const DaemonSocketProvider = ({
 
   useEffect(() => {
     if (!enabled) {
-      setStatus("unavailable");
       return;
     }
     let cancelled = false;
@@ -303,9 +302,10 @@ export const DaemonSocketProvider = ({
       setPower: (action) => send(WS_EVENTS.SET_STATE, [action]),
       state,
       stats,
-      status,
+      // Derived rather than set from the effect: a disabled socket never connects.
+      status: enabled ? status : "unavailable",
     }),
-    [error, history, lines, send, state, stats, status]
+    [enabled, error, history, lines, send, state, stats, status]
   );
 
   return (

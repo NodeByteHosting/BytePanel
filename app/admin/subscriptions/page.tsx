@@ -122,8 +122,8 @@ const AdminSubscriptionsPage = async () => {
               accent={pastDueCount > 0 ? "red" : "zinc"}
             />
 
-            <div className="col-span-2 overflow-hidden rounded-xl border border-border/60 bg-card p-4 sm:col-span-1">
-              <p className="mb-3 text-sm font-medium text-muted-foreground">
+            <div className="border-border/60 bg-card col-span-2 overflow-hidden rounded-xl border p-4 sm:col-span-1">
+              <p className="text-muted-foreground mb-3 text-sm font-medium">
                 Breakdown
               </p>
               <div className="flex flex-col gap-1.5">
@@ -141,7 +141,7 @@ const AdminSubscriptionsPage = async () => {
                     >
                       {r.status.replace("_", " ")}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       {r._count} — £
                       {((r._sum.pricePerMonthCents ?? 0) / 100).toFixed(0)}/mo
                     </span>
@@ -152,19 +152,19 @@ const AdminSubscriptionsPage = async () => {
           </div>
 
           {/* Subscriptions table */}
-          <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
-            <div className="border-b border-border/50 px-5 py-4">
+          <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
+            <div className="border-border/50 border-b px-5 py-4">
               <h2 className="text-sm font-semibold">All subscriptions</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="text-muted-foreground mt-0.5 text-xs">
                 Showing most recent 100
               </p>
             </div>
             {subscriptions.length === 0 ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">
+              <div className="text-muted-foreground py-12 text-center text-sm">
                 No subscriptions yet.
               </div>
             ) : (
-              <div className="divide-y divide-border/50">
+              <div className="divide-border/50 divide-y">
                 {subscriptions.map((sub) => (
                   <div
                     key={sub.id}
@@ -174,7 +174,7 @@ const AdminSubscriptionsPage = async () => {
                       <span className="text-sm font-medium">
                         {sub.server.name}
                       </span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         {sub.billingCustomer.email}
                       </span>
                     </div>
@@ -204,10 +204,10 @@ const AdminSubscriptionsPage = async () => {
                           ? ` (−£${(sub.discountAmountCents / 100).toFixed(2)})`
                           : ""}
                       </span>
-                      <span className="hidden text-xs text-muted-foreground sm:block">
+                      <span className="text-muted-foreground hidden text-xs sm:block">
                         {sub.planName}
                       </span>
-                      <span className="hidden text-xs text-muted-foreground md:block">
+                      <span className="text-muted-foreground hidden text-xs md:block">
                         {sub.currentPeriodEnd
                           ? new Date(sub.currentPeriodEnd).toLocaleDateString(
                               "en-US",
@@ -223,20 +223,20 @@ const AdminSubscriptionsPage = async () => {
           </div>
 
           {/* Recent invoices */}
-          <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
-            <div className="border-b border-border/50 px-5 py-4">
+          <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
+            <div className="border-border/50 border-b px-5 py-4">
               <h2 className="text-sm font-semibold">Recent invoices</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="text-muted-foreground mt-0.5 text-xs">
                 Last 50 invoices across all customers
               </p>
             </div>
             {recentInvoices.length === 0 ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">
+              <div className="text-muted-foreground py-12 text-center text-sm">
                 No invoices recorded yet. Invoices are created automatically via
                 the Stripe webhook.
               </div>
             ) : (
-              <div className="divide-y divide-border/50">
+              <div className="divide-border/50 divide-y">
                 {recentInvoices.map((inv) => {
                   const serverName = inv.subscription?.server?.name ?? "—";
                   const planName = inv.subscription?.planName ?? "—";
@@ -256,7 +256,7 @@ const AdminSubscriptionsPage = async () => {
                         <span className="text-sm font-medium">
                           {serverName}
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-muted-foreground text-xs">
                           {inv.billingCustomer.email} · {planName}
                         </span>
                       </div>
@@ -273,7 +273,7 @@ const AdminSubscriptionsPage = async () => {
                         <span className="text-sm font-medium">
                           {amountLabel}
                         </span>
-                        <span className="hidden text-xs text-muted-foreground sm:block">
+                        <span className="text-muted-foreground hidden text-xs sm:block">
                           {new Date(inv.createdAt).toLocaleDateString("en-US", {
                             dateStyle: "medium",
                           })}
@@ -283,7 +283,7 @@ const AdminSubscriptionsPage = async () => {
                             href={inv.invoiceUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline"
+                            className="text-primary inline-flex items-center gap-1 text-xs underline-offset-2 hover:underline"
                           >
                             <ExternalLink className="size-3" />
                             View

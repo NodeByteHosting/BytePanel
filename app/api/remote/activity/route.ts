@@ -14,9 +14,9 @@ const describe = (
   if (event === "server:console.command") {
     return `Ran console command: ${String(metadata?.command ?? "").slice(0, 200)}`;
   }
-  const power = /^server:power\.(\w+)$/u.exec(event);
+  const power = /^server:power\.(?<action>\w+)$/u.exec(event);
   if (power) {
-    return `Sent power action: ${power[1]}`;
+    return `Sent power action: ${power.groups?.action}`;
   }
   return event;
 };
@@ -39,6 +39,7 @@ export const POST = remoteHandler(async ({ node, request }) => {
     if (!serverId) {
       continue;
     }
+    // oxlint-disable-next-line no-await-in-loop -- sequential so per-server activity seq numbers follow batch order
     await emitActivity({
       actorId: entry.userUuid ?? null,
       ip: entry.ip ?? null,

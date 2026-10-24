@@ -10,7 +10,7 @@ interface AdminSectionProps {
 export const AdminSection = ({ children, className }: AdminSectionProps) => (
   <div
     className={cn(
-      "overflow-hidden rounded-xl border border-border/60 bg-card",
+      "border-border/60 bg-card overflow-hidden rounded-xl border",
       className
     )}
   >
@@ -33,14 +33,14 @@ export const AdminSectionHeader = ({
 }: AdminSectionHeaderProps) => (
   <div
     className={cn(
-      "flex items-start justify-between gap-4 border-b border-border/50 px-5 py-4",
+      "border-border/50 flex items-start justify-between gap-4 border-b px-5 py-4",
       className
     )}
   >
     <div>
       <p className="text-sm font-semibold">{title}</p>
       {description && (
-        <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+        <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>
       )}
     </div>
     {actions && <div className="shrink-0">{actions}</div>}

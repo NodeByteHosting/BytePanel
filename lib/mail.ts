@@ -1,5 +1,5 @@
 import "server-only";
-import nodemailer from "nodemailer";
+import { createTransport } from "nodemailer";
 
 import { env } from "./env";
 
@@ -7,7 +7,7 @@ const getTransporter = () => {
   if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS || !env.SMTP_FROM) {
     return null;
   }
-  return nodemailer.createTransport({
+  return createTransport({
     auth: { pass: env.SMTP_PASS, user: env.SMTP_USER },
     host: env.SMTP_HOST,
     port: env.SMTP_PORT ?? 587,

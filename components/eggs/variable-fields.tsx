@@ -130,10 +130,12 @@ export const variableErrors = (
   return errors;
 };
 
+const NO_ERRORS: Record<string, string> = {};
+
 export const VariableFields = ({
   variables,
   values,
-  errors = {},
+  errors = NO_ERRORS,
   onChange,
 }: {
   variables: VariableFieldDef[];
@@ -154,21 +156,21 @@ export const VariableFields = ({
           >
             {variable.name}
             {parseRules(variable.rules).required && (
-              <span aria-hidden className="ml-1 text-destructive">
+              <span aria-hidden className="text-destructive ml-1">
                 *
               </span>
             )}
           </Label>
           {variable.description && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {variable.description}
             </span>
           )}
-          <code className="text-[10px] text-muted-foreground/70">
+          <code className="text-muted-foreground/70 text-[10px]">
             {variable.envVariable}
           </code>
           {errors[variable.envVariable] && (
-            <span className="text-xs text-destructive">
+            <span className="text-destructive text-xs">
               {errors[variable.envVariable]}
             </span>
           )}

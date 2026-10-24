@@ -49,43 +49,43 @@ const PlanCard = ({
     className={cn(
       "relative flex flex-col gap-5 rounded-2xl border p-5 backdrop-blur-sm transition-all duration-300",
       highlight
-        ? "border-primary/60 bg-card/60 shadow-lg shadow-primary/10 ring-1 ring-primary/20"
+        ? "border-primary/60 bg-card/60 shadow-primary/10 ring-primary/20 shadow-lg ring-1"
         : "border-border/50 bg-card/30 hover:border-primary/30 hover:bg-card/50"
     )}
   >
     {highlight && (
-      <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary px-3 py-0.5 text-xs font-semibold text-primary-foreground shadow">
+      <Badge className="bg-primary text-primary-foreground absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 text-xs font-semibold shadow">
         Most popular
       </Badge>
     )}
 
     {/* Specs */}
     <div className="grid grid-cols-2 gap-2">
-      <div className="flex items-center gap-2 rounded-xl border border-border/40 bg-muted/30 px-3 py-2">
-        <Cpu className="size-3.5 shrink-0 text-primary" />
+      <div className="border-border/40 bg-muted/30 flex items-center gap-2 rounded-xl border px-3 py-2">
+        <Cpu className="text-primary size-3.5 shrink-0" />
         <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground">vCPU</span>
+          <span className="text-muted-foreground text-xs">vCPU</span>
           <span className="text-sm font-semibold">{type.cores}</span>
         </div>
       </div>
-      <div className="flex items-center gap-2 rounded-xl border border-border/40 bg-muted/30 px-3 py-2">
-        <MemoryStick className="size-3.5 shrink-0 text-primary" />
+      <div className="border-border/40 bg-muted/30 flex items-center gap-2 rounded-xl border px-3 py-2">
+        <MemoryStick className="text-primary size-3.5 shrink-0" />
         <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground">RAM</span>
+          <span className="text-muted-foreground text-xs">RAM</span>
           <span className="text-sm font-semibold">{type.memory}</span>
         </div>
       </div>
-      <div className="flex items-center gap-2 rounded-xl border border-border/40 bg-muted/30 px-3 py-2">
-        <HardDrive className="size-3.5 shrink-0 text-primary" />
+      <div className="border-border/40 bg-muted/30 flex items-center gap-2 rounded-xl border px-3 py-2">
+        <HardDrive className="text-primary size-3.5 shrink-0" />
         <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground">SSD</span>
+          <span className="text-muted-foreground text-xs">SSD</span>
           <span className="text-sm font-semibold">{type.disk}</span>
         </div>
       </div>
-      <div className="flex items-center gap-2 rounded-xl border border-border/40 bg-muted/30 px-3 py-2">
-        <Server className="size-3.5 shrink-0 text-primary" />
+      <div className="border-border/40 bg-muted/30 flex items-center gap-2 rounded-xl border px-3 py-2">
+        <Server className="text-primary size-3.5 shrink-0" />
         <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground">Backups</span>
+          <span className="text-muted-foreground text-xs">Backups</span>
           <span className="text-sm font-semibold uppercase">
             {type.backups}
           </span>
@@ -94,12 +94,12 @@ const PlanCard = ({
     </div>
 
     {/* Price + CTA */}
-    <div className="flex items-end justify-between border-t border-border/40 pt-4">
+    <div className="border-border/40 flex items-end justify-between border-t pt-4">
       <div>
-        <div className="text-2xl font-bold tabular-nums leading-none">
+        <div className="text-2xl leading-none font-bold tabular-nums">
           {formatPrice(type.pricePerMonth, currency)}
         </div>
-        <div className="mt-0.5 text-xs text-muted-foreground">per month</div>
+        <div className="text-muted-foreground mt-0.5 text-xs">per month</div>
       </div>
       <Button
         asChild
@@ -159,7 +159,7 @@ export const PricingSection = ({
               type="button"
               variant="ghost"
               size="sm"
-              className="mx-auto flex gap-1.5 text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground mx-auto flex gap-1.5"
             >
               <ChevronDown
                 className={cn(
@@ -189,7 +189,7 @@ export const PricingSection = ({
 
       {/* Bottom CTA */}
       <div className="mt-4 flex flex-col items-center gap-3 text-center">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           All plans include DDoS protection, NVMe SSD storage, and 24/7 support.
           Cancel anytime.
         </p>

@@ -24,13 +24,13 @@ const renderStep = (
     .replaceAll("{address-host}", vars.host)
     .replaceAll("{address-port}", vars.port)
     .replaceAll("{address}", vars.address);
-  return substituted.split(/`([^`]+)`/gu).map((part, i) =>
+  return substituted.split(/`(?<code>[^`]+)`/gu).map((part, i) =>
     i % 2 === 0 ? (
       <Fragment key={i}>{part}</Fragment>
     ) : (
       <code
         key={i}
-        className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs"
+        className="bg-muted rounded-md px-1.5 py-0.5 font-mono text-xs"
       >
         {part}
       </code>
@@ -56,9 +56,9 @@ const Copyable = ({ label, value, reveal }: CopyableProps) => {
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="text-muted-foreground text-xs font-medium">{label}</span>
       <div className="flex items-center gap-2">
-        <code className="rounded-md bg-muted px-2 py-1 font-mono text-sm">
+        <code className="bg-muted rounded-md px-2 py-1 font-mono text-sm">
           {shown ? value : "•".repeat(value.length)}
         </code>
         {reveal && (
@@ -68,7 +68,7 @@ const Copyable = ({ label, value, reveal }: CopyableProps) => {
             size="icon"
             aria-label={shown ? "Hide" : "Show"}
             onClick={() => setShown((v) => !v)}
-            className="size-7 text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground size-7"
           >
             {shown ? (
               <EyeOffIcon className="size-3.5" />
@@ -83,7 +83,7 @@ const Copyable = ({ label, value, reveal }: CopyableProps) => {
           size="icon"
           aria-label={`Copy ${label.toLowerCase()}`}
           onClick={copy}
-          className="size-7 text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground size-7"
         >
           {copied ? (
             <CheckIcon className="size-3.5" />
@@ -119,7 +119,7 @@ export const ConnectPanel = ({
   if (!address) {
     return (
       <Panel>
-        <PanelCard className="text-sm text-muted-foreground">
+        <PanelCard className="text-muted-foreground text-sm">
           No address assigned yet.
         </PanelCard>
       </Panel>
@@ -135,13 +135,13 @@ export const ConnectPanel = ({
         )}
         {allocations.length > 1 && (
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="text-muted-foreground text-xs font-medium">
               Ports
             </span>
             <div className="flex flex-wrap gap-2">
               {allocations.map((allocation) => (
                 <code
-                  className="rounded-md bg-muted px-2 py-1 font-mono text-xs"
+                  className="bg-muted rounded-md px-2 py-1 font-mono text-xs"
                   key={allocation.id}
                 >
                   {allocation.port}
@@ -152,7 +152,7 @@ export const ConnectPanel = ({
           </div>
         )}
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="text-muted-foreground text-xs font-medium">
             How to connect
           </span>
           {howToConnect ? (

@@ -63,7 +63,7 @@ export const ServerAdminActions = ({
               disabled={pending}
               variant="outline"
               onClick={() =>
-                void run(
+                run(
                   () => adminSetSuspended(serverId, !suspended),
                   suspended ? "Unsuspended" : "Suspended"
                 )
@@ -75,10 +75,7 @@ export const ServerAdminActions = ({
               disabled={pending}
               variant="outline"
               onClick={() =>
-                void run(
-                  () => adminReinstallServer(serverId),
-                  "Reinstall started"
-                )
+                run(() => adminReinstallServer(serverId), "Reinstall started")
               }
             >
               Reinstall
@@ -102,7 +99,7 @@ export const ServerAdminActions = ({
             <Button
               disabled={pending}
               onClick={() =>
-                void run(
+                run(
                   () =>
                     adminDeployServer(
                       serverId,
@@ -139,7 +136,8 @@ export const ServerAdminActions = ({
                 checked={force}
                 onCheckedChange={(v) => setForce(v === true)}
               />
-              Force (delete from the panel even if the node can't be reached)
+              Force (delete from the panel even if the node can&apos;t be
+              reached)
             </Label>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -195,7 +193,7 @@ export const BuildForm = ({
           setV((prev) => ({ ...prev, [key]: Number(e.target.value) }))
         }
       />
-      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+      {hint && <span className="text-muted-foreground text-xs">{hint}</span>}
     </div>
   );
   return (
@@ -217,8 +215,9 @@ export const BuildForm = ({
       {num("backupLimit", "Backups")}
       {num("allocationLimit", "Ports")}
       <div className="flex flex-col gap-1.5">
-        <Label>CPU pinning</Label>
+        <Label htmlFor="server-threads">CPU pinning</Label>
         <Input
+          id="server-threads"
           placeholder="e.g. 0-3 or 0,2"
           value={v.threads ?? ""}
           onChange={(e) =>
@@ -226,8 +225,12 @@ export const BuildForm = ({
           }
         />
       </div>
-      <Label className="flex items-center gap-2 text-sm md:col-span-3 font-normal">
+      <Label
+        htmlFor="server-oom-disabled"
+        className="flex items-center gap-2 text-sm font-normal md:col-span-3"
+      >
         <Switch
+          id="server-oom-disabled"
           checked={v.oomDisabled}
           onCheckedChange={(c) => setV((prev) => ({ ...prev, oomDisabled: c }))}
         />

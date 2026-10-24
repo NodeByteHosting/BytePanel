@@ -27,9 +27,9 @@ const resolveKey = (
   if (key in ctx.env) {
     return ctx.env[key];
   }
-  const extraPort = /^SERVER_PORT_(\d+)$/u.exec(key);
-  if (extraPort) {
-    const port = ctx.ports[Number(extraPort[1])];
+  const extraPort = /^SERVER_PORT_(?<index>\d+)$/u.exec(key);
+  if (extraPort?.groups) {
+    const port = ctx.ports[Number(extraPort.groups.index)];
     return port === undefined ? undefined : String(port);
   }
   switch (key) {
@@ -57,9 +57,9 @@ const resolveKey = (
       break;
     }
   }
-  const envMatch = /^(?:server\.build\.)?env\.(.+)$/u.exec(key);
-  if (envMatch) {
-    return ctx.env[envMatch[1] ?? ""];
+  const envMatch = /^(?:server\.build\.)?env\.(?<name>.+)$/u.exec(key);
+  if (envMatch?.groups) {
+    return ctx.env[envMatch.groups.name ?? ""];
   }
   return undefined;
 };
@@ -69,6 +69,6 @@ export const resolvePlaceholders = (
   ctx: PlaceholderContext
 ): string =>
   template.replaceAll(
-    /\{\{\s*([\w.]+)\s*\}\}/gu,
+    /\{\{\s*(?<key>[\w.]+)\s*\}\}/gu,
     (whole, key: string) => resolveKey(key, ctx) ?? whole
   );

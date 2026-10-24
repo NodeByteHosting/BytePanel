@@ -38,7 +38,7 @@ const Field = ({
   >
     <Label>{label}</Label>
     {children}
-    {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+    {hint && <span className="text-muted-foreground text-xs">{hint}</span>}
   </div>
 );
 
@@ -163,9 +163,7 @@ export const EggForm = ({
         </Select>
       </Field>
       <Field
-        hint={
-          '"^C" / "^SIGTERM" = signal, "native" = docker stop, else a console command.'
-        }
+        hint='"^C" / "^SIGTERM" = signal, "native" = docker stop, else a console command.'
         label="Stop command"
       >
         <Input
@@ -266,8 +264,12 @@ export const EggForm = ({
           onChange={(e) => set("scriptInstall", e.target.value)}
         />
       </Field>
-      <Label className="flex items-center gap-2 text-sm font-normal">
+      <Label
+        htmlFor="egg-enabled"
+        className="flex items-center gap-2 text-sm font-normal"
+      >
         <Switch
+          id="egg-enabled"
           checked={v.enabled}
           onCheckedChange={(c) => set("enabled", c)}
         />
@@ -310,7 +312,7 @@ export const VariablesEditor = ({
     <div className="flex flex-col gap-3">
       {rows.map((row, index) => (
         <div
-          className="grid gap-2 rounded-lg border border-border/60 p-3 md:grid-cols-4"
+          className="border-border/60 grid gap-2 rounded-lg border p-3 md:grid-cols-4"
           key={index}
         >
           <Input
@@ -343,15 +345,23 @@ export const VariablesEditor = ({
             onChange={(e) => update(index, { description: e.target.value })}
           />
           <div className="flex items-center gap-4 md:col-span-2">
-            <Label className="flex items-center gap-2 text-sm font-normal">
+            <Label
+              htmlFor={`egg-var-${index}-viewable`}
+              className="flex items-center gap-2 text-sm font-normal"
+            >
               <Switch
+                id={`egg-var-${index}-viewable`}
                 checked={row.userViewable}
                 onCheckedChange={(c) => update(index, { userViewable: c })}
               />
               Viewable
             </Label>
-            <Label className="flex items-center gap-2 text-sm font-normal">
+            <Label
+              htmlFor={`egg-var-${index}-editable`}
+              className="flex items-center gap-2 text-sm font-normal"
+            >
               <Switch
+                id={`egg-var-${index}-editable`}
                 checked={row.userEditable}
                 onCheckedChange={(c) => update(index, { userEditable: c })}
               />
@@ -383,7 +393,7 @@ export const VariablesEditor = ({
         <Button
           disabled={pending}
           onClick={() =>
-            void run(() => saveEggVariables(eggId, rows), "Variables saved")
+            run(() => saveEggVariables(eggId, rows), "Variables saved")
           }
         >
           Save variables

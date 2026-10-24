@@ -32,7 +32,7 @@ export const ServerGrid = ({ servers }: Props) => {
     <div className="flex flex-col gap-4">
       {servers.length > 4 && (
         <div className="relative">
-          <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <Input
             className="pl-9"
             placeholder="Search servers…"
@@ -42,7 +42,7 @@ export const ServerGrid = ({ servers }: Props) => {
         </div>
       )}
       {filtered.length === 0 && search && (
-        <p className="py-8 text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground py-8 text-center text-sm">
           No servers match &ldquo;{search}&rdquo;.
         </p>
       )}

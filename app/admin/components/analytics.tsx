@@ -21,13 +21,14 @@ export const PeriodSelector = ({
   onSelect,
   className,
 }: PeriodSelectorProps) => (
-  <div className={cn("flex gap-2 flex-wrap", className)}>
+  <div className={cn("flex flex-wrap gap-2", className)}>
     {periods.map((period) => (
       <button
+        type="button"
         key={period.value}
         onClick={() => onSelect(period.value)}
         className={cn(
-          "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+          "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
           selected === period.value
             ? "bg-primary text-primary-foreground"
             : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -54,11 +55,11 @@ export const AnalyticsHeader = ({
   selectedPeriod = "month",
   onPeriodChange,
 }: AnalyticsHeaderProps) => (
-  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+  <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{title}</h1>
+      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
       {description && (
-        <p className="text-sm text-muted-foreground mt-1">{description}</p>
+        <p className="text-muted-foreground mt-1 text-sm">{description}</p>
       )}
     </div>
 
@@ -112,7 +113,7 @@ export const ComparisonMetric = ({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+        <CardTitle className="text-muted-foreground text-sm font-medium">
           {label}
         </CardTitle>
       </CardHeader>
@@ -121,14 +122,14 @@ export const ComparisonMetric = ({
           <div className="text-2xl font-bold">
             {format(current)}
             {unit && (
-              <span className="text-sm text-muted-foreground ml-1">{unit}</span>
+              <span className="text-muted-foreground ml-1 text-sm">{unit}</span>
             )}
           </div>
 
           {change && (
             <div
               className={cn(
-                "text-xs font-medium flex items-center gap-1",
+                "flex items-center gap-1 text-xs font-medium",
                 change.direction === "up"
                   ? "text-emerald-600 dark:text-emerald-400"
                   : "text-red-600 dark:text-red-400"
@@ -140,7 +141,7 @@ export const ComparisonMetric = ({
           )}
 
           {previous && (
-            <div className="text-xs text-muted-foreground">
+            <div className="text-muted-foreground text-xs">
               Previous: {format(previous)}
             </div>
           )}
@@ -176,7 +177,7 @@ export const Gauge = ({
   return (
     <Card className={className}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+        <CardTitle className="text-muted-foreground text-sm font-medium">
           {label}
         </CardTitle>
       </CardHeader>
@@ -186,13 +187,13 @@ export const Gauge = ({
         </div>
 
         <div className="space-y-1">
-          <div className="h-2 rounded-full bg-muted overflow-hidden">
+          <div className="bg-muted h-2 overflow-hidden rounded-full">
             <div
               className={cn("h-full transition-all", colorMap[color])}
               style={{ width: `${Math.min(percentage, 100)}%` }}
             />
           </div>
-          <p className="text-xs text-muted-foreground text-right">
+          <p className="text-muted-foreground text-right text-xs">
             {percentage.toFixed(1)}%
           </p>
         </div>

@@ -83,7 +83,7 @@ const StepIndicator = ({ step }: { step: number }) => (
               className={cn(
                 "flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
                 active &&
-                  "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/30",
+                  "border-primary bg-primary text-primary-foreground shadow-primary/30 shadow-sm",
                 done && "border-primary/40 bg-primary/10 text-primary",
                 !active && !done && "border-border/60 text-muted-foreground"
               )}
@@ -122,7 +122,7 @@ const StepTitle = ({
 }) => (
   <div>
     <h2 className="text-base font-semibold">{title}</h2>
-    <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+    <p className="text-muted-foreground mt-0.5 text-sm">{description}</p>
   </div>
 );
 
@@ -132,7 +132,7 @@ const optionClass = (selected: boolean, disabled = false) =>
     disabled && "cursor-not-allowed opacity-50",
     !disabled && "cursor-pointer",
     selected
-      ? "border-primary bg-primary/5 shadow-sm shadow-primary/10"
+      ? "border-primary bg-primary/5 shadow-primary/10 shadow-sm"
       : "border-border/60 bg-card hover:border-primary/40"
   );
 
@@ -152,8 +152,8 @@ const GameArt = ({
       width={240}
     />
   ) : (
-    <div className={cn("flex items-center justify-center bg-muted", className)}>
-      <GamepadIcon className="size-6 text-muted-foreground" />
+    <div className={cn("bg-muted flex items-center justify-center", className)}>
+      <GamepadIcon className="text-muted-foreground size-6" />
     </div>
   );
 
@@ -188,7 +188,7 @@ const GameStep = ({
           <GameArt className="aspect-video w-full" egg={e} />
           <div className="p-2.5">
             <div className="text-sm font-semibold">{e.name}</div>
-            <div className="mt-0.5 text-xs text-muted-foreground">
+            <div className="text-muted-foreground mt-0.5 text-xs">
               {e.minMemory > 0
                 ? `${formatMib(e.minMemory)}+ recommended`
                 : e.nest}
@@ -201,7 +201,7 @@ const GameStep = ({
 );
 
 const PlanSpecs = ({ plan }: { plan: PlanOption }) => (
-  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+  <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
     <span className="flex items-center gap-1">
       <MemoryStick className="size-3" />
       {formatMib(plan.memory)} RAM
@@ -269,7 +269,7 @@ const PlanStep = ({
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold">{p.name}</span>
                 {recommended && (
-                  <Badge className="border border-primary/30 bg-primary/15 text-primary shadow-none">
+                  <Badge className="border-primary/30 bg-primary/15 text-primary border shadow-none">
                     Recommended
                   </Badge>
                 )}
@@ -281,14 +281,14 @@ const PlanStep = ({
               </div>
               <PlanSpecs plan={p} />
               {p.description && (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-muted-foreground text-xs">
                   {p.description}
                 </span>
               )}
             </div>
             <div className="shrink-0 text-sm font-semibold tabular-nums">
               {formatPrice(p.priceMonthCents, p.currency)}
-              <span className="font-normal text-muted-foreground">/mo</span>
+              <span className="text-muted-foreground font-normal">/mo</span>
             </div>
           </label>
         );
@@ -328,10 +328,10 @@ const LocationStep = ({
             value={l.id}
             onChange={() => onSelect(l.id)}
           />
-          <MapPinIcon className="size-4 text-muted-foreground" />
+          <MapPinIcon className="text-muted-foreground size-4" />
           <div className="flex flex-col">
             <span className="text-sm font-semibold">{l.long ?? l.short}</span>
-            <code className="text-xs text-muted-foreground">{l.short}</code>
+            <code className="text-muted-foreground text-xs">{l.short}</code>
           </div>
         </label>
       ))}
@@ -359,8 +359,8 @@ const ConfigureStep = ({
       description="Name your server and adjust its startup settings."
       title="Configure your server"
     />
-    <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
-      <div className="border-b border-border/50 px-4 py-3">
+    <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
+      <div className="border-border/50 border-b px-4 py-3">
         <p className="text-sm font-semibold">Server name</p>
       </div>
       <div className="px-4 py-4">
@@ -373,18 +373,18 @@ const ConfigureStep = ({
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        <p className="mt-1.5 text-xs text-muted-foreground">3–40 characters.</p>
+        <p className="text-muted-foreground mt-1.5 text-xs">3–40 characters.</p>
       </div>
     </div>
     {egg.variables.length > 0 && (
-      <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
-        <div className="border-b border-border/50 px-4 py-3">
+      <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
+        <div className="border-border/50 border-b px-4 py-3">
           <p className="text-sm font-semibold">{egg.name} settings</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="text-muted-foreground mt-0.5 text-xs">
             You can change these later from the Startup tab.
           </p>
         </div>
-        <div className="flex flex-col divide-y divide-border/50">
+        <div className="divide-border/50 flex flex-col divide-y">
           <VariableFields
             errors={errors}
             values={values}
@@ -405,7 +405,7 @@ const ReviewRow = ({
   children: React.ReactNode;
 }) => (
   <div className="flex items-center justify-between gap-4 px-4 py-3">
-    <span className="text-sm text-muted-foreground">{label}</span>
+    <span className="text-muted-foreground text-sm">{label}</span>
     {children}
   </div>
 );
@@ -426,8 +426,8 @@ const ReviewStep = ({
       description="Confirm your configuration and continue to payment."
       title="Review your order"
     />
-    <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
-      <div className="divide-y divide-border/50">
+    <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
+      <div className="divide-border/50 divide-y">
         <ReviewRow label="Game">
           <span className="flex items-center gap-2 text-sm font-medium">
             <GameArt className="size-5 rounded" egg={egg} />
@@ -437,7 +437,7 @@ const ReviewStep = ({
         <ReviewRow label="Plan">
           <span className="text-right text-sm font-medium">
             {plan.name}
-            <span className="block text-xs font-normal text-muted-foreground">
+            <span className="text-muted-foreground block text-xs font-normal">
               {formatMib(plan.memory)} RAM · {formatMib(plan.disk)} SSD ·{" "}
               {plan.backupLimit} backups
             </span>
@@ -453,10 +453,10 @@ const ReviewStep = ({
             {name}
           </span>
         </ReviewRow>
-        <div className="flex items-center justify-between gap-4 bg-muted/30 px-4 py-4">
+        <div className="bg-muted/30 flex items-center justify-between gap-4 px-4 py-4">
           <div className="flex flex-col gap-0.5">
             <p className="text-sm font-semibold">Monthly total</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Billed monthly · cancel anytime
             </p>
           </div>
@@ -466,7 +466,7 @@ const ReviewStep = ({
         </div>
       </div>
     </div>
-    <p className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+    <p className="text-muted-foreground rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs leading-relaxed">
       Payment is taken first. Your server is then placed on a node and installed
       automatically, usually within a minute or two.
     </p>
@@ -521,11 +521,11 @@ const Unavailable = () => (
   <>
     <PageHeader title="New server" />
     <PageBody>
-      <div className="rounded-xl border border-dashed border-border/60 bg-card p-8 text-center">
+      <div className="border-border/60 bg-card rounded-xl border border-dashed p-8 text-center">
         <p className="text-lg font-semibold">
-          We're not taking orders right now
+          We&apos;re not taking orders right now
         </p>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="text-muted-foreground mt-2 text-sm">
           No games, plans or locations are available yet. Please check back
           soon.
         </p>
@@ -662,7 +662,7 @@ export const NewServerForm = ({ eggs, plans, locations }: Props) => {
             />
           )}
 
-          <div className="flex items-center justify-between gap-2 border-t border-border/50 pt-4">
+          <div className="border-border/50 flex items-center justify-between gap-2 border-t pt-4">
             <Button
               disabled={step === 0 || pending}
               type="button"

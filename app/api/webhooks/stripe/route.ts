@@ -35,7 +35,8 @@ const toSubscriptionStatus = (
     case "incomplete":
     case "incomplete_expired":
     case "paused": {
-      return status;
+      // Stripe's status union includes OtherString, so the case doesn't narrow.
+      return status as SubscriptionStatus;
     }
     default: {
       return "incomplete";
@@ -52,7 +53,7 @@ const toInvoiceStatus = (
     case "paid":
     case "uncollectible":
     case "void": {
-      return status;
+      return status as InvoiceStatus;
     }
     default: {
       return "open";

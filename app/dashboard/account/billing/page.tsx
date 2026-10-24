@@ -112,21 +112,21 @@ const BillingPage = async () => {
     <PageBody constrained>
       <div className="space-y-6">
         {/* Summary card */}
-        <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+        <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
           <div className="flex items-center justify-between gap-4 px-5 py-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-primary/10 p-2.5">
-                <CreditCard className="size-5 text-primary" />
+              <div className="bg-primary/10 rounded-lg p-2.5">
+                <CreditCard className="text-primary size-5" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground">
+                <p className="text-foreground text-sm font-semibold">
                   {activeSubscriptions.length > 0
                     ? `${activeSubscriptions.length} active plan${activeSubscriptions.length > 1 ? "s" : ""}`
                     : "No active subscriptions"}
                 </p>
                 {activeSubscriptions.length > 0 && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    <span className="font-medium text-foreground">
+                  <p className="text-muted-foreground mt-0.5 text-xs">
+                    <span className="text-foreground font-medium">
                       {formatNodeBytePrice(totalMonthlyCents)}
                     </span>{" "}
                     / month total
@@ -145,7 +145,7 @@ const BillingPage = async () => {
         {/* Active subscriptions */}
         {activeSubscriptions.length > 0 && (
           <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-foreground">
+            <h2 className="text-foreground text-sm font-semibold">
               Active plans
             </h2>
             <div className="grid gap-3">
@@ -156,31 +156,31 @@ const BillingPage = async () => {
                 return (
                   <div
                     key={sub.id}
-                    className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card px-4 py-4"
+                    className="border-border/60 bg-card flex items-center justify-between gap-4 rounded-xl border px-4 py-4"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex min-w-0 items-center gap-3">
                       <div
-                        className={cn("rounded-lg border p-2 shrink-0", cfg.bg)}
+                        className={cn("shrink-0 rounded-lg border p-2", cfg.bg)}
                       >
                         <TrendingUp className={cn("size-4", cfg.color)} />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold text-sm truncate">
+                        <p className="truncate text-sm font-semibold">
                           {sub.server?.name ?? "Unknown server"}
                         </p>
-                        <p className="text-muted-foreground text-xs capitalize mt-0.5">
+                        <p className="text-muted-foreground mt-0.5 text-xs capitalize">
                           {sub.planName}
                           {sub.server?.egg && ` · ${sub.server.egg.name}`}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <div className="hidden sm:block text-right">
+                    <div className="flex shrink-0 items-center gap-3">
+                      <div className="hidden text-right sm:block">
                         <p className="font-mono text-sm font-semibold">
                           {formatNodeBytePrice(sub.pricePerMonthCents)}/mo
                         </p>
                         {sub.currentPeriodEnd && (
-                          <p className="text-muted-foreground text-xs mt-0.5">
+                          <p className="text-muted-foreground mt-0.5 text-xs">
                             Renews{" "}
                             {sub.currentPeriodEnd.toLocaleDateString("en-US", {
                               day: "numeric",
@@ -225,7 +225,7 @@ const BillingPage = async () => {
         {/* Past subscriptions */}
         {inactiveSubscriptions.length > 0 && (
           <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-muted-foreground">
+            <h2 className="text-muted-foreground text-sm font-semibold">
               Past plans
             </h2>
             <div className="grid gap-2">
@@ -236,17 +236,17 @@ const BillingPage = async () => {
                 return (
                   <div
                     key={sub.id}
-                    className="flex items-center justify-between gap-4 rounded-lg border border-border/40 bg-muted/20 px-4 py-3"
+                    className="border-border/40 bg-muted/20 flex items-center justify-between gap-4 rounded-lg border px-4 py-3"
                   >
                     <div className="min-w-0">
-                      <p className="font-medium text-sm truncate">
+                      <p className="truncate text-sm font-medium">
                         {sub.server?.name ?? "Unknown server"}
                       </p>
-                      <p className="text-muted-foreground text-xs capitalize mt-0.5">
+                      <p className="text-muted-foreground mt-0.5 text-xs capitalize">
                         {sub.planName} · {cfg.label}
                       </p>
                     </div>
-                    <span className="font-mono text-sm text-muted-foreground shrink-0">
+                    <span className="text-muted-foreground shrink-0 font-mono text-sm">
                       {formatNodeBytePrice(sub.pricePerMonthCents)}/mo
                     </span>
                   </div>
@@ -258,13 +258,13 @@ const BillingPage = async () => {
 
         {/* Empty state */}
         {!billingCustomer || billingCustomer.subscriptions.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border bg-muted/20 py-14 text-center">
-            <div className="rounded-xl bg-muted p-4">
-              <CreditCard className="size-8 text-muted-foreground" />
+          <div className="border-border bg-muted/20 flex flex-col items-center gap-4 rounded-xl border border-dashed py-14 text-center">
+            <div className="bg-muted rounded-xl p-4">
+              <CreditCard className="text-muted-foreground size-8" />
             </div>
             <div>
-              <p className="font-semibold text-sm">No subscriptions yet</p>
-              <p className="mt-1 text-muted-foreground text-sm max-w-xs">
+              <p className="text-sm font-semibold">No subscriptions yet</p>
+              <p className="text-muted-foreground mt-1 max-w-xs text-sm">
                 Create your first game server to get started.
               </p>
             </div>

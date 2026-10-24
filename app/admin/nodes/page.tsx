@@ -37,7 +37,7 @@ const AdminNodesPage = async () => {
           <Panel title={`Nodes (${nodes.length})`}>
             <PanelCard className="flex flex-col gap-1">
               {nodes.length === 0 && (
-                <p className="px-3 py-2 text-sm text-muted-foreground">
+                <p className="text-muted-foreground px-3 py-2 text-sm">
                   No nodes yet. A node is a machine running the NodeByte daemon;
                   many servers share one node.
                 </p>
@@ -50,7 +50,7 @@ const AdminNodesPage = async () => {
                 const disk = node.servers.reduce((sum, s) => sum + s.disk, 0);
                 return (
                   <Link
-                    className="flex items-center justify-between gap-4 rounded-lg px-3 py-2 hover:bg-muted/40"
+                    className="hover:bg-muted/40 flex items-center justify-between gap-4 rounded-lg px-3 py-2"
                     href={`/admin/nodes/${node.id}`}
                     key={node.id}
                   >
@@ -64,12 +64,12 @@ const AdminNodesPage = async () => {
                           <Badge variant="outline">Private</Badge>
                         )}
                       </span>
-                      <span className="truncate text-xs text-muted-foreground">
+                      <span className="text-muted-foreground truncate text-xs">
                         {node.scheme}://{node.fqdn}:{node.daemonListen} ·{" "}
                         {node.location.short}
                       </span>
                     </div>
-                    <div className="hidden gap-6 text-right text-xs text-muted-foreground sm:flex">
+                    <div className="text-muted-foreground hidden gap-6 text-right text-xs sm:flex">
                       <span>
                         Memory {formatMib(memory)} / {formatMib(node.memory)} (
                         {pct(memory, node.memory)}%)

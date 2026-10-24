@@ -124,19 +124,21 @@ const StartupCard = () => {
       <PanelCard className="flex flex-col gap-1">
         {server.startup && (
           <div className="flex flex-col gap-1 px-3 py-2">
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="text-muted-foreground text-xs font-medium">
               Startup command
             </span>
-            <code className="break-all rounded-md bg-muted px-2 py-1.5 font-mono text-xs">
+            <code className="bg-muted rounded-md px-2 py-1.5 font-mono text-xs break-all">
               {server.startup}
             </code>
           </div>
         )}
         {images.length > 1 && (
           <div className="flex items-center justify-between gap-4 rounded-lg px-3 py-3">
-            <Label className="text-sm font-medium">Docker image</Label>
+            <Label htmlFor="docker-image" className="text-sm font-medium">
+              Docker image
+            </Label>
             <Select value={image} onValueChange={setImage}>
-              <SelectTrigger className="w-64">
+              <SelectTrigger id="docker-image" className="w-64">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -150,7 +152,7 @@ const StartupCard = () => {
           </div>
         )}
         {server.variables.length === 0 ? (
-          <p className="px-3 py-2 text-sm text-muted-foreground">
+          <p className="text-muted-foreground px-3 py-2 text-sm">
             This game has no configurable variables.
           </p>
         ) : (
@@ -210,9 +212,9 @@ const ReinstallCard = () => {
   return (
     <Panel title="Reinstall">
       <PanelCard className="flex items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">
-          Stops the server and re-runs the game's install script. Some files may
-          be overwritten; take a backup first.
+        <p className="text-muted-foreground text-sm">
+          Stops the server and re-runs the game&apos;s install script. Some
+          files may be overwritten; take a backup first.
         </p>
         <AlertDialog>
           <AlertDialogTrigger asChild>

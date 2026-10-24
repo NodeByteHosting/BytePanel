@@ -139,11 +139,11 @@ const MetricBar = ({ label, value }: { label: string; value: number }) => (
   <div className="flex flex-col gap-1">
     <div className="flex items-center justify-between text-xs">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-mono font-medium text-foreground/80">
+      <span className="text-foreground/80 font-mono font-medium">
         {Math.round(value)}%
       </span>
     </div>
-    <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+    <div className="bg-muted h-1 w-full overflow-hidden rounded-full">
       <div
         className={cn(
           "h-full rounded-full transition-all",
@@ -223,7 +223,7 @@ export const ServerCard = ({ server }: Props) => {
     };
     void load();
     // Poll every 10s, like Pterodactyl's server list.
-    const interval = setInterval(() => void load(), 10_000);
+    const interval = setInterval(() => load(), 10_000);
     return () => {
       cancelled = true;
       clearInterval(interval);
@@ -263,13 +263,13 @@ export const ServerCard = ({ server }: Props) => {
   return (
     <div
       className={cn(
-        "group relative flex flex-col rounded-xl border border-border/60 bg-card overflow-hidden transition-all duration-200",
+        "group border-border/60 bg-card relative flex flex-col overflow-hidden rounded-xl border transition-all duration-200",
         "hover:border-primary/30 hover:shadow-lg",
         status.glow && `hover:shadow-md hover:${status.glow}`
       )}
     >
       {/* Game image banner */}
-      <div className="relative h-28 w-full overflow-hidden bg-muted">
+      <div className="bg-muted relative h-28 w-full overflow-hidden">
         {game?.image ? (
           <Image
             src={game.image}
@@ -279,12 +279,12 @@ export const ServerCard = ({ server }: Props) => {
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-linear-to-br from-primary/5 to-primary/20">
-            <ServerIcon className="h-12 w-12 text-primary/30" />
+          <div className="from-primary/5 to-primary/20 flex h-full items-center justify-center bg-linear-to-br">
+            <ServerIcon className="text-primary/30 h-12 w-12" />
           </div>
         )}
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-linear-to-t from-card/90 via-card/20 to-transparent" />
+        <div className="from-card/90 via-card/20 absolute inset-0 bg-linear-to-t to-transparent" />
 
         {/* Status pill — top right */}
         <div className="absolute top-3 right-3">
@@ -313,11 +313,11 @@ export const ServerCard = ({ server }: Props) => {
       <div className="flex flex-1 flex-col gap-3 p-4">
         {/* Server name + location */}
         <div>
-          <h3 className="font-semibold text-sm text-foreground truncate">
+          <h3 className="text-foreground truncate text-sm font-semibold">
             {server.name}
           </h3>
-          <div className="flex items-center gap-1.5 mt-1">
-            <span className="text-xs text-muted-foreground">
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="text-muted-foreground text-xs">
               {server.nodeName ?? "Awaiting deployment"}
             </span>
           </div>
@@ -328,12 +328,12 @@ export const ServerCard = ({ server }: Props) => {
           <button
             type="button"
             onClick={handleCopyIP}
-            className="group/ip flex items-center justify-between rounded-lg border border-border/50 bg-muted/40 px-3 py-2 transition-colors hover:bg-muted/70 hover:border-border"
+            className="group/ip border-border/50 bg-muted/40 hover:bg-muted/70 hover:border-border flex items-center justify-between rounded-lg border px-3 py-2 transition-colors"
           >
-            <code className="text-xs font-mono text-foreground/70 truncate">
+            <code className="text-foreground/70 truncate font-mono text-xs">
               {server.address}
             </code>
-            <span className="ml-2 shrink-0 text-muted-foreground transition-colors group-hover/ip:text-foreground">
+            <span className="text-muted-foreground group-hover/ip:text-foreground ml-2 shrink-0 transition-colors">
               {copiedIP ? (
                 <Check className="h-3.5 w-3.5 text-emerald-500" />
               ) : (
@@ -342,8 +342,8 @@ export const ServerCard = ({ server }: Props) => {
             </span>
           </button>
         ) : (
-          <div className="flex items-center rounded-lg border border-dashed border-border/40 bg-muted/20 px-3 py-2">
-            <code className="text-xs font-mono text-muted-foreground/50">
+          <div className="border-border/40 bg-muted/20 flex items-center rounded-lg border border-dashed px-3 py-2">
+            <code className="text-muted-foreground/50 font-mono text-xs">
               No address yet
             </code>
           </div>
@@ -353,7 +353,7 @@ export const ServerCard = ({ server }: Props) => {
         {isRunning && (
           <div className="space-y-2">
             {metricsLoading ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-2 text-xs">
                 <Spinner className="h-3 w-3" />
                 <span>Loading metrics…</span>
               </div>
@@ -374,7 +374,7 @@ export const ServerCard = ({ server }: Props) => {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center gap-2 border-t border-border/40 bg-muted/20 px-4 py-3">
+      <div className="border-border/40 bg-muted/20 flex items-center gap-2 border-t px-4 py-3">
         <Link href={`/dashboard/${server.id}`} className="flex-1">
           <Button variant="secondary" size="sm" className="w-full gap-2">
             <ArrowRightIcon className="h-3.5 w-3.5" />
@@ -416,7 +416,7 @@ export const ServerCard = ({ server }: Props) => {
                     disabled={actionPending !== null}
                     className="cursor-pointer gap-2"
                   >
-                    <RotateCcwIcon className="h-3.5 w-3.5 text-primary" />
+                    <RotateCcwIcon className="text-primary h-3.5 w-3.5" />
                     Restart
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

@@ -10,7 +10,7 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
     await requireAdmin();
 
     const { searchParams } = request.nextUrl;
-    const range = Number.parseInt(searchParams.get("range") || "30", 10);
+    const range = Math.trunc(Number(searchParams.get("range") || "30"));
 
     // Calculate date range
     const endDate = new Date();
@@ -103,7 +103,7 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
       .toSorted((a, b) => a[0].localeCompare(b[0]))
       .map(([date, revenue]) => ({
         date,
-        revenue: Number.parseFloat(revenue.toFixed(2)),
+        revenue: Number(revenue.toFixed(2)),
       }));
 
     // 7. Server Count by Game

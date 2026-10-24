@@ -85,7 +85,7 @@ export const PlanDialog = ({
         value={v[key] as number}
         onChange={(e) => set(key, Number(e.target.value) as never)}
       />
-      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+      {hint && <span className="text-muted-foreground text-xs">{hint}</span>}
     </div>
   );
 
@@ -109,21 +109,22 @@ export const PlanDialog = ({
         </DialogHeader>
         <div className="grid gap-3 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <Label>Name</Label>
+            <Label htmlFor="plan-name">Name</Label>
             <Input
+              id="plan-name"
               value={v.name}
               onChange={(e) => set("name", e.target.value)}
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label>Location</Label>
+            <Label htmlFor="plan-location">Location</Label>
             <Select
               value={v.locationId ?? ANY}
               onValueChange={(value) =>
                 set("locationId", value === ANY ? null : value)
               }
             >
-              <SelectTrigger>
+              <SelectTrigger id="plan-location">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -137,8 +138,9 @@ export const PlanDialog = ({
             </Select>
           </div>
           <div className="flex flex-col gap-1.5 md:col-span-2">
-            <Label>Description</Label>
+            <Label htmlFor="plan-description">Description</Label>
             <Input
+              id="plan-description"
               value={v.description}
               onChange={(e) => set("description", e.target.value)}
             />
@@ -151,8 +153,12 @@ export const PlanDialog = ({
           {num("allocationLimit", "Ports")}
           {num("priceMonthCents", "Price per month (pence)")}
           {num("sort", "Sort order")}
-          <Label className="flex items-center gap-2 text-sm font-normal">
+          <Label
+            htmlFor="plan-active"
+            className="flex items-center gap-2 text-sm font-normal"
+          >
             <Switch
+              id="plan-active"
               checked={v.active}
               onCheckedChange={(c) => set("active", c)}
             />

@@ -34,7 +34,7 @@ const AdminPlansPage = async () => {
         <Panel>
           <PanelCard className="flex flex-col gap-1">
             {plans.length === 0 && (
-              <p className="px-3 py-2 text-sm text-muted-foreground">
+              <p className="text-muted-foreground px-3 py-2 text-sm">
                 No plans yet. Plans are the resource bundles customers buy
                 (memory, CPU, disk, backups, ports).
               </p>
@@ -49,7 +49,7 @@ const AdminPlansPage = async () => {
                     {plan.name}
                     {!plan.active && <Badge variant="outline">inactive</Badge>}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-muted-foreground text-xs">
                     {formatMib(plan.memory)} RAM ·{" "}
                     {plan.cpu > 0 ? `${plan.cpu}% CPU` : "unlimited CPU"} ·{" "}
                     {formatMib(plan.disk)} disk · {plan.backupLimit} backups ·{" "}

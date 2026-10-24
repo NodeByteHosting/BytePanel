@@ -204,7 +204,7 @@ const ServerActions = ({
           className="gap-1.5"
           disabled={pending !== null}
           size="sm"
-          onClick={() => void power("start")}
+          onClick={() => power("start")}
         >
           <PlayIcon className="size-3.5" />
           <span className="hidden sm:inline">Start</span>
@@ -220,7 +220,7 @@ const ServerActions = ({
               disabled={pending !== null || state === "stopping"}
               size="sm"
               variant="outline"
-              onClick={() => void power("restart")}
+              onClick={() => power("restart")}
             >
               <RotateCcwIcon className="size-3.5" />
               <span className="hidden sm:inline">Restart</span>
@@ -230,7 +230,7 @@ const ServerActions = ({
                 className="gap-1.5"
                 size="sm"
                 variant="destructive"
-                onClick={() => void power("kill")}
+                onClick={() => power("kill")}
               >
                 <SkullIcon className="size-3.5" />
                 <span className="hidden sm:inline">Kill</span>
@@ -241,7 +241,7 @@ const ServerActions = ({
                 disabled={pending !== null}
                 size="sm"
                 variant="outline"
-                onClick={() => void power("stop")}
+                onClick={() => power("stop")}
               >
                 <SquareIcon className="size-3.5" />
                 <span className="hidden sm:inline">Stop</span>
@@ -250,7 +250,7 @@ const ServerActions = ({
           </>
         )}
       {pending && (
-        <Loader2Icon className="size-4 animate-spin text-muted-foreground" />
+        <Loader2Icon className="text-muted-foreground size-4 animate-spin" />
       )}
       {canDelete && (
         <DropdownMenu>
@@ -267,7 +267,7 @@ const ServerActions = ({
           <DropdownMenuContent align="end">
             {canControl && server.deployed && (
               <>
-                <DropdownMenuItem onSelect={() => void power("kill")}>
+                <DropdownMenuItem onSelect={() => power("kill")}>
                   <SkullIcon />
                   Force kill
                 </DropdownMenuItem>
@@ -314,7 +314,7 @@ const NotDeployedNotice = ({ server }: { server: ServerView }) => {
         {server.status === "install_failed" || legacy ? (
           <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-amber-500" />
         ) : (
-          <Loader2Icon className="mt-0.5 size-4 shrink-0 animate-spin text-muted-foreground" />
+          <Loader2Icon className="text-muted-foreground mt-0.5 size-4 shrink-0 animate-spin" />
         )}
         <div className="flex flex-col gap-1">
           <p className="font-medium">{title}</p>
@@ -381,6 +381,7 @@ export const ServerShell = ({
       ? segment
       : "connect";
   const [server, setServer] = useState(initial);
+  const [prevInitial, setPrevInitial] = useState(initial);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
@@ -389,7 +390,10 @@ export const ServerShell = ({
     setServer((prev) => ({ ...prev, ...patch }));
 
   // Server-rendered props change on router.refresh(); keep local state in step.
-  useEffect(() => setServer(initial), [initial]);
+  if (initial !== prevInitial) {
+    setPrevInitial(initial);
+    setServer(initial);
+  }
 
   // While deploying / installing, re-fetch the panel-side status periodically.
   const transitional =
@@ -424,7 +428,7 @@ export const ServerShell = ({
       width={40}
     />
   ) : (
-    <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+    <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
       <GamepadIcon className="size-5" />
     </div>
   );
@@ -457,9 +461,9 @@ export const ServerShell = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Type{" "}
-            <span className="font-medium text-foreground">{server.name}</span>{" "}
+            <span className="text-foreground font-medium">{server.name}</span>{" "}
             to confirm.
           </p>
           <Input

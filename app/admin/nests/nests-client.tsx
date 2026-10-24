@@ -91,9 +91,9 @@ export const ImportEggDialog = ({
         <div className="flex flex-col gap-3">
           {!eggId && (
             <div className="flex flex-col gap-1.5">
-              <Label>Nest</Label>
+              <Label htmlFor="import-egg-nest">Nest</Label>
               <Select value={nestId} onValueChange={setNestId}>
-                <SelectTrigger>
+                <SelectTrigger id="import-egg-nest">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -199,7 +199,7 @@ export const DeleteNestButton = ({ id }: { id: string }) => {
       disabled={pending}
       size="icon"
       variant="ghost"
-      onClick={() => void run(() => deleteNest(id), "Nest deleted")}
+      onClick={() => run(() => deleteNest(id), "Nest deleted")}
     >
       <Trash2Icon className="size-4" />
     </Button>

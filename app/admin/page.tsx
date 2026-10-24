@@ -29,8 +29,18 @@ const getHealthClass = (pct: number) => {
   return "text-red-600 dark:text-red-400";
 };
 
+// Boundaries for the "this month vs last month" stats.
+const monthBounds = () => {
+  const now = new Date();
+  return {
+    lastMonthStart: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+    thisMonthStart: new Date(new Date(now).setDate(1)),
+  };
+};
+
 const AdminOverviewPage = async () => {
   await requireAdmin();
+  const { lastMonthStart, thisMonthStart } = monthBounds();
 
   const [
     totalUsers,
@@ -52,15 +62,15 @@ const AdminOverviewPage = async () => {
     prisma.user.count({
       where: {
         createdAt: {
-          gte: new Date(new Date().setDate(1)),
+          gte: thisMonthStart,
         },
       },
     }),
     prisma.user.count({
       where: {
         createdAt: {
-          gte: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
-          lt: new Date(new Date().setDate(1)),
+          gte: lastMonthStart,
+          lt: thisMonthStart,
         },
       },
     }),
@@ -85,7 +95,7 @@ const AdminOverviewPage = async () => {
       _sum: { pricePerMonthCents: true },
       where: {
         createdAt: {
-          lt: new Date(new Date().setDate(1)),
+          lt: thisMonthStart,
         },
         status: "active",
       },
@@ -142,9 +152,9 @@ const AdminOverviewPage = async () => {
       ? ((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100
       : 0;
   const revenueChange =
-    Number.parseFloat(lastMonthRevenue) > 0
-      ? ((Number.parseFloat(revenue) - Number.parseFloat(lastMonthRevenue)) /
-          Number.parseFloat(lastMonthRevenue)) *
+    Number(lastMonthRevenue) > 0
+      ? ((Number(revenue) - Number(lastMonthRevenue)) /
+          Number(lastMonthRevenue)) *
         100
       : 0;
 
@@ -225,7 +235,7 @@ const AdminOverviewPage = async () => {
               {
                 accent: "amber",
                 change:
-                  Number.parseFloat(lastMonthRevenue) > 0
+                  Number(lastMonthRevenue) > 0
                     ? {
                         isPositive: revenueChange >= 0,
                         period: "vs last month",
@@ -242,11 +252,11 @@ const AdminOverviewPage = async () => {
           {/* Health bar + charts row */}
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Platform health */}
-            <div className="flex flex-col gap-4 rounded-xl border border-border/60 bg-card p-5">
+            <div className="border-border/60 bg-card flex flex-col gap-4 rounded-xl border p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold">Platform health</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="text-muted-foreground mt-0.5 text-xs">
                     Server state breakdown
                   </p>
                 </div>
@@ -262,7 +272,7 @@ const AdminOverviewPage = async () => {
 
               {/* Segmented bar */}
               {totalServers > 0 && (
-                <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
+                <div className="bg-muted flex h-3 w-full overflow-hidden rounded-full">
                   <div
                     className="bg-emerald-500 transition-all"
                     style={{
@@ -301,11 +311,11 @@ const AdminOverviewPage = async () => {
                 ].map((s) => (
                   <div
                     key={s.label}
-                    className="flex flex-col gap-1 rounded-xl border border-border/40 bg-background/50 p-3"
+                    className="border-border/40 bg-background/50 flex flex-col gap-1 rounded-xl border p-3"
                   >
                     <div className="flex items-center gap-1.5">
                       <div className={cn("size-2 rounded-full", s.dot)} />
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         {s.label}
                       </span>
                     </div>
@@ -339,11 +349,11 @@ const AdminOverviewPage = async () => {
           {/* Recent activity */}
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Recent signups */}
-            <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
-              <div className="flex items-center justify-between border-b border-border/50 px-5 py-4">
+            <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
+              <div className="border-border/50 flex items-center justify-between border-b px-5 py-4">
                 <div>
                   <h3 className="text-sm font-semibold">Recent signups</h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="text-muted-foreground mt-0.5 text-xs">
                     Latest user registrations
                   </p>
                 </div>
@@ -352,11 +362,11 @@ const AdminOverviewPage = async () => {
                 </Button>
               </div>
               {recentUsers.length === 0 ? (
-                <p className="py-12 text-center text-sm text-muted-foreground">
+                <p className="text-muted-foreground py-12 text-center text-sm">
                   No recent signups
                 </p>
               ) : (
-                <div className="divide-y divide-border/50">
+                <div className="divide-border/50 divide-y">
                   {recentUsers.map((user) => (
                     <div
                       key={user.id}
@@ -372,7 +382,7 @@ const AdminOverviewPage = async () => {
                           {user.name ?? user.email}
                         </p>
                         {user.name && (
-                          <p className="truncate text-xs text-muted-foreground">
+                          <p className="text-muted-foreground truncate text-xs">
                             {user.email}
                           </p>
                         )}
@@ -386,7 +396,7 @@ const AdminOverviewPage = async () => {
                             {user.role}
                           </Badge>
                         )}
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-muted-foreground text-xs">
                           {new Date(user.createdAt).toLocaleDateString()}
                         </span>
                       </div>
@@ -397,11 +407,11 @@ const AdminOverviewPage = async () => {
             </div>
 
             {/* Recent servers */}
-            <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
-              <div className="flex items-center justify-between border-b border-border/50 px-5 py-4">
+            <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
+              <div className="border-border/50 flex items-center justify-between border-b px-5 py-4">
                 <div>
                   <h3 className="text-sm font-semibold">Recent servers</h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="text-muted-foreground mt-0.5 text-xs">
                     Latest server creations
                   </p>
                 </div>
@@ -410,11 +420,11 @@ const AdminOverviewPage = async () => {
                 </Button>
               </div>
               {recentServers.length === 0 ? (
-                <p className="py-12 text-center text-sm text-muted-foreground">
+                <p className="text-muted-foreground py-12 text-center text-sm">
                   No recent servers
                 </p>
               ) : (
-                <div className="divide-y divide-border/50">
+                <div className="divide-border/50 divide-y">
                   {recentServers.map((server) => {
                     const game = server.egg;
                     let stateKey = "stopped";
@@ -442,15 +452,15 @@ const AdminOverviewPage = async () => {
                             className="size-8 shrink-0 rounded-lg object-cover"
                           />
                         ) : (
-                          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-muted">
-                            <ServerIcon className="size-4 text-muted-foreground" />
+                          <div className="border-border/50 bg-muted flex size-8 shrink-0 items-center justify-center rounded-lg border">
+                            <ServerIcon className="text-muted-foreground size-4" />
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium">
                             {server.name}
                           </p>
-                          <p className="truncate text-xs text-muted-foreground">
+                          <p className="text-muted-foreground truncate text-xs">
                             {server.user?.name ?? server.user?.email}
                           </p>
                         </div>

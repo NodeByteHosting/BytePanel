@@ -191,6 +191,7 @@ export const saveEggVariables = async (
       where: { eggId, envVariable: { notIn: envs } },
     });
     for (const [index, v] of parsed.data.entries()) {
+      // oxlint-disable-next-line no-await-in-loop -- interactive transaction queries must run one at a time
       await tx.eggVariable.upsert({
         create: { eggId, id: ulid(), sort: index, ...v },
         update: { sort: index, ...v },

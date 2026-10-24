@@ -6,10 +6,12 @@ import { eggs, games } from "../games/index";
 
 // Placeholders the panel resolves itself (see lib/eggs/placeholders.ts).
 const BUILT_IN =
-  /^(SERVER_MEMORY|SERVER_PORT|SERVER_IP|SERVER_PORT_\d+|server\.[\w.]+|env\.\w+|config\.docker\.interface)$/u;
+  /^(?:SERVER_MEMORY|SERVER_PORT|SERVER_IP|SERVER_PORT_\d+|server\.[\w.]+|env\.\w+|config\.docker\.interface)$/u;
 
 const placeholders = (text: string) =>
-  [...text.matchAll(/\{\{\s*([\w.]+)\s*\}\}/gu)].map((m) => m[1] ?? "");
+  [...text.matchAll(/\{\{\s*(?<key>[\w.]+)\s*\}\}/gu)].map(
+    (m) => m.groups?.key ?? ""
+  );
 
 describe("built-in GSG eggs", () => {
   test("every enabled game has an egg with a matching slug", () => {
@@ -64,9 +66,9 @@ describe("built-in GSG eggs", () => {
         const ports = Math.max(1, egg.containerPorts?.length ?? 0);
         const sources = [egg.startup, ...egg.variables.map((v) => v.default)];
         for (const name of sources.flatMap(placeholders)) {
-          const extra = /^SERVER_PORT_(\d+)$/u.exec(name);
-          if (extra) {
-            expect(Number(extra[1])).toBeLessThan(ports);
+          const extra = /^SERVER_PORT_(?<index>\d+)$/u.exec(name);
+          if (extra?.groups) {
+            expect(Number(extra.groups.index)).toBeLessThan(ports);
           }
         }
       });

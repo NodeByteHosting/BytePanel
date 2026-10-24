@@ -9,12 +9,13 @@ export const parsePorts = (input: string): number[] => {
     if (!part) {
       continue;
     }
-    const match = /^(\d{1,5})(?:-(\d{1,5}))?$/u.exec(part);
-    if (!match) {
+    const match = /^(?<start>\d{1,5})(?:-(?<end>\d{1,5}))?$/u.exec(part);
+    if (!match?.groups) {
       throw new Error(`"${part}" is not a port or port range`);
     }
-    const start = Number(match[1]);
-    const end = match[2] === undefined ? start : Number(match[2]);
+    const start = Number(match.groups.start);
+    const end =
+      match.groups.end === undefined ? start : Number(match.groups.end);
     if (start < 1024 || end > 65_535 || end < start) {
       throw new Error(`"${part}" must be within 1024-65535`);
     }

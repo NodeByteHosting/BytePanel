@@ -11,7 +11,7 @@ const AdminLayout = async ({ children }: { children: ReactNode }) => {
   const user = await requireAdmin();
 
   return (
-    <SidebarProvider className="h-svh bg-sidebar">
+    <SidebarProvider className="bg-sidebar h-svh">
       <AdminSidebarEnhanced
         user={{
           email: user.email,

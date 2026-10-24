@@ -40,7 +40,7 @@ export const CopyBlock = ({
   const [copied, setCopied] = useState(false);
   return (
     <div className="relative">
-      <pre className="overflow-x-auto rounded-md bg-muted p-3 pr-20 font-mono text-xs">
+      <pre className="bg-muted overflow-x-auto rounded-md p-3 pr-20 font-mono text-xs">
         {shown ? value : value.replaceAll(/[^\s]/gu, "•").slice(0, 400)}
       </pre>
       <div className="absolute top-2 right-2 flex gap-1">
@@ -145,9 +145,9 @@ export const AllocationManager = ({
           Add
         </Button>
       </form>
-      <p className="text-xs text-muted-foreground">
-        Use 0.0.0.0 to bind every interface, with the node's public address as
-        the alias. {free} of {allocations.length} free.
+      <p className="text-muted-foreground text-xs">
+        Use 0.0.0.0 to bind every interface, with the node&apos;s public address
+        as the alias. {free} of {allocations.length} free.
       </p>
       {selected.size > 0 && (
         <Button
@@ -170,7 +170,7 @@ export const AllocationManager = ({
       <div className="grid max-h-96 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
         {allocations.map((a) => (
           <label
-            className="flex items-center gap-2 rounded-md border border-border/60 px-2 py-1.5 font-mono text-xs"
+            className="border-border/60 flex items-center gap-2 rounded-md border px-2 py-1.5 font-mono text-xs"
             key={a.id}
           >
             <Checkbox
@@ -193,7 +193,7 @@ export const AllocationManager = ({
             </span>
             {a.server && (
               <Link
-                className="ml-auto truncate font-sans text-muted-foreground hover:underline"
+                className="text-muted-foreground ml-auto truncate font-sans hover:underline"
                 href={`/admin/servers/${a.server.id}`}
               >
                 {a.server.name}
@@ -218,7 +218,7 @@ export const NodeDangerZone = ({
   return (
     <Panel title="Danger zone">
       <PanelCard className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Resetting the token disconnects the daemon until it is reconfigured.
         </p>
         <div className="flex gap-2">
@@ -240,7 +240,7 @@ export const NodeDangerZone = ({
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() =>
-                    void run(() => resetNodeToken(nodeId), "Token reset")
+                    run(() => resetNodeToken(nodeId), "Token reset")
                   }
                 >
                   Reset

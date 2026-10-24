@@ -9,8 +9,9 @@ import type { ConsoleLine } from "./daemon-socket";
 
 // Some upstream log producers emit ANSI in caret notation (`^[[0m`) rather than
 // the raw ESC byte. Convert it back so anser can parse it.
-const CARET_CSI = /\^\[\[([0-9;]*)([a-zA-Z])/gu;
-const normalizeAnsi = (text: string) => text.replace(CARET_CSI, "\u001B[$1$2");
+const CARET_CSI = /\^\[\[(?<params>[0-9;]*)(?<cmd>[a-zA-Z])/gu;
+const normalizeAnsi = (text: string) =>
+  text.replaceAll(CARET_CSI, "\u001B[$<params>$<cmd>");
 
 const AnsiPart = ({ part }: { part: Anser.AnserJsonEntry }) => {
   const style: React.CSSProperties = {};
@@ -69,12 +70,12 @@ const AnsiLine = ({ line }: { line: ConsoleLine }) => {
   return (
     <span
       className={cn(
-        "whitespace-pre-wrap wrap-anywhere",
+        "wrap-anywhere whitespace-pre-wrap",
         !hasAnsiColors && getLineClass(line)
       )}
     >
       {line.kind === "install" && (
-        <span className="mr-2 select-none text-amber-500">[install]</span>
+        <span className="mr-2 text-amber-500 select-none">[install]</span>
       )}
       {parts.map((part, i) => (
         <AnsiPart key={i} part={part} />
@@ -97,7 +98,7 @@ export const ConsoleOutput = ({
   >
     <StickToBottom.Content className="flex flex-col gap-1 px-3 py-3 font-mono text-xs">
       {lines.length === 0 && (
-        <span className="px-3 py-2 text-sm text-muted-foreground">
+        <span className="text-muted-foreground px-3 py-2 text-sm">
           {placeholder}
         </span>
       )}

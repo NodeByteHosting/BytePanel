@@ -100,7 +100,7 @@ const AdminNodePage = async ({
                 </div>
               ) : (
                 <p className="text-muted-foreground">
-                  The panel can't reach this node (
+                  The panel can&apos;t reach this node (
                   {system.ok ? "" : system.error}). Install and configure the
                   daemon below.
                 </p>
@@ -134,7 +134,7 @@ const AdminNodePage = async ({
                 value={`${configureCommand}\nsystemctl enable --now nodebyte-daemon`}
               />
               <details>
-                <summary className="cursor-pointer text-muted-foreground">
+                <summary className="text-muted-foreground cursor-pointer">
                   Or write /etc/nodebyte/daemon.json by hand
                 </summary>
                 <CopyBlock secret value={JSON.stringify(config, null, 2)} />

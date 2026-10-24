@@ -25,14 +25,14 @@ export const FloatingNav = ({
   return (
     <nav
       aria-label="Primary"
-      className="-translate-x-1/2 fixed bottom-6 left-1/2 z-40 flex items-center gap-1 rounded-full border border-foreground/10 bg-background/80 p-1 pl-3 shadow-foreground/5 shadow-lg backdrop-blur"
+      className="border-foreground/10 bg-background/80 shadow-foreground/5 fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border p-1 pl-3 shadow-lg backdrop-blur"
     >
       <Link
         href="/"
         aria-current={isActive("/")}
-        className="flex items-center gap-2 pl-1 pr-2 text-sm font-semibold text-foreground"
+        className="text-foreground flex items-center gap-2 pr-2 pl-1 text-sm font-semibold"
       >
-        <Logo className="h-5 w-auto text-foreground" />
+        <Logo className="text-foreground h-5 w-auto" />
       </Link>
       {/* Text label on desktop, icon on mobile */}
       <Link

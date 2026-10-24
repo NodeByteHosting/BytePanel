@@ -40,8 +40,8 @@ export const BulkActionToolbar = ({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30 transition-all",
-        selectedIds.length === 0 && "opacity-50 pointer-events-none"
+        "border-border bg-muted/30 flex items-center gap-3 rounded-lg border p-3 transition-all",
+        selectedIds.length === 0 && "pointer-events-none opacity-50"
       )}
     >
       <Checkbox
@@ -64,7 +64,7 @@ export const BulkActionToolbar = ({
       </div>
 
       {/* Action buttons */}
-      <div className="flex items-center gap-2 ml-auto">
+      <div className="ml-auto flex items-center gap-2">
         {actions.map((action) => (
           <Button
             key={action.id}
@@ -95,16 +95,18 @@ interface SelectableItemProps {
   children: React.ReactNode;
 }
 
+const NO_ACTIONS: BulkAction[] = [];
+
 export const SelectableItem = ({
   id,
   selected,
   onSelected,
-  actions = [],
+  actions = NO_ACTIONS,
   children,
 }: SelectableItemProps) => (
   <div
     className={cn(
-      "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+      "flex items-center gap-3 rounded-lg border p-3 transition-colors",
       selected
         ? "bg-primary/5 border-primary/20"
         : "bg-background border-border hover:bg-muted/30"

@@ -160,6 +160,7 @@ export const ServersTable = () => {
   );
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
     void fetchServers();
   }, [fetchServers]);
 
@@ -168,7 +169,7 @@ export const ServersTable = () => {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-0 flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <Input
             className="pl-9"
             placeholder="Search by name, owner email…"
@@ -213,9 +214,9 @@ export const ServersTable = () => {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
+      <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
         {(loading || !data) && (
-          <div className="divide-y divide-border/50">
+          <div className="divide-border/50 divide-y">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-3">
                 <Skeleton className="size-8 shrink-0 rounded-lg" />
@@ -230,18 +231,18 @@ export const ServersTable = () => {
           </div>
         )}
         {!loading && data?.servers.length === 0 && (
-          <div className="py-16 text-center text-sm text-muted-foreground">
+          <div className="text-muted-foreground py-16 text-center text-sm">
             No servers found.
           </div>
         )}
         {!loading && data && data.servers.length > 0 && (
-          <div className="divide-y divide-border/50">
+          <div className="divide-border/50 divide-y">
             {data.servers.map((server) => {
               const state = statusOf(server);
               return (
                 <div
                   key={server.id}
-                  className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30"
+                  className="group hover:bg-muted/30 flex items-center gap-3 px-4 py-3 transition-colors"
                 >
                   {/* Game image */}
                   {server.egg?.image ? (
@@ -253,8 +254,8 @@ export const ServersTable = () => {
                       className="size-8 shrink-0 rounded-lg object-cover"
                     />
                   ) : (
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-muted">
-                      <Server className="size-4 text-muted-foreground" />
+                    <div className="border-border/50 bg-muted flex size-8 shrink-0 items-center justify-center rounded-lg border">
+                      <Server className="text-muted-foreground size-4" />
                     </div>
                   )}
 
@@ -276,7 +277,7 @@ export const ServersTable = () => {
                         </span>
                       </div>
                     </div>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="text-muted-foreground truncate text-xs">
                       {server.user.name ?? server.user.email}
                       {server.allocation && (
                         <span className="ml-2 font-mono">
@@ -288,7 +289,7 @@ export const ServersTable = () => {
                   </div>
 
                   {/* Meta — hidden on mobile */}
-                  <div className="hidden shrink-0 items-center gap-4 text-xs text-muted-foreground sm:flex">
+                  <div className="text-muted-foreground hidden shrink-0 items-center gap-4 text-xs sm:flex">
                     <span>{server.egg?.name ?? "—"}</span>
                     <span>{server.node?.name ?? "—"}</span>
                     <span>
@@ -315,7 +316,7 @@ export const ServersTable = () => {
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="size-8 shrink-0 opacity-60 transition-opacity hover:text-destructive hover:opacity-100"
+                    className="hover:text-destructive size-8 shrink-0 opacity-60 transition-opacity hover:opacity-100"
                     disabled={deletingIds.has(server.id)}
                     onClick={() => setDeleteTarget(server.id)}
                   >
@@ -330,7 +331,7 @@ export const ServersTable = () => {
 
       {/* Pagination */}
       {data && data.totalPages > 1 && (
-        <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-muted-foreground flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
           <span>
             {(data.page - 1) * data.pageSize + 1}–
             {Math.min(data.page * data.pageSize, data.total)} of {data.total}

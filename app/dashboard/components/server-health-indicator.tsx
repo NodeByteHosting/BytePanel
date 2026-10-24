@@ -132,9 +132,9 @@ export const ServerHealthIndicator = ({
   }
 
   return (
-    <Card className="p-4 space-y-3">
+    <Card className="space-y-3 p-4">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-muted-foreground">
+        <span className="text-muted-foreground text-sm font-medium">
           Status
         </span>
         <Badge variant="outline" className={cn("gap-1.5", config.bgColor)}>
@@ -149,7 +149,7 @@ export const ServerHealthIndicator = ({
             <span className="text-muted-foreground">CPU Usage</span>
             <span className="font-medium">{status.cpu.toFixed(1)}%</span>
           </div>
-          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div className="bg-muted h-1.5 overflow-hidden rounded-full">
             <div
               className={cn(
                 "h-full transition-all",
@@ -167,7 +167,7 @@ export const ServerHealthIndicator = ({
             <span className="text-muted-foreground">Memory</span>
             <span className="font-medium">{status.memory.toFixed(1)}%</span>
           </div>
-          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div className="bg-muted h-1.5 overflow-hidden rounded-full">
             <div
               className={cn(
                 "h-full transition-all",
@@ -180,7 +180,7 @@ export const ServerHealthIndicator = ({
       )}
 
       {status.uptime !== undefined && (
-        <div className="flex items-center justify-between text-xs pt-1 border-t border-border/50">
+        <div className="border-border/50 flex items-center justify-between border-t pt-1 text-xs">
           <span className="text-muted-foreground">Uptime</span>
           <div className="flex items-center gap-1.5 font-medium">
             <Zap className="h-3 w-3 text-amber-500" />
@@ -190,7 +190,7 @@ export const ServerHealthIndicator = ({
       )}
 
       {status.lastHeartbeat && (
-        <div className="flex items-center justify-between text-xs pt-1 border-t border-border/50">
+        <div className="border-border/50 flex items-center justify-between border-t pt-1 text-xs">
           <span className="text-muted-foreground">Last Heartbeat</span>
           <span>{formatTimeAgo(status.lastHeartbeat)}</span>
         </div>

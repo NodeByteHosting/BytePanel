@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 const COLORS = [
   "#3b82f6",
   "#ef4444",
@@ -59,32 +60,32 @@ const StatCard = ({
   description?: string;
   isLoading?: boolean;
 }) => (
-  <div className="rounded-2xl border border-border/50 bg-card/30 p-4 backdrop-blur-sm md:p-5">
+  <div className="border-border/50 bg-card/30 rounded-2xl border p-4 backdrop-blur-sm md:p-5">
     <div className="mb-3 flex items-center justify-between">
-      <p className="text-sm font-medium text-muted-foreground">{title}</p>
-      <div className="rounded-lg border border-border/50 bg-card/50 p-1.5">
+      <p className="text-muted-foreground text-sm font-medium">{title}</p>
+      <div className="border-border/50 bg-card/50 rounded-lg border p-1.5">
         {isLoading ? (
-          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+          <Loader2 className="text-muted-foreground size-4 animate-spin" />
         ) : (
-          <Icon className="size-4 text-muted-foreground" />
+          <Icon className="text-muted-foreground size-4" />
         )}
       </div>
     </div>
     <p className="text-2xl font-bold tracking-tight">
       {isLoading ? (
-        <span className="inline-block h-8 w-20 animate-pulse rounded bg-muted" />
+        <span className="bg-muted inline-block h-8 w-20 animate-pulse rounded" />
       ) : (
         value
       )}
     </p>
     {description && !isLoading && (
-      <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+      <p className="text-muted-foreground mt-1 text-xs">{description}</p>
     )}
   </div>
 );
 
 const ChartSkeleton = () => (
-  <div className="h-80 w-full animate-pulse rounded-lg bg-muted" />
+  <div className="bg-muted h-80 w-full animate-pulse rounded-lg" />
 );
 
 interface AnalyticsData {
@@ -376,7 +377,7 @@ const ChartsGrid = ({
   </div>
 );
 
-export default function AnalyticsDashboard() {
+const AnalyticsDashboard = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dateRange = (searchParams.get("range") || "30") as string;
@@ -430,4 +431,6 @@ export default function AnalyticsDashboard() {
       </PageBody>
     </>
   );
-}
+};
+
+export default AnalyticsDashboard;

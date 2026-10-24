@@ -34,6 +34,7 @@ const InvitePage = async ({
     redirect(`/dashboard/${invite.serverId}`);
   }
 
+  // oxlint-disable-next-line react/purity -- server component, renders once per request
   if (invite.expiresAt < new Date()) {
     return (
       <InviteAcceptCard

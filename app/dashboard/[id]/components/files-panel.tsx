@@ -63,7 +63,7 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
 });
 
-const ARCHIVE = /\.(zip|tar|tar\.gz|tgz|tar\.xz|txz|tar\.bz2)$/iu;
+const ARCHIVE = /\.(?:zip|tar|tar\.gz|tgz|tar\.xz|txz|tar\.bz2)$/iu;
 
 const joinPath = (dir: string, name: string) =>
   `${dir.replace(/\/+$/u, "")}/${name}`.replace(/^\/*/u, "/");
@@ -211,7 +211,7 @@ const FileRow = ({
 }) => {
   const isDir = entry.type === "dir";
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-muted/40">
+    <div className="hover:bg-muted/40 flex items-center justify-between gap-3 rounded-lg px-3 py-2">
       <Checkbox
         aria-label={`Select ${entry.name}`}
         checked={selected}
@@ -223,13 +223,13 @@ const FileRow = ({
         onClick={onOpen}
       >
         {isDir ? (
-          <FolderIcon className="size-4 shrink-0 text-muted-foreground" />
+          <FolderIcon className="text-muted-foreground size-4 shrink-0" />
         ) : (
-          <FileIcon className="size-4 shrink-0 text-muted-foreground" />
+          <FileIcon className="text-muted-foreground size-4 shrink-0" />
         )}
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="truncate text-sm font-medium">{entry.name}</span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground text-xs">
             {isDir ? "Folder" : formatBytes(entry.size)} ·{" "}
             {formatDate(entry.mtime)}
           </span>
@@ -363,7 +363,7 @@ const EditorDialog = ({
       </DialogHeader>
       <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
         {loading ? (
-          <div className="px-3 py-4 text-sm text-muted-foreground">
+          <div className="text-muted-foreground px-3 py-4 text-sm">
             Loading…
           </div>
         ) : (
@@ -412,13 +412,22 @@ export const FilesPanel = ({ serverId }: { serverId: string }) => {
   const [editorLoading, setEditorLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const load = useCallback(async () => {
+  const [shownPath, setShownPath] = useState(path);
+  // Navigating to another directory: clear the old listing while it loads.
+  if (path !== shownPath) {
+    setShownPath(path);
+    setEntries(null);
+    setSelected(new Set());
     setLoadError(null);
+  }
+
+  const load = useCallback(async () => {
     try {
       const result = await api<{ entries: FileEntry[] }>(
         `${base}?directory=${encodeURIComponent(path)}`
       );
       setEntries(result.entries);
+      setLoadError(null);
     } catch (error) {
       setEntries([]);
       setLoadError(
@@ -428,8 +437,7 @@ export const FilesPanel = ({ serverId }: { serverId: string }) => {
   }, [base, path]);
 
   useEffect(() => {
-    setEntries(null);
-    setSelected(new Set());
+    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
     load();
   }, [load]);
 
@@ -604,7 +612,7 @@ export const FilesPanel = ({ serverId }: { serverId: string }) => {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {busy && (
-            <Loader2Icon className="size-4 animate-spin text-muted-foreground" />
+            <Loader2Icon className="text-muted-foreground size-4 animate-spin" />
           )}
           {selected.size > 0 && (
             <>
@@ -681,15 +689,15 @@ export const FilesPanel = ({ serverId }: { serverId: string }) => {
 
       <PanelCard className="flex flex-col gap-1">
         {loadError && (
-          <div className="px-3 py-4 text-sm text-destructive">{loadError}</div>
+          <div className="text-destructive px-3 py-4 text-sm">{loadError}</div>
         )}
         {entries === null && (
-          <div className="px-3 py-4 text-sm text-muted-foreground">
+          <div className="text-muted-foreground px-3 py-4 text-sm">
             Loading…
           </div>
         )}
         {entries?.length === 0 && !loadError && (
-          <div className="px-3 py-4 text-sm text-muted-foreground">
+          <div className="text-muted-foreground px-3 py-4 text-sm">
             This folder is empty.
           </div>
         )}

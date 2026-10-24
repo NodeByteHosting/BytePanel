@@ -24,6 +24,7 @@ const replaceVariables = async (
     where: { eggId, envVariable: { notIn: keep } },
   });
   for (const v of variables) {
+    // oxlint-disable-next-line no-await-in-loop -- interactive transaction queries must run one at a time
     await tx.eggVariable.upsert({
       create: { eggId, id: ulid(), ...v },
       update: v,
@@ -58,6 +59,7 @@ const builtinData = (egg: EggDefinition) => ({
 // Upserts the GSG built-in eggs (matched by slug). Safe to run repeatedly.
 export const syncBuiltinEggs = async (): Promise<{ synced: number }> => {
   for (const egg of eggs) {
+    // oxlint-disable-next-line no-await-in-loop -- eggs sharing a nest must not race ensureNest
     const nest = await ensureNest(egg.nest);
     const data = builtinData(egg);
     const variables: ParsedEgg["variables"] = egg.variables.map((v, index) => ({
@@ -70,6 +72,7 @@ export const syncBuiltinEggs = async (): Promise<{ synced: number }> => {
       userEditable: v.userEditable ?? true,
       userViewable: v.userViewable ?? true,
     }));
+    // oxlint-disable-next-line no-await-in-loop -- eggs sharing a nest must not race ensureNest
     await prisma.$transaction(async (tx) => {
       const saved = await tx.egg.upsert({
         create: { id: ulid(), nestId: nest.id, slug: egg.slug, ...data },

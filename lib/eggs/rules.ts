@@ -24,9 +24,9 @@ const compile = (source: string, flags: string): RegExp | undefined => {
 // Egg regexes are written for PCRE; prefer unicode mode but fall back when
 // the pattern uses escapes that unicode mode rejects.
 const parseRegex = (raw: string): RegExp | undefined => {
-  const match = /^\/(.*)\/([a-z]*)$/su.exec(raw);
-  const source = match ? (match[1] ?? "") : raw;
-  const flags = match ? (match[2] ?? "").replaceAll(/[^gimsy]/gu, "") : "";
+  const match = /^\/(?<source>.*)\/(?<flags>[a-z]*)$/su.exec(raw)?.groups;
+  const source = match ? (match.source ?? "") : raw;
+  const flags = match ? (match.flags ?? "").replaceAll(/[^gimsy]/gu, "") : "";
   return compile(source, `${flags}u`) ?? compile(source, flags);
 };
 
@@ -112,7 +112,7 @@ const checkNumber = (
   label: string
 ): string | null => {
   const integer = r.type === "integer";
-  if (!(integer ? /^-?\d+$/u : /^-?\d+(\.\d+)?$/u).test(value)) {
+  if (!(integer ? /^-?\d+$/u : /^-?\d+(?:\.\d+)?$/u).test(value)) {
     return `${label} must be ${integer ? "a whole number" : "a number"}`;
   }
   const n = Number(value);

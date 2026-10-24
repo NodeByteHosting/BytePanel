@@ -8,7 +8,7 @@ import {
   SunIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -131,27 +131,33 @@ const SystemSwatch = () => (
   />
 );
 
+// The theme is only known on the client: false during SSR/hydration, then true.
+const subscribeNoop = () => () => {
+  // Nothing to unsubscribe: mounted never changes after hydration.
+};
+const useMounted = () =>
+  useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false
+  );
+
+const TriggerIcon = ({ theme }: { theme: string | undefined }) => {
+  if (theme === "light") {
+    return <SunIcon className="size-[1.1rem]" />;
+  }
+  if (theme === "dark") {
+    return <MoonIcon className="size-[1.1rem]" />;
+  }
+  if (theme === "system") {
+    return <MonitorIcon className="size-[1.1rem]" />;
+  }
+  return <PaletteIcon className="size-[1.1rem]" />;
+};
+
 export const ModeToggle = () => {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
-  const getTriggerIcon = () => {
-    if (!mounted) {
-      return PaletteIcon;
-    }
-    if (theme === "light") {
-      return SunIcon;
-    }
-    if (theme === "dark") {
-      return MoonIcon;
-    }
-    if (theme === "system") {
-      return MonitorIcon;
-    }
-    return PaletteIcon;
-  };
-  const TriggerIcon = getTriggerIcon();
+  const mounted = useMounted();
 
   return (
     <DropdownMenu>
@@ -159,10 +165,10 @@ export const ModeToggle = () => {
         <Button
           variant="ghost"
           size="icon"
-          className="shrink-0 text-muted-foreground"
+          className="text-muted-foreground shrink-0"
           title="Change theme"
         >
-          <TriggerIcon className="size-[1.1rem]" />
+          <TriggerIcon theme={mounted ? theme : undefined} />
           <span className="sr-only">Change theme</span>
         </Button>
       </DropdownMenuTrigger>
@@ -173,7 +179,7 @@ export const ModeToggle = () => {
         {THEME_GROUPS.map((group, i) => (
           <div key={group.label}>
             {i > 0 && <DropdownMenuSeparator />}
-            <DropdownMenuLabel className="text-xs text-muted-foreground">
+            <DropdownMenuLabel className="text-muted-foreground text-xs">
               {group.label}
             </DropdownMenuLabel>
             {group.themes.map(({ label, value, ...rest }) => {
@@ -185,13 +191,13 @@ export const ModeToggle = () => {
                   onClick={() => setTheme(value)}
                   className={cn(
                     "cursor-pointer gap-2",
-                    active && "bg-accent/20 font-medium text-foreground"
+                    active && "bg-accent/20 text-foreground font-medium"
                   )}
                 >
                   {/* Left: icon or color swatch */}
                   {value === "system" && <SystemSwatch />}
                   {value !== "system" && Icon && (
-                    <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+                    <Icon className="text-muted-foreground size-3.5 shrink-0" />
                   )}
                   {value !== "system" && !Icon && <ThemeSwatch value={value} />}
 
@@ -199,7 +205,7 @@ export const ModeToggle = () => {
 
                   {/* Right: checkmark when active */}
                   {active && (
-                    <CheckIcon className="size-3.5 shrink-0 text-foreground" />
+                    <CheckIcon className="text-foreground size-3.5 shrink-0" />
                   )}
                 </DropdownMenuItem>
               );

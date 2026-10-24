@@ -138,6 +138,7 @@ export const UsersTable = () => {
   }, [page, search]);
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
     void fetchUsers();
   }, [fetchUsers]);
 
@@ -230,7 +231,7 @@ export const UsersTable = () => {
       {/* Search */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-0 flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <Input
             className="pl-9"
             placeholder="Search by name or email…"
@@ -257,9 +258,9 @@ export const UsersTable = () => {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
+      <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
         {(loading || !data) && (
-          <div className="divide-y divide-border/50">
+          <div className="divide-border/50 divide-y">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-3">
                 <Skeleton className="size-8 shrink-0 rounded-lg" />
@@ -274,17 +275,17 @@ export const UsersTable = () => {
           </div>
         )}
         {!loading && data?.users.length === 0 && (
-          <div className="py-16 text-center text-sm text-muted-foreground">
+          <div className="text-muted-foreground py-16 text-center text-sm">
             No users found.
           </div>
         )}
         {!loading && data && data.users.length > 0 && (
-          <div className="divide-y divide-border/50">
+          <div className="divide-border/50 divide-y">
             {data.users.map((user) => (
               <div
                 key={user.id}
                 className={cn(
-                  "group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30",
+                  "group hover:bg-muted/30 flex items-center gap-3 px-4 py-3 transition-colors",
                   user.banned && "bg-red-500/5"
                 )}
               >
@@ -324,14 +325,14 @@ export const UsersTable = () => {
                     )}
                   </div>
                   {user.name && (
-                    <span className="truncate text-xs text-muted-foreground">
+                    <span className="text-muted-foreground truncate text-xs">
                       {user.email}
                     </span>
                   )}
                 </div>
 
                 {/* Stats — hidden on mobile */}
-                <div className="hidden shrink-0 items-center gap-4 text-xs text-muted-foreground sm:flex">
+                <div className="text-muted-foreground hidden shrink-0 items-center gap-4 text-xs sm:flex">
                   <span className="tabular-nums">
                     {user._count.servers}{" "}
                     {user._count.servers === 1 ? "server" : "servers"}
@@ -352,7 +353,7 @@ export const UsersTable = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    <DropdownMenuLabel className="text-muted-foreground text-xs">
                       Role
                     </DropdownMenuLabel>
                     <DropdownMenuItem
@@ -420,7 +421,7 @@ export const UsersTable = () => {
 
       {/* Pagination */}
       {data && data.totalPages > 1 && (
-        <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-muted-foreground flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
           <span>
             {(data.page - 1) * data.pageSize + 1}–
             {Math.min(data.page * data.pageSize, data.total)} of {data.total}

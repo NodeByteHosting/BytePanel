@@ -74,7 +74,7 @@ const RoleBadge = ({ role }: { role: string }) => {
   const label =
     SERVER_ROLE_LABELS[role as keyof typeof SERVER_ROLE_LABELS] ?? role;
   return (
-    <Badge variant="secondary" className="capitalize text-xs">
+    <Badge variant="secondary" className="text-xs capitalize">
       {label}
     </Badge>
   );
@@ -184,11 +184,11 @@ export const TeamPanel = ({
   return (
     <div className="flex flex-col gap-6">
       {/* Team members */}
-      <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
-        <div className="flex items-center justify-between gap-4 border-b border-border/50 px-5 py-4">
+      <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
+        <div className="border-border/50 flex items-center justify-between gap-4 border-b px-5 py-4">
           <div>
             <p className="text-sm font-semibold">Team members</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-0.5 text-xs">
               Manage who has access to this server.
             </p>
           </div>
@@ -258,7 +258,7 @@ export const TeamPanel = ({
           </Dialog>
         </div>
 
-        <div className="divide-y divide-border/50">
+        <div className="divide-border/50 divide-y">
           {/* Owner row */}
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <div className="flex items-center gap-3">
@@ -268,7 +268,7 @@ export const TeamPanel = ({
                   {owner.name ?? owner.email}
                 </span>
                 {owner.name && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-muted-foreground text-xs">
                     {owner.email}
                   </span>
                 )}
@@ -286,7 +286,7 @@ export const TeamPanel = ({
           {members.map((member) => (
             <div
               key={member.id}
-              className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/30"
+              className="hover:bg-muted/30 flex items-center justify-between gap-3 px-4 py-3 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <UserAvatar user={member.user} />
@@ -295,7 +295,7 @@ export const TeamPanel = ({
                     {member.user.name ?? member.user.email}
                   </span>
                   {member.user.name && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       {member.user.email}
                     </span>
                   )}
@@ -345,7 +345,7 @@ export const TeamPanel = ({
           ))}
 
           {members.length === 0 && (
-            <p className="py-12 text-center text-sm text-muted-foreground">
+            <p className="text-muted-foreground py-12 text-center text-sm">
               No members yet. Invite someone to get started.
             </p>
           )}
@@ -354,22 +354,22 @@ export const TeamPanel = ({
 
       {/* Pending invites */}
       {invites.length > 0 && (
-        <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
-          <div className="border-b border-border/50 px-5 py-4">
+        <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
+          <div className="border-border/50 border-b px-5 py-4">
             <p className="text-sm font-semibold">Pending invites</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-0.5 text-xs">
               These invites have not been accepted yet.
             </p>
           </div>
-          <div className="divide-y divide-border/50">
+          <div className="divide-border/50 divide-y">
             {invites.map((invite) => (
               <div
                 key={invite.id}
-                className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/30"
+                className="hover:bg-muted/30 flex items-center justify-between gap-3 px-4 py-3 transition-colors"
               >
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">{invite.email}</span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-muted-foreground text-xs">
                     Expires {new Date(invite.expiresAt).toLocaleDateString()}
                   </span>
                 </div>

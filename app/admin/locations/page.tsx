@@ -25,7 +25,7 @@ const AdminLocationsPage = async () => {
           <Panel title={`Locations (${locations.length})`}>
             <PanelCard className="flex flex-col gap-1">
               {locations.length === 0 && (
-                <p className="px-3 py-2 text-sm text-muted-foreground">
+                <p className="text-muted-foreground px-3 py-2 text-sm">
                   No locations yet. Nodes are grouped into locations (e.g.
                   uk-lon, de-fsn).
                 </p>
@@ -39,7 +39,7 @@ const AdminLocationsPage = async () => {
                     <code className="text-sm font-medium">
                       {location.short}
                     </code>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       {location.long ?? "No description"} ·{" "}
                       {location._count.nodes} node(s)
                     </span>

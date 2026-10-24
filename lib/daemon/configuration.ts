@@ -70,8 +70,10 @@ const resolvedEnvironment = (ctx: PlaceholderContext): Record<string, string> =>
 const parseOwner = (
   raw: string | null
 ): { uid: number; gid: number } | null => {
-  const match = /^(\d+):(\d+)$/u.exec(raw ?? "");
-  return match ? { gid: Number(match[2]), uid: Number(match[1]) } : null;
+  const match = /^(?<uid>\d+):(?<gid>\d+)$/u.exec(raw ?? "");
+  return match?.groups
+    ? { gid: Number(match.groups.gid), uid: Number(match.groups.uid) }
+    : null;
 };
 
 const parseStop = (raw: string): ServerConfiguration["process"]["stop"] => {

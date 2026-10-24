@@ -16,21 +16,23 @@ interface SimpleBarChartProps {
   format?: (value: number) => string;
 }
 
+const defaultFormat = (value: number) => value.toString();
+
 export const SimpleBarChart = ({
   data,
   title,
   description,
   height = 200,
-  format = (v) => v.toString(),
+  format = defaultFormat,
 }: SimpleBarChartProps) => {
   const maxValue = Math.max(...data.map((d) => d.value), 1);
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-5">
+    <div className="border-border/60 bg-card flex flex-col gap-3 rounded-xl border p-5">
       <div>
         <p className="text-sm font-semibold">{title}</p>
         {description && (
-          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+          <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>
         )}
       </div>
       <div className="flex items-end gap-1.5" style={{ height }}>
@@ -42,12 +44,12 @@ export const SimpleBarChart = ({
           >
             <div className="flex w-full flex-1 flex-col justify-end gap-0.5">
               <div
-                className="w-full rounded-t-md bg-primary/70 transition-all group-hover:bg-primary"
+                className="bg-primary/70 group-hover:bg-primary w-full rounded-t-md transition-all"
                 style={{ height: `${(point.value / maxValue) * 100}%` }}
                 title={`${point.label}: ${format(point.value)}`}
               />
             </div>
-            <span className="w-full truncate text-center text-[10px] text-muted-foreground">
+            <span className="text-muted-foreground w-full truncate text-center text-[10px]">
               {point.label}
             </span>
           </div>
@@ -70,7 +72,7 @@ export const SimpleLineChart = ({
   title,
   description,
   height = 200,
-  format = (v) => v.toString(),
+  format = defaultFormat,
 }: SimpleLineChartProps) => {
   const maxValue = Math.max(...data.map((d) => d.value), 1);
   const minValue = Math.min(...data.map((d) => d.value), 0);
@@ -85,11 +87,11 @@ export const SimpleLineChart = ({
     .join(" ");
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-5">
+    <div className="border-border/60 bg-card flex flex-col gap-3 rounded-xl border p-5">
       <div>
         <p className="text-sm font-semibold">{title}</p>
         {description && (
-          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+          <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>
         )}
       </div>
       <div style={{ height }} className="relative">
@@ -151,7 +153,7 @@ export const SimpleLineChart = ({
           })}
         </svg>
       </div>
-      <div className="grid grid-cols-3 gap-4 border-t border-border/50 pt-3 text-xs">
+      <div className="border-border/50 grid grid-cols-3 gap-4 border-t pt-3 text-xs">
         <div>
           <p className="text-muted-foreground">Highest</p>
           <p className="font-semibold">{format(maxValue)}</p>

@@ -19,7 +19,7 @@ export const Panel = ({
     {(title || action) && (
       <div className="flex items-center justify-between gap-2">
         {title ? (
-          <h2 className="font-medium text-sm text-muted-foreground">{title}</h2>
+          <h2 className="text-muted-foreground text-sm font-medium">{title}</h2>
         ) : (
           <span />
         )}
@@ -36,7 +36,7 @@ type PanelCardProps =
 
 export const PanelCard = ({ className, ...props }: PanelCardProps) => {
   const mergedClassName = cn(
-    "rounded-xl border border-border/60 bg-card p-3",
+    "border-border/60 bg-card rounded-xl border p-3",
     className
   );
 

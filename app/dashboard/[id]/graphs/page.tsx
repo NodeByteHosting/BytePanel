@@ -99,7 +99,7 @@ const GraphsTab = () => {
   if (state !== "running" && state !== "starting" && history.length === 0) {
     return (
       <Panel>
-        <PanelCard className="text-sm text-muted-foreground">
+        <PanelCard className="text-muted-foreground text-sm">
           Graphs show live usage while the server is running.
         </PanelCard>
       </Panel>

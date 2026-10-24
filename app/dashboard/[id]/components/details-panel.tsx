@@ -16,7 +16,7 @@ const Row = ({
     <span className="text-muted-foreground">{label}</span>
     <span
       className={
-        mono ? "break-all text-right font-mono text-xs" : "font-medium"
+        mono ? "text-right font-mono text-xs break-all" : "font-medium"
       }
     >
       {value}

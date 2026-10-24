@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import path from "node:path";
 
 // Why: protocol/ (shared zod schemas) is compiled into both the panel and the
 // node daemon (agent/). Two different zod versions produce structurally
@@ -8,14 +8,16 @@ import { join } from "node:path";
 // packages must pin the exact same zod release. `npm-check-updates` and
 // similar tools love to bump this — guard the pin here.
 
-const ROOT = join(import.meta.dir, "..");
+const ROOT = path.join(import.meta.dir, "..");
 
 interface PackageJson {
   dependencies?: Record<string, string>;
 }
 
 const readPackageJson = (dir: string): PackageJson =>
-  JSON.parse(readFileSync(join(dir, "package.json"), "utf-8")) as PackageJson;
+  JSON.parse(
+    readFileSync(path.join(dir, "package.json"), "utf-8")
+  ) as PackageJson;
 
 describe("zod version pin", () => {
   test("panel pins zod to an exact version (no ^ or ~)", () => {
@@ -26,7 +28,7 @@ describe("zod version pin", () => {
 
   test("daemon (agent/) pins the same zod as the panel", () => {
     const panel = readPackageJson(ROOT).dependencies?.zod;
-    const daemon = readPackageJson(join(ROOT, "agent")).dependencies?.zod;
+    const daemon = readPackageJson(path.join(ROOT, "agent")).dependencies?.zod;
     expect(daemon).toBe(panel);
   });
 });

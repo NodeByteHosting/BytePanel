@@ -31,10 +31,10 @@ const Stat = ({
   value: string;
   limit?: string;
 }) => (
-  <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-card px-3 py-2">
-    <Icon className="size-4 shrink-0 text-muted-foreground" />
+  <div className="border-border/60 bg-card flex items-center gap-3 rounded-lg border px-3 py-2">
+    <Icon className="text-muted-foreground size-4 shrink-0" />
     <div className="flex min-w-0 flex-col">
-      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-muted-foreground text-xs">{label}</span>
       <span className="truncate font-mono text-sm">
         {value}
         {limit && <span className="text-muted-foreground"> / {limit}</span>}
@@ -137,10 +137,10 @@ const ConsoleTab = () => {
 
       <Panel className="min-h-0 flex-1" title="Console">
         <PanelCard className="flex min-h-[24rem] flex-1 flex-col overflow-hidden p-0">
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 bg-muted/40 px-4 py-2">
+          <div className="border-border/60 bg-muted/40 flex shrink-0 items-center justify-between gap-2 border-b px-4 py-2">
             <div className="flex min-w-0 items-center gap-2">
-              <TerminalIcon className="size-3.5 shrink-0 text-muted-foreground" />
-              <span className="truncate font-mono text-xs text-muted-foreground">
+              <TerminalIcon className="text-muted-foreground size-3.5 shrink-0" />
+              <span className="text-muted-foreground truncate font-mono text-xs">
                 {server.name}
               </span>
             </div>
@@ -153,7 +153,7 @@ const ConsoleTab = () => {
                     : "bg-muted-foreground/40"
                 )}
               />
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="text-muted-foreground font-mono text-xs">
                 {socket.status === "connected" ? state : socket.status}
               </span>
             </div>
@@ -170,12 +170,12 @@ const ConsoleTab = () => {
             />
           </div>
 
-          <div className="flex shrink-0 flex-row items-center gap-2 border-t border-border/60 bg-muted/20 px-3 py-2">
-            <span className="shrink-0 select-none font-mono text-sm text-emerald-500">
+          <div className="border-border/60 bg-muted/20 flex shrink-0 flex-row items-center gap-2 border-t px-3 py-2">
+            <span className="shrink-0 font-mono text-sm text-emerald-500 select-none">
               $
             </span>
             <Input
-              className="h-8 flex-1 overflow-hidden border-0 bg-transparent font-mono text-sm shadow-none placeholder:text-muted-foreground/50 focus-visible:ring-0"
+              className="placeholder:text-muted-foreground/50 h-8 flex-1 overflow-hidden border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0"
               disabled={!canSend}
               placeholder={
                 canSend

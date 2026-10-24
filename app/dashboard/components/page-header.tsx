@@ -23,22 +23,22 @@ export const PageHeader = ({
 }: PageHeaderProps) => (
   <header
     className={cn(
-      "sticky top-0 z-10 flex shrink-0 flex-col gap-0 border-b border-border/60 bg-background/80 backdrop-blur-md",
+      "border-border/60 bg-background/80 sticky top-0 z-10 flex shrink-0 flex-col gap-0 border-b backdrop-blur-md",
       flush && "border-b-0"
     )}
   >
     <div className="flex items-center gap-3 px-4 py-3 md:px-6">
-      <SidebarTrigger className="-ml-1 shrink-0 text-muted-foreground hover:text-foreground transition-colors" />
+      <SidebarTrigger className="text-muted-foreground hover:text-foreground -ml-1 shrink-0 transition-colors" />
       <Separator orientation="vertical" className="h-5 opacity-40" />
       {icon ? (
-        <div className="shrink-0 text-muted-foreground">{icon}</div>
+        <div className="text-muted-foreground shrink-0">{icon}</div>
       ) : null}
       <div className="flex min-w-0 flex-1 items-center gap-2.5">
-        <h1 className="truncate text-base font-semibold text-foreground tracking-tight sm:text-lg">
+        <h1 className="text-foreground truncate text-base font-semibold tracking-tight sm:text-lg">
           {title}
         </h1>
         {meta ? (
-          <div className="flex items-center gap-2 shrink-0">{meta}</div>
+          <div className="flex shrink-0 items-center gap-2">{meta}</div>
         ) : null}
       </div>
       {actions ? (

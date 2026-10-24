@@ -44,7 +44,7 @@ const AdminNestsPage = async () => {
         <div className="flex flex-col gap-4">
           {nests.length === 0 && (
             <Panel>
-              <PanelCard className="text-sm text-muted-foreground">
+              <PanelCard className="text-muted-foreground text-sm">
                 No eggs yet. Sync the built-in NodeByte games, or import
                 Pterodactyl eggs (PTDL JSON) into a nest.
               </PanelCard>
@@ -62,13 +62,13 @@ const AdminNestsPage = async () => {
             >
               <PanelCard className="flex flex-col gap-1">
                 {nest.eggs.length === 0 && (
-                  <p className="px-3 py-2 text-sm text-muted-foreground">
+                  <p className="text-muted-foreground px-3 py-2 text-sm">
                     No eggs in this nest.
                   </p>
                 )}
                 {nest.eggs.map((egg) => (
                   <Link
-                    className="flex items-center justify-between gap-4 rounded-lg px-3 py-2 hover:bg-muted/40"
+                    className="hover:bg-muted/40 flex items-center justify-between gap-4 rounded-lg px-3 py-2"
                     href={`/admin/eggs/${egg.id}`}
                     key={egg.id}
                   >
@@ -84,11 +84,11 @@ const AdminNestsPage = async () => {
                           <Badge variant="outline">hidden</Badge>
                         )}
                       </span>
-                      <span className="truncate text-xs text-muted-foreground">
+                      <span className="text-muted-foreground truncate text-xs">
                         {egg.description}
                       </span>
                     </div>
-                    <span className="shrink-0 text-xs text-muted-foreground">
+                    <span className="text-muted-foreground shrink-0 text-xs">
                       {egg._count.servers} servers
                     </span>
                   </Link>

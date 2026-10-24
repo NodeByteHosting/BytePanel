@@ -66,7 +66,7 @@ const Field = ({
   <div className="flex flex-col gap-1.5">
     <Label>{label}</Label>
     {children}
-    {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+    {hint && <span className="text-muted-foreground text-xs">{hint}</span>}
   </div>
 );
 
@@ -221,22 +221,34 @@ export const NodeForm = ({
         />
       </Field>
       <div className="flex flex-wrap gap-6 md:col-span-2">
-        <Label className="flex items-center gap-2 text-sm font-normal">
+        <Label
+          htmlFor="node-public"
+          className="flex items-center gap-2 text-sm font-normal"
+        >
           <Switch
+            id="node-public"
             checked={v.public}
             onCheckedChange={(c) => set("public", c)}
           />
           Public (used for automatic deployment)
         </Label>
-        <Label className="flex items-center gap-2 text-sm font-normal">
+        <Label
+          htmlFor="node-behind-proxy"
+          className="flex items-center gap-2 text-sm font-normal"
+        >
           <Switch
+            id="node-behind-proxy"
             checked={v.behindProxy}
             onCheckedChange={(c) => set("behindProxy", c)}
           />
           Behind a reverse proxy (TLS terminated by the proxy)
         </Label>
-        <Label className="flex items-center gap-2 text-sm font-normal">
+        <Label
+          htmlFor="node-maintenance"
+          className="flex items-center gap-2 text-sm font-normal"
+        >
           <Switch
+            id="node-maintenance"
             checked={v.maintenanceMode}
             onCheckedChange={(c) => set("maintenanceMode", c)}
           />

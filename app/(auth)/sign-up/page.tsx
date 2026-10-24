@@ -35,17 +35,17 @@ const SignUpPage = () => {
     <div className="flex flex-col gap-6">
       <div className="text-center">
         <h1 className="text-2xl font-bold tracking-tight">
-          <span className="bg-linear-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
+          <span className="from-primary via-primary to-accent bg-linear-to-r bg-clip-text text-transparent">
             NodeByte Panel
           </span>
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-muted-foreground mt-1 text-sm">
           Create your account
         </p>
       </div>
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 rounded-2xl border border-border/50 bg-card/30 p-6 backdrop-blur-sm"
+        className="border-border/50 bg-card/30 space-y-4 rounded-2xl border p-6 backdrop-blur-sm"
       >
         <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
@@ -75,10 +75,10 @@ const SignUpPage = () => {
         <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Creating…" : "Create account"}
         </Button>
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-center text-sm">
           Already have an account?{" "}
           <Link
-            className="text-primary underline underline-offset-4 hover:text-primary/80"
+            className="text-primary hover:text-primary/80 underline underline-offset-4"
             href="/sign-in"
           >
             Sign in

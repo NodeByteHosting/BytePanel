@@ -98,6 +98,7 @@ export const BackupsPanel = ({ serverId }: { serverId: string }) => {
   }, [base]);
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
     void load();
   }, [load]);
 
@@ -107,7 +108,7 @@ export const BackupsPanel = ({ serverId }: { serverId: string }) => {
     if (!pending) {
       return;
     }
-    const timer = setInterval(() => void load(), 5000);
+    const timer = setInterval(() => load(), 5000);
     return () => clearInterval(timer);
   }, [load, pending]);
 
@@ -171,12 +172,12 @@ export const BackupsPanel = ({ serverId }: { serverId: string }) => {
     >
       <PanelCard className="flex flex-col gap-1">
         {backups === null && (
-          <div className="px-3 py-4 text-sm text-muted-foreground">
+          <div className="text-muted-foreground px-3 py-4 text-sm">
             Loading…
           </div>
         )}
         {backups?.length === 0 && (
-          <div className="px-3 py-4 text-sm text-muted-foreground">
+          <div className="text-muted-foreground px-3 py-4 text-sm">
             {limit === 0
               ? "Your plan doesn't include backups."
               : "No backups yet."}
@@ -191,15 +192,15 @@ export const BackupsPanel = ({ serverId }: { serverId: string }) => {
             >
               <div className="flex min-w-0 items-center gap-3">
                 {running ? (
-                  <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />
+                  <Loader2Icon className="text-muted-foreground size-4 shrink-0 animate-spin" />
                 ) : (
-                  <ArchiveIcon className="size-4 shrink-0 text-muted-foreground" />
+                  <ArchiveIcon className="text-muted-foreground size-4 shrink-0" />
                 )}
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <span className="flex items-center gap-2 truncate text-sm font-medium">
                     {backup.name}
                     {backup.isLocked && (
-                      <LockIcon className="size-3 text-muted-foreground" />
+                      <LockIcon className="text-muted-foreground size-3" />
                     )}
                     {!running && !backup.isSuccessful && (
                       <Badge className="text-[10px]" variant="destructive">
@@ -207,7 +208,7 @@ export const BackupsPanel = ({ serverId }: { serverId: string }) => {
                       </Badge>
                     )}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-muted-foreground text-xs">
                     {new Date(backup.createdAt).toLocaleString()}
                     {backup.isSuccessful && ` · ${formatBytes(backup.bytes)}`}
                     {running && " · in progress"}
@@ -228,7 +229,7 @@ export const BackupsPanel = ({ serverId }: { serverId: string }) => {
                 <DropdownMenuContent align="end">
                   {backup.isSuccessful && (
                     <>
-                      <DropdownMenuItem onSelect={() => void download(backup)}>
+                      <DropdownMenuItem onSelect={() => download(backup)}>
                         <DownloadIcon />
                         Download
                       </DropdownMenuItem>
@@ -242,7 +243,7 @@ export const BackupsPanel = ({ serverId }: { serverId: string }) => {
                   )}
                   <DropdownMenuItem
                     onSelect={() =>
-                      void run(
+                      run(
                         () =>
                           request(`${base}/${backup.id}`, {
                             body: JSON.stringify({
@@ -278,7 +279,7 @@ export const BackupsPanel = ({ serverId }: { serverId: string }) => {
           <DialogHeader>
             <DialogTitle>Create backup</DialogTitle>
             <DialogDescription>
-              Archives the server's files on its node. The server can keep
+              Archives the server&apos;s files on its node. The server can keep
               running.
             </DialogDescription>
           </DialogHeader>
@@ -302,7 +303,7 @@ export const BackupsPanel = ({ serverId }: { serverId: string }) => {
                 value={ignored}
                 onChange={(e) => setIgnored(e.target.value)}
               />
-              <span className="text-xs text-muted-foreground">
+              <span className="text-muted-foreground text-xs">
                 One pattern per line, like .gitignore.
               </span>
             </div>
@@ -315,7 +316,7 @@ export const BackupsPanel = ({ serverId }: { serverId: string }) => {
             >
               Cancel
             </Button>
-            <Button disabled={busy} onClick={() => void create()}>
+            <Button disabled={busy} onClick={() => create()}>
               {busy ? "Starting…" : "Start backup"}
             </Button>
           </DialogFooter>
@@ -329,7 +330,7 @@ export const BackupsPanel = ({ serverId }: { serverId: string }) => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Restore "{restoreTarget?.name}"?
+              Restore &quot;{restoreTarget?.name}&quot;?
             </AlertDialogTitle>
             <AlertDialogDescription>
               The server must be stopped. Files in the backup overwrite the
@@ -373,7 +374,9 @@ export const BackupsPanel = ({ serverId }: { serverId: string }) => {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete "{deleteTarget?.name}"?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Delete &quot;{deleteTarget?.name}&quot;?
+            </AlertDialogTitle>
             <AlertDialogDescription>
               This backup will be permanently removed from the node.
             </AlertDialogDescription>

@@ -43,13 +43,13 @@ export const StatCard = ({
   return (
     <button
       type="button"
-      className="rounded-2xl border border-border/50 bg-card/30 p-4 backdrop-blur-sm transition-all hover:border-border/80 hover:bg-card/50 cursor-pointer md:p-5 text-left"
+      className="border-border/50 bg-card/30 hover:border-border/80 hover:bg-card/50 cursor-pointer rounded-2xl border p-4 text-left backdrop-blur-sm transition-all md:p-5"
       onClick={onClick}
     >
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
+        <p className="text-muted-foreground text-sm font-medium">{title}</p>
         {icon && (
-          <div className="rounded-lg border border-border/50 bg-card/50 p-1.5">
+          <div className="border-border/50 bg-card/50 rounded-lg border p-1.5">
             {icon}
           </div>
         )}
@@ -57,7 +57,7 @@ export const StatCard = ({
 
       <div className="mb-2">
         {loading ? (
-          <div className="h-8 w-32 animate-pulse rounded bg-muted" />
+          <div className="bg-muted h-8 w-32 animate-pulse rounded" />
         ) : (
           <p className="text-2xl font-bold tracking-tight md:text-3xl">
             {value}
@@ -75,7 +75,7 @@ export const StatCard = ({
       )}
 
       {subtext && (
-        <p className="mt-2 text-xs text-muted-foreground">{subtext}</p>
+        <p className="text-muted-foreground mt-2 text-xs">{subtext}</p>
       )}
     </button>
   );

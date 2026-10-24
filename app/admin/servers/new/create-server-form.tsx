@@ -145,7 +145,7 @@ export const CreateServerForm = ({
           setLimits((prev) => ({ ...prev, [key]: Number(e.target.value) }))
         }
       />
-      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+      {hint && <span className="text-muted-foreground text-xs">{hint}</span>}
     </div>
   );
 
@@ -154,12 +154,17 @@ export const CreateServerForm = ({
       <Panel title="Core">
         <PanelCard className="grid gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <Label>Server name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <Label htmlFor="server-name">Server name</Label>
+            <Input
+              id="server-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label>Owner email</Label>
+            <Label htmlFor="owner-email">Owner email</Label>
             <Input
+              id="owner-email"
               type="email"
               value={ownerEmail}
               onChange={(e) => setOwnerEmail(e.target.value)}
@@ -171,9 +176,9 @@ export const CreateServerForm = ({
       <Panel title="Placement">
         <PanelCard className="grid gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <Label>Location</Label>
+            <Label htmlFor="server-location">Location</Label>
             <Select value={locationId} onValueChange={setLocationId}>
-              <SelectTrigger>
+              <SelectTrigger id="server-location">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -187,9 +192,9 @@ export const CreateServerForm = ({
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label>Node</Label>
+            <Label htmlFor="server-node">Node</Label>
             <Select value={nodeId} onValueChange={setNodeId}>
-              <SelectTrigger>
+              <SelectTrigger id="server-node">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -212,9 +217,11 @@ export const CreateServerForm = ({
       <Panel title="Resources">
         <PanelCard className="grid gap-4 md:grid-cols-4">
           <div className="flex flex-col gap-1.5 md:col-span-4">
-            <Label>Plan (optional — fills the limits below)</Label>
+            <Label htmlFor="server-plan">
+              Plan (optional — fills the limits below)
+            </Label>
             <Select value={planId} onValueChange={applyPlan}>
-              <SelectTrigger className="md:w-80">
+              <SelectTrigger id="server-plan" className="md:w-80">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -241,7 +248,7 @@ export const CreateServerForm = ({
         <PanelCard className="flex flex-col gap-3">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label>Egg</Label>
+              <Label htmlFor="server-egg">Egg</Label>
               <Select
                 value={eggId}
                 onValueChange={(value) => {
@@ -250,7 +257,7 @@ export const CreateServerForm = ({
                   setImage(undefined);
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger id="server-egg">
                   <SelectValue placeholder="Sync or import eggs first" />
                 </SelectTrigger>
                 <SelectContent>
@@ -271,12 +278,12 @@ export const CreateServerForm = ({
             </div>
             {egg && Object.keys(egg.dockerImages).length > 1 && (
               <div className="flex flex-col gap-1.5">
-                <Label>Docker image</Label>
+                <Label htmlFor="server-image">Docker image</Label>
                 <Select
                   value={image ?? Object.values(egg.dockerImages)[0]}
                   onValueChange={setImage}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="server-image">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -304,8 +311,12 @@ export const CreateServerForm = ({
       </Panel>
 
       <div className="flex items-center justify-between">
-        <Label className="flex items-center gap-2 text-sm font-normal">
+        <Label
+          htmlFor="start-on-completion"
+          className="flex items-center gap-2 text-sm font-normal"
+        >
           <Switch
+            id="start-on-completion"
             checked={startOnCompletion}
             onCheckedChange={setStartOnCompletion}
           />
@@ -319,7 +330,7 @@ export const CreateServerForm = ({
             !ownerEmail ||
             Object.keys(errors).length > 0
           }
-          onClick={() => void submit()}
+          onClick={() => submit()}
         >
           {pending ? "Creating…" : "Create server"}
         </Button>

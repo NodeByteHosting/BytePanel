@@ -69,7 +69,7 @@ export const DeleteLocationButton = ({
       size="icon"
       title={disabled ? "Location has nodes" : "Delete"}
       variant="ghost"
-      onClick={() => void run(() => deleteLocation(id), "Location deleted")}
+      onClick={() => run(() => deleteLocation(id), "Location deleted")}
     >
       <Trash2Icon className="size-4" />
     </Button>

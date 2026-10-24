@@ -43,11 +43,12 @@ export class RemoteAuthError extends Error {
 // Authenticates a daemon calling /api/remote/*.
 export const authenticateNode = async (request: Request): Promise<Node> => {
   const header = request.headers.get("authorization") ?? "";
-  const match = /^Bearer ([A-Za-z0-9]+)\.([A-Za-z0-9]+)$/u.exec(header);
-  if (!match) {
+  const match =
+    /^Bearer (?<tokenId>[A-Za-z0-9]+)\.(?<token>[A-Za-z0-9]+)$/u.exec(header);
+  if (!match?.groups) {
     throw new RemoteAuthError("Missing or malformed node token");
   }
-  const [, tokenId = "", token = ""] = match;
+  const { tokenId = "", token = "" } = match.groups;
   const node = await prisma.node.findUnique({
     where: { daemonTokenId: tokenId },
   });

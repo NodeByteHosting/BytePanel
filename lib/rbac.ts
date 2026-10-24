@@ -10,11 +10,7 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "./db";
 import type { ServerRole } from "./server-roles";
-import {
-  meetsMinServerRole,
-  SERVER_ROLE_DESCRIPTIONS,
-  SERVER_ROLE_LABELS,
-} from "./server-roles";
+import { meetsMinServerRole } from "./server-roles";
 
 // ─── Server-level roles ────────────────────────────────────────────────────────
 
@@ -94,4 +90,8 @@ export const isAdmin = (role: string, superAdmin: boolean) =>
 
 export const isSuperAdmin = (superAdmin: boolean) => superAdmin;
 
-export { meetsMinServerRole, SERVER_ROLE_DESCRIPTIONS, SERVER_ROLE_LABELS };
+export {
+  meetsMinServerRole,
+  SERVER_ROLE_DESCRIPTIONS,
+  SERVER_ROLE_LABELS,
+} from "./server-roles";

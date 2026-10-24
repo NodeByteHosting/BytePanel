@@ -8,93 +8,82 @@ import { cn } from "@/lib/utils";
  * ResponsiveTable - A table component that scrolls horizontally on mobile
  * and displays normally on desktop with proper touch-friendly sizing
  */
-interface ResponsiveTableProps extends React.TableHTMLAttributes<HTMLTableElement> {
+interface ResponsiveTableProps extends React.ComponentProps<"table"> {
   compact?: boolean;
 }
 
-export const ResponsiveTable = React.forwardRef<
-  HTMLTableElement,
-  ResponsiveTableProps
->(({ className, compact: _compact = false, ...props }, ref) => (
-  <div className="w-full overflow-x-auto -mx-4 sm:mx-0">
-    <table
-      ref={ref}
-      className={cn("w-full border-collapse", className)}
-      {...props}
-    />
+export const ResponsiveTable = ({
+  className,
+  compact: _compact = false,
+  ...props
+}: ResponsiveTableProps) => (
+  <div className="-mx-4 w-full overflow-x-auto sm:mx-0">
+    <table className={cn("w-full border-collapse", className)} {...props} />
   </div>
-));
+);
 
 ResponsiveTable.displayName = "ResponsiveTable";
 
-export const ResponsiveTableHeader = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
+export const ResponsiveTableHeader = ({
+  className,
+  ...props
+}: React.ComponentProps<"thead">) => (
   <thead
-    ref={ref}
-    className={cn("bg-muted/50 border-b border-border", className)}
+    className={cn("bg-muted/50 border-border border-b", className)}
     {...props}
   />
-));
+);
 
 ResponsiveTableHeader.displayName = "ResponsiveTableHeader";
 
-export const ResponsiveTableBody = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <tbody
-    ref={ref}
-    className={cn("[&_tr:last-child]:border-0", className)}
-    {...props}
-  />
-));
+export const ResponsiveTableBody = ({
+  className,
+  ...props
+}: React.ComponentProps<"tbody">) => (
+  <tbody className={cn("[&_tr:last-child]:border-0", className)} {...props} />
+);
 
 ResponsiveTableBody.displayName = "ResponsiveTableBody";
 
-export const ResponsiveTableRow = React.forwardRef<
-  HTMLTableRowElement,
-  React.HTMLAttributes<HTMLTableRowElement>
->(({ className, ...props }, ref) => (
+export const ResponsiveTableRow = ({
+  className,
+  ...props
+}: React.ComponentProps<"tr">) => (
   <tr
-    ref={ref}
     className={cn(
-      "border-b border-border/50 hover:bg-muted/30 transition-colors",
+      "border-border/50 hover:bg-muted/30 border-b transition-colors",
       className
     )}
     {...props}
   />
-));
+);
 
 ResponsiveTableRow.displayName = "ResponsiveTableRow";
 
-export const ResponsiveTableHead = React.forwardRef<
-  HTMLTableCellElement,
-  React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
+export const ResponsiveTableHead = ({
+  className,
+  ...props
+}: React.ComponentProps<"th">) => (
   <th
-    ref={ref}
     className={cn(
-      "text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-muted-foreground",
+      "text-muted-foreground px-3 py-2 text-left text-xs font-semibold sm:px-4 sm:py-3 sm:text-sm",
       className
     )}
     {...props}
   />
-));
+);
 
 ResponsiveTableHead.displayName = "ResponsiveTableHead";
 
-export const ResponsiveTableCell = React.forwardRef<
-  HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
+export const ResponsiveTableCell = ({
+  className,
+  ...props
+}: React.ComponentProps<"td">) => (
   <td
-    ref={ref}
-    className={cn("px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm", className)}
+    className={cn("px-3 py-2 text-xs sm:px-4 sm:py-3 sm:text-sm", className)}
     {...props}
   />
-));
+);
 
 ResponsiveTableCell.displayName = "ResponsiveTableCell";
 

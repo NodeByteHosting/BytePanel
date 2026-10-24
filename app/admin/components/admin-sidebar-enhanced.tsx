@@ -56,6 +56,9 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Users,
 };
 
+const getIcon = (iconName: string): LucideIcon =>
+  ICON_MAP[iconName] || LayoutDashboard;
+
 export const AdminSidebarEnhanced = ({
   user,
   navItems,
@@ -69,9 +72,6 @@ export const AdminSidebarEnhanced = ({
     router.refresh();
   };
 
-  const getIcon = (iconName: string): LucideIcon =>
-    ICON_MAP[iconName] || LayoutDashboard;
-
   return (
     <SharedSidebar
       user={user}
@@ -82,8 +82,8 @@ export const AdminSidebarEnhanced = ({
       onSignOut={handleSignOut}
     >
       {/* Admin Navigation */}
-      <SidebarGroup className="border-b border-border/40 px-0 py-3">
-        <SidebarGroupLabel className="px-4 h-9 flex items-center text-xs font-semibold text-muted-foreground">
+      <SidebarGroup className="border-border/40 border-b px-0 py-3">
+        <SidebarGroupLabel className="text-muted-foreground flex h-9 items-center px-4 text-xs font-semibold">
           Admin
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -109,7 +109,7 @@ export const AdminSidebarEnhanced = ({
                         <Icon className="h-4 w-4" />
                         <span>{label}</span>
                         {superAdminOnly && (
-                          <Lock className="size-3 shrink-0 opacity-40 ml-auto" />
+                          <Lock className="ml-auto size-3 shrink-0 opacity-40" />
                         )}
                       </Link>
                     </SidebarMenuButton>
