@@ -37,6 +37,7 @@ export const env = createEnv({
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     NEXT_RUNTIME: process.env.NEXT_RUNTIME,
+    NODEBYTE_DEBUG: process.env.NODEBYTE_DEBUG,
     NODEBYTE_PUBLIC_URL: process.env.NODEBYTE_PUBLIC_URL,
     SENTRY_ORG: process.env.SENTRY_ORG,
     SENTRY_PROJECT: process.env.SENTRY_PROJECT,
@@ -75,6 +76,12 @@ export const env = createEnv({
     KV_REST_API_URL: z.string().min(1).url().optional(),
 
     NEXT_RUNTIME: z.enum(["nodejs", "edge"]).optional(),
+    // Returns unexpected server-action errors to the UI instead of letting
+    // Next.js redact them. Exposes internals — test environments only.
+    NODEBYTE_DEBUG: z
+      .enum(["true", "false", "1", "0"])
+      .optional()
+      .transform((v) => v === "true" || v === "1"),
     // Overrides the computed API_URL for local dev bakes — set this to a
     // publicly reachable URL (e.g. ngrok/Cloudflare Tunnel) so the builder VM
     // on Hetzner can download the agent binary. Not needed on Vercel.

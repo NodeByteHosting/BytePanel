@@ -7,6 +7,7 @@ import { logEvent } from "@/lib/audit";
 import type { AuditAction } from "@/lib/audit";
 import { DaemonError } from "@/lib/daemon/client";
 import { prisma } from "@/lib/db";
+import { debugErrorMessage } from "@/lib/debug";
 import { sendServerDeletedEmail } from "@/lib/mail";
 import {
   deployServer,
@@ -24,6 +25,10 @@ import type { ActionResult } from "./infrastructure";
 const failure = (error: unknown) => {
   if (error instanceof ServiceError || error instanceof DaemonError) {
     return { error: error.message, ok: false } as const;
+  }
+  const debug = debugErrorMessage(error);
+  if (debug) {
+    return { error: debug, ok: false } as const;
   }
   throw error;
 };

@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { DaemonError } from "@/lib/daemon/client";
 import { prisma } from "@/lib/db";
+import { debugErrorMessage } from "@/lib/debug";
 import { emitActivity } from "@/lib/events/emit";
 import { getServerAccess, requestIp } from "@/lib/servers/access";
 import {
@@ -20,6 +21,10 @@ type Result = { ok: true } | { error: string; ok: false };
 const failure = (error: unknown): Result => {
   if (error instanceof ServiceError || error instanceof DaemonError) {
     return { error: error.message, ok: false };
+  }
+  const debug = debugErrorMessage(error);
+  if (debug) {
+    return { error: debug, ok: false };
   }
   throw error;
 };
