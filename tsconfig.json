@@ -16,5 +16,5 @@
       "@protocol/*": ["../protocol/*"]
     }
   },
-  "include": ["src/**/*.ts", "../protocol/**/*.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts", "../protocol/**/*.ts"]
 }

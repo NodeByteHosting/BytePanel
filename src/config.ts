@@ -1,72 +1,127 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 
 import { z } from "zod";
 
-const bootstrapSchema = z.object({
-  apiBaseUrl: z.string().url(),
-  bootstrapToken: z.string().min(1),
-  serverId: z.string().min(1),
-  // Set on Vercel preview deployments so callbacks can pass through Vercel's
-  // deployment protection. Null on production (no auth wall) and local dev.
-  vercelProtectionBypass: z.string().nullable(),
+export const CONFIG_PATH =
+  process.env.NODEBYTE_CONFIG_PATH ?? "/etc/nodebyte/daemon.json";
+
+export const VERSION = "0.2.0";
+
+// Node configuration. The panel renders this file for each node (admin →
+// nodes → configuration) and `nodebyte-daemon configure` can fetch it.
+export const configSchema = z.object({
+  allowedOrigins: z.array(z.string()).default([]),
+  api: z
+    .object({
+      host: z.string().default("0.0.0.0"),
+      port: z.number().int().min(1).max(65_535).default(8080),
+      ssl: z
+        .object({
+          cert: z.string().default(""),
+          enabled: z.boolean().default(false),
+          key: z.string().default(""),
+        })
+        .default({ cert: "", enabled: false, key: "" }),
+      uploadLimitMb: z.number().int().positive().default(100),
+    })
+    .default({
+      host: "0.0.0.0",
+      port: 8080,
+      ssl: { cert: "", enabled: false, key: "" },
+      uploadLimitMb: 100,
+    }),
+  docker: z
+    .object({
+      dns: z.array(z.string()).default(["1.1.1.1", "1.0.0.1"]),
+      network: z
+        .object({
+          bridge: z.string().default("nodebyte0"),
+          gateway: z.string().default("172.18.0.1"),
+          name: z.string().default("nodebyte_nw"),
+          subnet: z.string().default("172.18.0.0/16"),
+        })
+        .default({
+          bridge: "nodebyte0",
+          gateway: "172.18.0.1",
+          name: "nodebyte_nw",
+          subnet: "172.18.0.0/16",
+        }),
+      pidsLimit: z.number().int().positive().default(512),
+      socket: z.string().default("/var/run/docker.sock"),
+      tmpfsSizeMb: z.number().int().positive().default(100),
+    })
+    .default({
+      dns: ["1.1.1.1", "1.0.0.1"],
+      network: {
+        bridge: "nodebyte0",
+        gateway: "172.18.0.1",
+        name: "nodebyte_nw",
+        subnet: "172.18.0.0/16",
+      },
+      pidsLimit: 512,
+      socket: "/var/run/docker.sock",
+      tmpfsSizeMb: 100,
+    }),
+  remote: z.string().url(),
+  system: z
+    .object({
+      backups: z.string().default("/var/lib/nodebyte/backups"),
+      data: z.string().default("/var/lib/nodebyte/volumes"),
+      diskCheckIntervalSeconds: z.number().int().positive().default(60),
+      logs: z.string().default("/var/log/nodebyte"),
+      timezone: z.string().default("UTC"),
+      tmp: z.string().default("/tmp/nodebyte"),
+      user: z
+        .object({
+          gid: z.number().int().nonnegative().default(988),
+          uid: z.number().int().nonnegative().default(988),
+        })
+        .default({ gid: 988, uid: 988 }),
+    })
+    .default({
+      backups: "/var/lib/nodebyte/backups",
+      data: "/var/lib/nodebyte/volumes",
+      diskCheckIntervalSeconds: 60,
+      logs: "/var/log/nodebyte",
+      timezone: "UTC",
+      tmp: "/tmp/nodebyte",
+      user: { gid: 988, uid: 988 },
+    }),
+  token: z.string().min(32),
+  tokenId: z.string().min(8),
+  uuid: z.string().uuid(),
 });
 
-const stateSchema = z.object({
-  agentId: z.string().min(1),
-  agentSeq: z.number().int().nonnegative(),
-  apiBaseUrl: z.string().url(),
-  lastExecutedCommandId: z.string().nullable(),
-  privateKey: z.string().min(1),
-  publicKey: z.string().min(1),
-  serverId: z.string().min(1),
-  // Carried forward from bootstrap so the agent keeps punching through preview
-  // deployment protection across restarts. Optional for backwards-compat with
-  // state files written before this field existed.
-  vercelProtectionBypass: z.string().nullable().optional(),
-});
+export type Config = z.infer<typeof configSchema>;
 
-export type Bootstrap = z.infer<typeof bootstrapSchema>;
-export type State = z.infer<typeof stateSchema>;
-
-const BOOTSTRAP_PATH =
-  process.env.nodebyte_BOOTSTRAP_PATH ?? "/etc/nodebyte/bootstrap.json";
-const STATE_PATH =
-  process.env.nodebyte_STATE_PATH ?? "/var/lib/nodebyte/state.json";
-const STATE_DIR = STATE_PATH.replace(/\/[^/]+$/u, "");
-
-export const loadBootstrap = async (): Promise<Bootstrap | null> => {
-  if (!existsSync(BOOTSTRAP_PATH)) {
-    return null;
+export const loadConfig = async (path = CONFIG_PATH): Promise<Config> => {
+  if (!existsSync(path)) {
+    throw new Error(
+      `No configuration at ${path}. Run "nodebyte-daemon configure" or paste the config from the panel.`,
+    );
   }
-  const raw = await readFile(BOOTSTRAP_PATH, "utf-8");
-  return bootstrapSchema.parse(JSON.parse(raw));
+  return configSchema.parse(JSON.parse(await readFile(path, "utf-8")));
 };
 
-export const deleteBootstrap = async (): Promise<void> => {
-  try {
-    await unlink(BOOTSTRAP_PATH);
-  } catch {
-    // ignore
-  }
+export const saveConfig = async (
+  config: unknown,
+  path = CONFIG_PATH,
+): Promise<Config> => {
+  const parsed = configSchema.parse(config);
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, `${JSON.stringify(parsed, null, 2)}\n`, { mode: 0o600 });
+  return parsed;
 };
 
-export const loadState = async (): Promise<State | null> => {
-  if (!existsSync(STATE_PATH)) {
-    return null;
-  }
-  const raw = await readFile(STATE_PATH, "utf-8");
-  return stateSchema.parse(JSON.parse(raw));
-};
-
-export const saveState = async (state: State): Promise<void> => {
-  await mkdir(STATE_DIR, { recursive: true });
-  const tmp = `${STATE_PATH}.tmp`;
-  await writeFile(tmp, JSON.stringify(state, null, 2), { mode: 0o600 });
-  await Bun.write(STATE_PATH, await Bun.file(tmp).arrayBuffer());
-  try {
-    await unlink(tmp);
-  } catch {
-    // ignore
+export const ensureDirectories = async (config: Config): Promise<void> => {
+  for (const dir of [
+    config.system.data,
+    config.system.backups,
+    config.system.tmp,
+    `${config.system.logs}/install`,
+  ]) {
+    await mkdir(dir, { recursive: true });
   }
 };

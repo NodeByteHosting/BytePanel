@@ -1,0 +1,21 @@
+[Unit]
+Description=NodeByte Daemon
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+User=root
+WorkingDirectory=/etc/nodebyte
+LimitNOFILE=4096
+PIDFile=/run/nodebyte-daemon.pid
+ExecStart=/usr/local/bin/nodebyte-daemon run
+Restart=on-failure
+StartLimitInterval=180
+StartLimitBurst=30
+RestartSec=5s
+# Game containers keep running when the daemon restarts.
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

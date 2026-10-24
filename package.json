@@ -1,20 +1,20 @@
 {
   "name": "@nodebyte/agent",
-  "version": "0.1.0",
-  "description": "NodeByte GSA is a lightweight, secure agent for managing game servers. Built with Bun and TypeScript, it provides a simple interface for executing commands, monitoring server status, and handling file transfers, all while ensuring minimal resource usage and maximum security.",
+  "version": "0.2.0",
+  "description": "NodeByte daemon: runs on every node and manages the game server containers placed there (power, console, files, backups), like Pterodactyl Wings. Built with Bun and TypeScript.",
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
     "dev": "bun run src/index.ts",
-    "build": "bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile ../dist/ghost-agent",
+    "build": "node --eval \"require('fs').mkdirSync('../dist',{recursive:true})\" && bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile ../dist/nodebyte-daemon",
     "types": "tsc --noEmit",
     "lint": "ultracite check",
-    "check": "bun run lint && bun run types"
+    "check": "bun run lint && bun run types && bun run test",
+    "test": "bun test"
   },
   "dependencies": {
-    "@noble/ed25519": "^3.1.0",
-    "ulid": "^3.0.2",
-    "zod": "^4.3.6"
+    "jose": "6.2.3",
+    "zod": "4.3.6"
   },
   "devDependencies": {
     "@types/bun": "latest",

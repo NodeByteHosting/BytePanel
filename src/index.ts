@@ -1,101 +1,111 @@
-import { appendFile, mkdir } from "node:fs/promises";
-import { dirname } from "node:path";
+import { parseArgs } from "node:util";
 
-import { pollCommands } from "./commands";
-import { loadBootstrap, loadState, saveState } from "./config";
-import { enroll } from "./enroll";
-import { EventBuffer } from "./events";
-import { runHeartbeat } from "./heartbeat";
+import { CONFIG_PATH, ensureDirectories, loadConfig, saveConfig, VERSION } from "./config";
+import { Docker } from "./docker";
+import { createFetchHandler } from "./http/router";
+import type { SocketData } from "./http/websocket";
+import { websocketHandlers } from "./http/websocket";
+import { logger } from "./log";
+import { ActivityBuffer, PanelClient } from "./panel";
+import { Backups } from "./server/backups";
+import { ServerManager } from "./server/manager";
 
-const LOG_PATH = "/var/log/nodebyte/agent.log";
+const log = logger("daemon");
 
-const writeLog = async (message: string): Promise<void> => {
-  const timestamp = new Date().toISOString();
-  const line = `[${timestamp}] ${message}\n`;
-  try {
-    await mkdir(dirname(LOG_PATH), { recursive: true });
-    await appendFile(LOG_PATH, line);
-  } catch (error) {
-    console.error("[nodebyte-agent] failed to write log:", error);
+// `nodebyte-daemon configure --panel https://panel.example --token <id>.<token>`
+// fetches this node's configuration from the panel and writes it to disk.
+const configure = async (args: string[]) => {
+  const { values } = parseArgs({
+    args,
+    options: {
+      config: { default: CONFIG_PATH, type: "string" },
+      panel: { type: "string" },
+      token: { type: "string" },
+    },
+  });
+  if (!values.panel || !values.token) {
+    console.error("usage: nodebyte-daemon configure --panel <url> --token <tokenId.token>");
+    process.exit(2);
   }
-};
-
-const run = async (state: Awaited<ReturnType<typeof loadState>>) => {
-  if (!state) {
-    throw new Error("no state");
-  }
-
-  const buffer = new EventBuffer(state);
-  buffer.enqueueActivity({ message: "Agent online", phase: "agent_connected" });
-  await buffer.flush();
-  await saveState(state);
-
-  const controller = new AbortController();
-  const shutdown = async (code: number) => {
-    controller.abort();
-    await buffer.flush();
-    process.exit(code);
-  };
-  process.on("SIGINT", () => shutdown(0));
-  process.on("SIGTERM", () => shutdown(0));
-
-  await Promise.all([
-    pollCommands(state, buffer, controller.signal),
-    runHeartbeat(state, controller.signal),
-  ]);
-};
-
-const main = async () => {
-  try {
-    await writeLog("Agent startup initializing");
-    const state = await loadState();
-
-    if (state) {
-      await writeLog(
-        `Loaded state for server ${state.serverId}, agent ${state.agentId}`,
-      );
-      console.log(`[nodebyte-agent] loaded state for ${state.serverId}`);
-    } else {
-      await writeLog("No state found, attempting enrollment");
-      const bootstrap = await loadBootstrap();
-      if (!bootstrap) {
-        await writeLog(
-          "ERROR: No bootstrap config found at /etc/nodebyte/bootstrap.json",
-        );
-        console.error("[nodebyte-agent] no bootstrap config found");
-        process.exit(1);
-      }
-      await writeLog(
-        `Bootstrap config detected for server ${bootstrap.serverId}`,
-      );
-      console.log(`[nodebyte-agent] enrolling server ${bootstrap.serverId}`);
-      const enrolled = await enroll(bootstrap);
-      await writeLog(
-        `Successfully enrolled as agent ${enrolled.agentId} for server ${enrolled.serverId}`,
-      );
-      console.log(`[nodebyte-agent] enrolled as ${enrolled.agentId}`);
-      return run(enrolled);
-    }
-
-    await run(state);
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const stack = error instanceof Error ? error.stack : "";
-    await writeLog(`FATAL ERROR: ${errorMessage}`);
-    if (stack) {
-      await writeLog(`Stack: ${stack}`);
-    }
-    // Note: Cannot report startup errors to /api/agent/errors since enrollment may have failed.
-    // The server will detect the agent failure when it doesn't report healthy within the timeout.
-    // Enrollment errors will be visible in /var/log/nodebyte/agent.log on the provisioned server.
-    console.error("[nodebyte-agent] fatal error:", error);
+  const res = await fetch(new URL("/api/remote/configuration", values.panel), {
+    headers: { accept: "application/json", authorization: `Bearer ${values.token}` },
+  });
+  if (!res.ok) {
+    console.error(`panel responded ${res.status}: ${await res.text()}`);
     process.exit(1);
   }
+  const saved = await saveConfig(await res.json(), values.config);
+  console.log(`Configuration for node ${saved.uuid} written to ${values.config}`);
 };
 
+const run = async () => {
+  const config = await loadConfig();
+  await ensureDirectories(config);
+  log.info(`NodeByte daemon v${VERSION} starting for node ${config.uuid}`);
+
+  const docker = new Docker(config.docker.socket);
+  const dockerVersion = await docker.version();
+  if (!dockerVersion) {
+    throw new Error(`cannot reach Docker at ${config.docker.socket}`);
+  }
+  log.info(`docker ${dockerVersion}`);
+  await docker.ensureNetwork(config.docker.network);
+
+  const panel = new PanelClient(config);
+  const activity = new ActivityBuffer(panel);
+  const manager = new ServerManager(config, docker, panel);
+  const backups = new Backups(config, panel);
+  await manager.boot();
+
+  const abort = new AbortController();
+  activity.start(abort.signal);
+
+  const server = Bun.serve<SocketData>({
+    fetch: createFetchHandler({ backups, config, docker, manager }),
+    hostname: config.api.host,
+    maxRequestBodySize: config.api.uploadLimitMb * 1024 * 1024 + 1024 * 1024,
+    port: config.api.port,
+    tls: config.api.ssl.enabled
+      ? { cert: Bun.file(config.api.ssl.cert), key: Bun.file(config.api.ssl.key) }
+      : undefined,
+    websocket: websocketHandlers(config, activity),
+  });
+  log.info(`listening on ${config.api.ssl.enabled ? "https" : "http"}://${server.hostname}:${server.port}`);
+
+  const shutdown = async () => {
+    log.info("shutting down (game servers keep running)");
+    abort.abort();
+    await activity.flush();
+    server.stop(true);
+    process.exit(0);
+  };
+  process.on("SIGINT", () => void shutdown());
+  process.on("SIGTERM", () => void shutdown());
+};
+
+const [command = "run", ...rest] = process.argv.slice(2);
+
 try {
-  await main();
+  switch (command) {
+    case "configure": {
+      await configure(rest);
+      break;
+    }
+    case "version":
+    case "--version": {
+      console.log(VERSION);
+      break;
+    }
+    case "run": {
+      await run();
+      break;
+    }
+    default: {
+      console.error(`unknown command ${command}. Commands: run, configure, version`);
+      process.exit(2);
+    }
+  }
 } catch (error) {
-  console.error("[nodebyte-agent] fatal", error);
+  log.error("fatal", error);
   process.exit(1);
 }
