@@ -28,8 +28,6 @@ export const env = createEnv({
     DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_UNPOOLED,
     HETZNER_API_TOKEN: process.env.HETZNER_API_TOKEN,
     HETZNER_SNAPSHOT_IMAGE_ID: process.env.HETZNER_SNAPSHOT_IMAGE_ID,
-    KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN,
-    KV_REST_API_URL: process.env.KV_REST_API_URL,
     NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
@@ -39,6 +37,7 @@ export const env = createEnv({
     NEXT_RUNTIME: process.env.NEXT_RUNTIME,
     NODEBYTE_DEBUG: process.env.NODEBYTE_DEBUG,
     NODEBYTE_PUBLIC_URL: process.env.NODEBYTE_PUBLIC_URL,
+    REDIS_URL: process.env.REDIS_URL,
     SENTRY_ORG: process.env.SENTRY_ORG,
     SENTRY_PROJECT: process.env.SENTRY_PROJECT,
     SMTP_FROM: process.env.SMTP_FROM,
@@ -71,10 +70,6 @@ export const env = createEnv({
     // Pre-built golden image ID; if unset the platform auto-manages a snapshot
     HETZNER_SNAPSHOT_IMAGE_ID: z.string().min(1).optional(),
 
-    KV_REST_API_TOKEN: z.string().min(1).optional(),
-
-    KV_REST_API_URL: z.string().min(1).url().optional(),
-
     NEXT_RUNTIME: z.enum(["nodejs", "edge"]).optional(),
     // Returns unexpected server-action errors to the UI instead of letting
     // Next.js redact them. Exposes internals — test environments only.
@@ -86,6 +81,8 @@ export const env = createEnv({
     // publicly reachable URL (e.g. ngrok/Cloudflare Tunnel) so the builder VM
     // on Hetzner can download the agent binary. Not needed on Vercel.
     NODEBYTE_PUBLIC_URL: z.string().min(1).url().optional(),
+    // redis:// or rediss:// (TLS), e.g. redis://:password@host:6379/0
+    REDIS_URL: z.string().min(1).url().default("redis://localhost:6379"),
     SENTRY_ORG: z.string().min(1).optional(),
 
     SENTRY_PROJECT: z.string().min(1).optional(),

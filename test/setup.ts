@@ -22,5 +22,4 @@ seed("BETTER_AUTH_URL", "http://localhost:3000");
 seed("DATABASE_URL", "postgresql://test:test@localhost:5432/test");
 seed("BLOB_READ_WRITE_TOKEN", "vercel_blob_rw_test");
 seed("HETZNER_API_TOKEN", "hetzner-test-token");
-seed("KV_REST_API_URL", "http://localhost:8079");
-seed("KV_REST_API_TOKEN", "test-token");
+seed("REDIS_URL", "redis://localhost:6379");
