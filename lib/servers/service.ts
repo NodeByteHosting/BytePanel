@@ -89,6 +89,7 @@ export const prepareServer = async (input: {
   image?: string;
   startup?: string;
   asAdmin?: boolean;
+  externalId?: string | null;
 }) => {
   const egg = await prisma.egg.findUnique({ where: { id: input.eggId } });
   if (!egg || (!egg.enabled && !input.asAdmin)) {
@@ -127,6 +128,7 @@ export const prepareServer = async (input: {
       description: input.description ?? null,
       disk: input.limits.disk,
       eggId: egg.id,
+      externalId: input.externalId ?? null,
       id,
       image,
       io: input.limits.io,

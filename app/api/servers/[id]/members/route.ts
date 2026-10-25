@@ -137,7 +137,7 @@ export const POST = async (
     ]);
     const baseUrl = env.BETTER_AUTH_URL.replace(/\/$/u, "");
     void sendServerMemberAddedEmail({
-      addedByName: inviter?.name ?? inviter?.email ?? "A NodeByte user",
+      addedByName: inviter?.name ?? inviter?.email ?? "Someone",
       role,
       serverName: serverInfo?.name ?? "a server",
       serverUrl: `${baseUrl}/dashboard/${serverId}`,
@@ -185,7 +185,7 @@ export const POST = async (
   void sendServerInviteEmail({
     acceptUrl,
     expiresAt: invite.expiresAt.toISOString(),
-    invitedByName: inviter?.name ?? inviter?.email ?? "A NodeByte user",
+    invitedByName: inviter?.name ?? inviter?.email ?? "Someone",
     role,
     serverName: server?.name ?? "a server",
     toEmail: email,

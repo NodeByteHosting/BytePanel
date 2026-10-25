@@ -33,6 +33,12 @@ export const ADMIN_NAV_ITEMS = [
     label: "Sessions",
     superAdminOnly: true,
   },
+  {
+    href: "/admin/settings",
+    icon: "Settings",
+    label: "Settings",
+    superAdminOnly: true,
+  },
 ] as const;
 
 export type AdminNavItem = (typeof ADMIN_NAV_ITEMS)[number];

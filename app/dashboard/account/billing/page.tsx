@@ -13,8 +13,10 @@ import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db";
 import { formatNodeBytePrice } from "@/lib/pricing";
 import { requireUser } from "@/lib/session";
+import { getPanelSettings, isExternalBilling } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
+import { ExternalStoreNotice } from "../../components/external-store-notice";
 import { PageBody } from "../../components/page-header";
 import { CustomerPortalButton } from "../components/customer-portal-button";
 
@@ -79,6 +81,18 @@ const statusConfig = {
 
 const BillingPage = async () => {
   const user = await requireUser();
+  const settings = await getPanelSettings();
+  if (isExternalBilling(settings.billingMode)) {
+    return (
+      <PageBody constrained>
+        <ExternalStoreNotice
+          description="Invoices, payment methods and cancellations are managed in our billing area."
+          storeUrl={settings.storeUrl}
+          title="Billing is managed in our store"
+        />
+      </PageBody>
+    );
+  }
 
   const billingCustomer = await prisma.billingCustomer.findUnique({
     include: {

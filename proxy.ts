@@ -23,6 +23,9 @@ const PUBLIC_PATHS = [
   "/sitemap.xml",
   "/api/auth",
   "/api/remote",
+  // Authenticated with the billing API key, not a session
+  "/api/application",
+  "/api/branding",
   "/monitoring",
 ];
 

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import {
   Accordion,
@@ -27,6 +28,7 @@ import { games } from "@/games";
 import { prisma } from "@/lib/db";
 import { formatMib } from "@/lib/format";
 import { getSession } from "@/lib/session";
+import { getPanelSettings } from "@/lib/settings";
 
 import HeroGraphic from "./components/hero-graphic";
 import { PricingSection } from "./components/pricing-section";
@@ -137,6 +139,11 @@ const STEPS = [
 ];
 
 const HomePage = async () => {
+  const { landingPage } = await getPanelSettings();
+  if (!landingPage) {
+    // /dashboard sends signed-out visitors on to /sign-in.
+    redirect("/dashboard");
+  }
   const session = await getSession();
   const isAuthenticated = Boolean(session?.user);
 

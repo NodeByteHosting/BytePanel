@@ -14,7 +14,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-import { Logo } from "@/components/logo";
+import { BrandLogo } from "@/components/brand-logo";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/sidebar";
 import { signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
+import { useBranding } from "@/providers/branding";
 
 // Panel-side health only; live power state comes from the node on the
 // server page.
@@ -105,6 +106,7 @@ export const AppSidebar = ({
 }) => {
   const pathname = usePathname();
   const router = useRouter();
+  const { panelName } = useBranding();
 
   const initial = (user.name ?? user.email ?? "?").charAt(0).toUpperCase();
   const isAdmin = user.superAdmin || user.role === "admin";
@@ -121,10 +123,10 @@ export const AppSidebar = ({
           href="/"
           className="flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80"
         >
-          <Logo className="text-sidebar-foreground h-5 w-auto" />
+          <BrandLogo className="text-sidebar-foreground h-5 w-auto" />
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
             <span className="text-sidebar-foreground text-sm font-bold tracking-tight">
-              NodeByte
+              {panelName}
             </span>
             <span className="text-muted-foreground text-[11px]">
               Game Servers

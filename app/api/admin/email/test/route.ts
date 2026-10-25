@@ -43,11 +43,12 @@ export const POST = async (req: Request) => {
 </head>
 <body>
   <div class="wrapper">
-    <div class="header"><div class="logo">Node<span>Byte</span> Panel</div></div>
+    <div class="header"><div class="logo">{{logo}}</div></div>
     <div class="body">${bodyText.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} NodeByte LTD &mdash;
-      <a href="https://nodebyte.host">nodebyte.host</a>
+      &copy; ${new Date().getFullYear()} {{panelName}} &mdash;
+      <a href="{{websiteUrl}}">{{websiteHost}}</a> &mdash;
+      <a href="{{supportUrl}}">Support</a>
     </div>
   </div>
 </body>

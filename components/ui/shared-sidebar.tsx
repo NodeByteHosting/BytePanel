@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { ChevronsUpDown, LogOut, User } from "lucide-react";
 import Link from "next/link";
 
-import { Logo } from "@/components/logo";
+import { BrandLogo } from "@/components/brand-logo";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -73,7 +73,7 @@ export const SharedSidebar = ({
           href={headerHref}
           className="flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80"
         >
-          <Logo className="h-5 w-auto text-sidebar-foreground" />
+          <BrandLogo className="h-5 w-auto text-sidebar-foreground" />
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-bold tracking-tight text-sidebar-foreground">
               {headerTitle}

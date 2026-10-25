@@ -8,35 +8,33 @@ type MetadataGenerator = Omit<Metadata, "description" | "title"> & {
   description: string;
   image?: string;
   /**
-   * Skip appending " | NodeByte GSM" to the title. Use for the homepage where the
+   * Skip appending " | <siteName>" to the title. Use for the homepage where the
    * title already leads with the brand context.
    */
   bareTitle?: boolean;
+  /** The panel name from /admin/settings. */
+  siteName?: string;
 };
 
-const applicationName = "NodeByte Panel";
-const author: Metadata["authors"] = {
-  name: "NodeByte Hosting",
-  url: "https://nodebyte.host",
-};
-const publisher = "NodeByte Hosting";
-const twitterHandle = "@NodeByteHost";
+const DEFAULT_SITE_NAME = "NodeByte Panel";
 
 export const createMetadata = ({
   title,
   description,
   image,
   bareTitle,
+  siteName = DEFAULT_SITE_NAME,
   ...properties
 }: MetadataGenerator): Metadata => {
-  const parsedTitle = bareTitle ? title : `${title} | ${applicationName}`;
+  const parsedTitle = bareTitle ? title : `${title} | ${siteName}`;
+  const author = { name: siteName };
   const defaultMetadata: Metadata = {
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",
       title: parsedTitle,
     },
-    applicationName,
+    applicationName: siteName,
     authors: [author],
     creator: author.name,
     description,
@@ -47,15 +45,14 @@ export const createMetadata = ({
     openGraph: {
       description,
       locale: "en_US",
-      siteName: applicationName,
+      siteName,
       title: parsedTitle,
       type: "website",
     },
-    publisher,
+    publisher: siteName,
     title: parsedTitle,
     twitter: {
       card: "summary_large_image",
-      creator: twitterHandle,
     },
   };
 

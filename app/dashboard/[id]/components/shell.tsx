@@ -320,7 +320,7 @@ const NotDeployedNotice = ({ server }: { server: ServerView }) => {
           <p className="font-medium">{title}</p>
           <p className="text-muted-foreground">
             {legacy
-              ? "Contact support to migrate it onto a NodeByte node."
+              ? "Contact support to migrate it onto a node."
               : (server.errorReason ??
                 "Once payment is confirmed it is placed on a node and installed automatically. This page updates when it's ready.")}
           </p>

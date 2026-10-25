@@ -1,11 +1,11 @@
 import Link from "next/link";
 
-import { AnimatedLogo } from "@/components/animated-logo";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 
 const NotFound = () => (
   <main className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col items-start justify-center gap-8 px-6 py-24">
-    <AnimatedLogo className="size-20" />
+    <BrandLogo animated className="size-20" />
     <h1 className="max-w-[20ch] text-5xl font-medium tracking-tight text-balance sm:text-6xl">
       Page not found.
     </h1>

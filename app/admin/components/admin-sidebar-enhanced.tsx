@@ -13,6 +13,7 @@ import {
   Package,
   ScrollText,
   Server,
+  Settings,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -30,6 +31,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { signOut } from "@/lib/auth-client";
+import { useBranding } from "@/providers/branding";
 
 interface AdminSidebarEnhancedProps {
   user: SidebarUserConfig;
@@ -53,6 +55,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Package,
   ScrollText,
   Server,
+  Settings,
   Users,
 };
 
@@ -65,6 +68,7 @@ export const AdminSidebarEnhanced = ({
 }: AdminSidebarEnhancedProps) => {
   const pathname = usePathname();
   const router = useRouter();
+  const { panelName } = useBranding();
 
   const handleSignOut = async () => {
     await signOut();
@@ -75,7 +79,7 @@ export const AdminSidebarEnhanced = ({
   return (
     <SharedSidebar
       user={user}
-      headerTitle="NodeByte"
+      headerTitle={panelName}
       headerSubtitle="Admin Panel"
       headerHref="/"
       showAdminLink={false}

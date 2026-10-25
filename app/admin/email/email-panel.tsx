@@ -89,7 +89,7 @@ const TestEmailTab = () => {
             <Label htmlFor="test-subject">Subject</Label>
             <Input
               id="test-subject"
-              placeholder="Test email from NodeByte Panel"
+              placeholder="Test email from the panel"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             />
@@ -187,7 +187,7 @@ const BroadcastTab = () => {
             <Label htmlFor="bc-subject">Subject</Label>
             <Input
               id="bc-subject"
-              placeholder="Important notice from NodeByte"
+              placeholder="Important notice"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             />

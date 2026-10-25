@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signUp } from "@/lib/auth-client";
+import { useBranding } from "@/providers/branding";
 
 const SignUpPage = () => {
+  const { panelName } = useBranding();
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
@@ -36,7 +38,7 @@ const SignUpPage = () => {
       <div className="text-center">
         <h1 className="text-2xl font-bold tracking-tight">
           <span className="from-primary via-primary to-accent bg-linear-to-r bg-clip-text text-transparent">
-            NodeByte Panel
+            {panelName}
           </span>
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">

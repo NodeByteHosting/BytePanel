@@ -537,7 +537,8 @@ const handleCheckoutSessionCompleted = async (
         reason:
           "No node had capacity for your server. Our team has been notified and will place it shortly.",
         serverName: server.name,
-        supportUrl: "https://nodebyte.host/contact",
+        // Filled in from /admin/settings by sendMail.
+        supportUrl: "{{supportUrl}}",
         toEmail: server.user.email,
         userName: server.user.name,
       });

@@ -92,7 +92,8 @@ export const POST = remoteHandler<{ uuid: string }>(
               reason:
                 "The game install script failed. Our team has been notified.",
               serverName: server.name,
-              supportUrl: "https://nodebyte.host/contact",
+              // Filled in from /admin/settings by sendMail.
+              supportUrl: "{{supportUrl}}",
               toEmail: owner.email,
               userName: owner.name,
             }));

@@ -3,12 +3,17 @@ import type { ReactNode } from "react";
 
 import { createMetadata } from "@/lib/seo/metadata";
 import { getSession } from "@/lib/session";
+import { getBranding } from "@/lib/settings";
 
-export const metadata = createMetadata({
-  description: "Sign in to NodeByte Panel.",
-  robots: { follow: false, index: false },
-  title: "Sign in",
-});
+export const generateMetadata = async () => {
+  const { panelName } = await getBranding();
+  return createMetadata({
+    description: `Sign in to ${panelName}.`,
+    robots: { follow: false, index: false },
+    siteName: panelName,
+    title: "Sign in",
+  });
+};
 
 const AuthLayout = async ({ children }: { children: ReactNode }) => {
   const session = await getSession();

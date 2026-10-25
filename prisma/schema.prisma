@@ -327,6 +327,9 @@ model Server {
   nodeId          String?
   eggId           String?
   planId          String?
+  // Service ID in an external billing system (WHMCS/Blesta/Paymenter) that
+  // provisioned this server through the application API.
+  externalId      String?          @unique
   allocationId    String?          @unique // primary allocation
   // Build configuration (limits enforced by the daemon)
   memory          Int // MiB, 0 = unlimited
@@ -660,4 +663,41 @@ model LegacyVpsServer {
   deletedAt        DateTime?
 
   @@map("legacy_vps_servers")
+}
+
+// ─── Panel settings ─────────────────────────────────────────────
+
+// Where customers buy servers: in the panel via Stripe, or in an external
+// billing system that provisions through /api/application.
+enum BillingMode {
+  panel
+  whmcs
+  blesta
+  paymenter
+}
+
+// Singleton row (id = "default") edited from /admin/settings so other hosting
+// providers can rebrand the panel and pick their billing system.
+model PanelSettings {
+  id                String      @id @default("default")
+  panelName         String      @default("NodeByte")
+  // Effective logo URL: an external URL, or /api/branding/logo for an upload
+  logoUrl           String?
+  // Uploaded logo, served by /api/branding/logo
+  logoImage         Bytes?
+  logoMime          String?
+  websiteUrl        String?
+  supportUrl        String?
+  // false = "/" skips the marketing landing page and opens the dashboard
+  landingPage       Boolean     @default(true)
+  billingMode       BillingMode @default(panel)
+  // Store / client area customers are sent to when billing is external
+  storeUrl          String?
+  // SHA-256 of the application API key used by the billing module
+  billingApiKeyHash String?
+  // First characters of the key, shown in the admin UI to identify it
+  billingApiKeyHint String?
+  updatedAt         DateTime    @updatedAt
+
+  @@map("panel_settings")
 }

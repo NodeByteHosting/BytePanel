@@ -1,11 +1,29 @@
 import { prisma } from "@/lib/db";
 import { loadEggCatalog } from "@/lib/eggs/catalog";
 import { requireUser } from "@/lib/session";
+import { getPanelSettings, isExternalBilling } from "@/lib/settings";
 
+import { ExternalStoreNotice } from "../components/external-store-notice";
+import { PageBody, PageHeader } from "../components/page-header";
 import { NewServerForm } from "./components/form";
 
 const NewServerPage = async () => {
   await requireUser();
+  const settings = await getPanelSettings();
+  if (isExternalBilling(settings.billingMode)) {
+    return (
+      <>
+        <PageHeader title="New server" />
+        <PageBody>
+          <ExternalStoreNotice
+            description="New servers are ordered through our store. Once your order is paid it appears here automatically."
+            storeUrl={settings.storeUrl}
+            title="Order from our store"
+          />
+        </PageBody>
+      </>
+    );
+  }
   const [eggs, plans, locations] = await Promise.all([
     loadEggCatalog({ includeDisabled: false }),
     prisma.plan.findMany({

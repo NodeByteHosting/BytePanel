@@ -4,9 +4,10 @@ import { Globe, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { Logo } from "@/components/logo";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useBranding } from "@/providers/branding";
 
 const linkClass =
   "relative whitespace-nowrap rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground after:pointer-events-none after:absolute after:-bottom-[5px] after:inset-x-3 after:h-px after:bg-foreground after:opacity-0 aria-[current=page]:text-foreground aria-[current=page]:after:opacity-100";
@@ -21,6 +22,7 @@ export const FloatingNav = ({
 }) => {
   const pathname = usePathname();
   const isActive = (href: string) => (pathname === href ? "page" : undefined);
+  const { websiteUrl, supportUrl } = useBranding();
 
   return (
     <nav
@@ -32,45 +34,53 @@ export const FloatingNav = ({
         aria-current={isActive("/")}
         className="text-foreground flex items-center gap-2 pr-2 pl-1 text-sm font-semibold"
       >
-        <Logo className="text-foreground h-5 w-auto" />
+        <BrandLogo className="text-foreground h-5 w-auto" />
       </Link>
       {/* Text label on desktop, icon on mobile */}
-      <Link
-        href="https://nodebyte.host"
-        target="_blank"
-        rel="noreferrer"
-        aria-label="Main site"
-        className={cn(linkClass, "hidden sm:inline-block")}
-      >
-        Main site
-      </Link>
-      <Link
-        href="https://nodebyte.host"
-        target="_blank"
-        rel="noreferrer"
-        aria-label="Main site"
-        className={cn(iconLinkClass, "sm:hidden")}
-      >
-        <Globe className="size-4" />
-      </Link>
-      <Link
-        href="https://discord.gg/nodebyte"
-        target="_blank"
-        rel="noreferrer"
-        aria-label="Discord"
-        className={cn(linkClass, "hidden sm:inline-block")}
-      >
-        Discord
-      </Link>
-      <Link
-        href="https://discord.gg/nodebyte"
-        target="_blank"
-        rel="noreferrer"
-        aria-label="Discord"
-        className={cn(iconLinkClass, "sm:hidden")}
-      >
-        <MessageCircle className="size-4" />
-      </Link>
+      {websiteUrl && (
+        <>
+          <Link
+            href={websiteUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Main site"
+            className={cn(linkClass, "hidden sm:inline-block")}
+          >
+            Main site
+          </Link>
+          <Link
+            href={websiteUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Main site"
+            className={cn(iconLinkClass, "sm:hidden")}
+          >
+            <Globe className="size-4" />
+          </Link>
+        </>
+      )}
+      {supportUrl && (
+        <>
+          <Link
+            href={supportUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Support"
+            className={cn(linkClass, "hidden sm:inline-block")}
+          >
+            Support
+          </Link>
+          <Link
+            href={supportUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Support"
+            className={cn(iconLinkClass, "sm:hidden")}
+          >
+            <MessageCircle className="size-4" />
+          </Link>
+        </>
+      )}
       {isAuthenticated ? (
         <Button asChild size="sm" className="ml-2 rounded-full">
           <Link href="/dashboard">Dashboard</Link>

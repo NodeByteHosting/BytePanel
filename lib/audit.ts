@@ -77,7 +77,19 @@ export type AuditAction =
   | "admin.session.revoked"
   // ── Admin: snapshot ──────────────────────────────────────────────────────
   | "admin.snapshot.bake_started"
-  | "admin.snapshot.bake_completed";
+  | "admin.snapshot.bake_completed"
+  // ── Admin: panel settings ────────────────────────────────────────────────
+  | "admin.settings.branding_changed"
+  | "admin.settings.billing_changed"
+  | "admin.settings.api_key_generated"
+  | "admin.settings.api_key_revoked"
+  // ── Application API (external billing) ───────────────────────────────────
+  | "application.user.create"
+  | "application.server.create"
+  | "application.server.suspend"
+  | "application.server.unsuspend"
+  | "application.server.change_plan"
+  | "application.server.terminate";
 
 export interface LogEventOptions {
   actorId?: string | null;

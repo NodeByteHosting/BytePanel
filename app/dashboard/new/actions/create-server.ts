@@ -11,6 +11,7 @@ import {
   ServiceError,
 } from "@/lib/servers/service";
 import { requireUser } from "@/lib/session";
+import { getPanelSettings, isExternalBilling } from "@/lib/settings";
 
 const createServerSchema = z.object({
   eggId: z.string().min(1),
@@ -35,7 +36,8 @@ export type CreateServerResult =
 // One recurring monthly price per plan + amount, found again via lookup_key.
 const getOrCreatePlanPrice = async (
   stripe: Stripe,
-  plan: { id: string; name: string; priceMonthCents: number; currency: string }
+  plan: { id: string; name: string; priceMonthCents: number; currency: string },
+  panelName: string
 ): Promise<string> => {
   const lookupKey = `nodebyte-plan-${plan.id}-${plan.priceMonthCents}-${plan.currency.toLowerCase()}`;
   const existing = await stripe.prices.list({ lookup_keys: [lookupKey] });
@@ -44,7 +46,7 @@ const getOrCreatePlanPrice = async (
   }
   const product = await stripe.products.create({
     metadata: { nodebytePlanId: plan.id },
-    name: `NodeByte — ${plan.name}`,
+    name: `${panelName} — ${plan.name}`,
   });
   const price = await stripe.prices.create({
     currency: plan.currency.toLowerCase(),
@@ -63,6 +65,10 @@ export const createServer = async (
   input: CreateServerInput
 ): Promise<CreateServerResult> => {
   const user = await requireUser();
+  const settings = await getPanelSettings();
+  if (isExternalBilling(settings.billingMode)) {
+    return { error: "Servers are ordered through our store", ok: false };
+  }
   const parsed = createServerSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -149,7 +155,7 @@ export const createServer = async (
       user.email,
       user.name
     );
-    const price = await getOrCreatePlanPrice(stripe, plan);
+    const price = await getOrCreatePlanPrice(stripe, plan, settings.panelName);
     const returnUrl = env.NODEBYTE_PUBLIC_URL || API_URL;
 
     // On preview deployments Vercel protection intercepts the redirect back

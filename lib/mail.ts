@@ -2,6 +2,7 @@ import "server-only";
 import { createTransport } from "nodemailer";
 
 import { env } from "./env";
+import { readPanelSettings } from "./settings";
 
 const getTransporter = () => {
   if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS || !env.SMTP_FROM) {
@@ -22,6 +23,47 @@ interface MailOptions {
   text: string;
 }
 
+const escapeHtml = (value: string) =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+
+// Templates use {{panelName}}, {{logo}}, {{supportUrl}}, {{websiteUrl}} and
+// {{websiteHost}}; they are filled from /admin/settings at send time.
+const brandTokens = async () => {
+  const settings = await readPanelSettings();
+  const panelUrl = env.BETTER_AUTH_URL;
+  const websiteUrl = settings.websiteUrl ?? panelUrl;
+  const name = escapeHtml(settings.panelName);
+  return {
+    html: {
+      logo: settings.logoUrl
+        ? `<img src="${escapeHtml(settings.logoUrl)}" alt="${name}" style="height:28px;max-width:200px" />`
+        : name,
+      panelName: name,
+      supportUrl: escapeHtml(settings.supportUrl ?? panelUrl),
+      websiteHost: escapeHtml(new URL(websiteUrl).host),
+      websiteUrl: escapeHtml(websiteUrl),
+    },
+    text: {
+      logo: settings.panelName,
+      panelName: settings.panelName,
+      supportUrl: settings.supportUrl ?? panelUrl,
+      websiteHost: new URL(websiteUrl).host,
+      websiteUrl,
+    },
+  };
+};
+
+const fillTokens = (template: string, values: Record<string, string>) =>
+  template.replaceAll(
+    /\{\{(?<key>\w+)\}\}/gu,
+    (match, key: string) =>
+      Object.hasOwn(values, key) ? (values[key] as string) : match
+  );
+
 /**
  * Sends an email. Returns `true` on success, `false` if SMTP is unconfigured
  * or the send fails. Never throws — email failures should never crash a request.
@@ -32,11 +74,12 @@ export const sendMail = async (options: MailOptions): Promise<boolean> => {
     return false;
   }
   try {
+    const tokens = await brandTokens();
     await transporter.sendMail({
       from: env.SMTP_FROM,
-      html: options.html,
-      subject: options.subject,
-      text: options.text,
+      html: fillTokens(options.html, tokens.html),
+      subject: fillTokens(options.subject, tokens.text),
+      text: fillTokens(options.text, tokens.text),
       to: options.to,
     });
     return true;
@@ -81,13 +124,13 @@ const baseTemplate = (contentHtml: string) =>
 <body>
   <div class="wrapper">
     <div class="header">
-      <div class="logo">Node<span>Byte</span> Panel</div>
+      <div class="logo">{{logo}}</div>
     </div>
     <div class="body">${contentHtml}</div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} NodeByte LTD &mdash;
-      <a href="https://nodebyte.host">nodebyte.host</a> &mdash;
-      <a href="https://nodebyte.host/contact">Support</a>
+      &copy; ${new Date().getFullYear()} {{panelName}} &mdash;
+      <a href="{{websiteUrl}}">{{websiteHost}}</a> &mdash;
+      <a href="{{supportUrl}}">Support</a>
     </div>
   </div>
 </body>
@@ -132,7 +175,7 @@ export const sendServerInviteEmail = (
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Server Invite — NodeByte</title>
+  <title>Server Invite — {{panelName}}</title>
   <style>
     body { margin: 0; padding: 0; background: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #e5e5e5; }
     .wrapper { max-width: 560px; margin: 40px auto; background: #111111; border: 1px solid #222; border-radius: 12px; overflow: hidden; }
@@ -153,13 +196,13 @@ export const sendServerInviteEmail = (
 <body>
   <div class="wrapper">
     <div class="header">
-      <div class="logo">Node<span>Byte</span></div>
+      <div class="logo">{{logo}}</div>
     </div>
     <div class="body">
       <h1>You've been invited</h1>
       <p>
         <span class="highlight">${invitedByName}</span> has invited you to collaborate on the server
-        <span class="highlight">${serverName}</span> on NodeByte Panel.
+        <span class="highlight">${serverName}</span> on {{panelName}}.
       </p>
       <p>
         You have been granted the <span class="badge">${roleLabel}</span> role.
@@ -167,12 +210,13 @@ export const sendServerInviteEmail = (
       <a class="btn" href="${acceptUrl}">Accept invite</a>
       <p class="meta">
         This invite expires on <strong style="color:#737373">${expiry}</strong>.
-        If you don't have a NodeByte account you'll need to create one first.
+        If you don't have a {{panelName}} account you'll need to create one first.
       </p>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} NodeByte LTD &mdash;
-      <a href="https://nodebyte.host">nodebyte.host</a>
+      &copy; ${new Date().getFullYear()} {{panelName}} &mdash;
+      <a href="{{websiteUrl}}">{{websiteHost}}</a> &mdash;
+      <a href="{{supportUrl}}">Support</a>
     </div>
   </div>
 </body>
@@ -180,18 +224,18 @@ export const sendServerInviteEmail = (
 `.trim();
 
   const text = [
-    `You've been invited to ${serverName} on NodeByte Panel by ${invitedByName}.`,
+    `You've been invited to ${serverName} on {{panelName}} by ${invitedByName}.`,
     `Role: ${roleLabel}`,
     ``,
     `Accept your invite: ${acceptUrl}`,
     ``,
     `This invite expires on ${expiry}.`,
-    `If you don't have a NodeByte account you'll need to create one first.`,
+    `If you don't have a {{panelName}} account you'll need to create one first.`,
   ].join("\n");
 
   return sendMail({
     html,
-    subject: `${invitedByName} invited you to ${serverName} on NodeByte`,
+    subject: `${invitedByName} invited you to ${serverName} on {{panelName}}`,
     text,
     to: toEmail,
   });
@@ -208,29 +252,28 @@ export const sendWelcomeEmail = (
   const panelUrl = process.env.BETTER_AUTH_URL ?? "https://panel.nodebyte.host";
 
   const html = baseTemplate(`
-    <h1>Welcome to NodeByte Panel</h1>
+    <h1>Welcome to {{panelName}}</h1>
     <p>Hi <span class="hl">${displayName}</span>, welcome aboard!</p>
     <p>Your account is ready. Head to the dashboard to deploy your first game server it only takes about 60 seconds.</p>
     <a class="btn" href="${panelUrl}/dashboard">Go to dashboard</a>
     <p class="meta">
-      Need help? Visit <a href="https://nodebyte.host/contact" style="color:#737373">nodebyte.host/contact</a> or
-      check out our <a href="https://nodebyte.host/kb" style="color:#737373">knowledge base</a>.
+      Need help? Visit <a href="{{supportUrl}}" style="color:#737373">{{supportUrl}}</a>.
     </p>
   `);
 
   const text = [
-    `Welcome to NodeByte Panel, ${displayName}!`,
+    `Welcome to {{panelName}}, ${displayName}!`,
     ``,
     `Your account is ready. Head to the dashboard to deploy your first game server.`,
     ``,
     `${panelUrl}/dashboard`,
     ``,
-    `Need help? Visit https://nodebyte.host/contact`,
+    `Need help? Visit {{supportUrl}}`,
   ].join("\n");
 
   return sendMail({
     html,
-    subject: "Welcome to NodeByte Panel",
+    subject: "Welcome to {{panelName}}",
     text,
     to: toEmail,
   });
@@ -246,7 +289,7 @@ export const sendPasswordResetEmail = (
 ): Promise<boolean> => {
   const html = baseTemplate(`
     <h1>Reset your password</h1>
-    <p>We received a request to reset the password for your NodeByte Panel account.</p>
+    <p>We received a request to reset the password for your {{panelName}} account.</p>
     <a class="btn" href="${resetUrl}">Reset password</a>
     <p class="meta">
       This link expires in <strong style="color:#737373">1 hour</strong>.
@@ -255,7 +298,7 @@ export const sendPasswordResetEmail = (
   `);
 
   const text = [
-    `Reset your NodeByte Panel password`,
+    `Reset your {{panelName}} password`,
     ``,
     `Click the link below to reset your password (expires in 1 hour):`,
     resetUrl,
@@ -265,7 +308,7 @@ export const sendPasswordResetEmail = (
 
   return sendMail({
     html,
-    subject: "Reset your NodeByte Panel password",
+    subject: "Reset your {{panelName}} password",
     text,
     to: toEmail,
   });
@@ -307,7 +350,7 @@ export const sendServerCreatedEmail = (
   `);
 
   const text = [
-    `Your NodeByte server "${serverName}" is being provisioned.`,
+    `Your {{panelName}} server "${serverName}" is being provisioned.`,
     ``,
     `Game: ${gameLabel}`,
     `Region: ${region}`,
@@ -345,16 +388,16 @@ export const sendServerDeletedEmail = (
     <p>All associated resources will be removed shortly. Your billing subscription for this server will also be cancelled.</p>
     <p class="meta">
       If this was a mistake or you have any questions, contact us at
-      <a href="https://nodebyte.host/contact" style="color:#737373">nodebyte.host/contact</a> as soon as possible.
+      <a href="{{supportUrl}}" style="color:#737373">{{supportUrl}}</a> as soon as possible.
     </p>
   `);
 
   const text = [
-    `Your NodeByte server "${serverName}" has been queued for deletion.`,
+    `Your {{panelName}} server "${serverName}" has been queued for deletion.`,
     ``,
     `All resources will be removed and your subscription will be cancelled.`,
     ``,
-    `If this was a mistake, contact us at https://nodebyte.host/contact`,
+    `If this was a mistake, contact us at {{supportUrl}}`,
   ].join("\n");
 
   return sendMail({
@@ -384,7 +427,7 @@ export const sendSnapshotBakeStartedEmail = async (
 
   const html = baseTemplate(`
     <h1>Snapshot bake started</h1>
-    <p>A new server image bake has been triggered on NodeByte Panel.</p>
+    <p>A new server image bake has been triggered on {{panelName}}.</p>
     <dl class="info-box">
       <dt>Build ID</dt><dd>${buildId}</dd>
       <dt>Triggered by</dt><dd>${triggeredByEmail}</dd>
@@ -398,7 +441,7 @@ export const sendSnapshotBakeStartedEmail = async (
   `);
 
   const text = [
-    `Snapshot bake started on NodeByte Panel.`,
+    `Snapshot bake started on {{panelName}}.`,
     ``,
     `Build ID: ${buildId}`,
     `Triggered by: ${triggeredByEmail}`,
@@ -409,7 +452,12 @@ export const sendSnapshotBakeStartedEmail = async (
 
   await Promise.all(
     toEmails.map((to) =>
-      sendMail({ html, subject: "NodeByte: Snapshot bake started", text, to })
+      sendMail({
+        html,
+        subject: "{{panelName}}: Snapshot bake started",
+        text,
+        to,
+      })
     )
   );
 };
@@ -462,7 +510,7 @@ export const sendSnapshotBakeCompletedEmail = async (
 
   const html = baseTemplate(`
     <h1 style="color:${headerColour}">Snapshot bake ${success ? "succeeded" : "failed"}</h1>
-    <p>The snapshot bake triggered on NodeByte Panel has <strong>${success ? "completed successfully" : "failed"}</strong>.</p>
+    <p>The snapshot bake triggered on {{panelName}} has <strong>${success ? "completed successfully" : "failed"}</strong>.</p>
     <dl class="info-box">
       <dt>Status</dt><dd>${statusLabel}</dd>
       <dt>Build ID</dt><dd>${buildId}</dd>
@@ -476,7 +524,7 @@ export const sendSnapshotBakeCompletedEmail = async (
 
   const text = success
     ? [
-        `Snapshot bake succeeded on NodeByte Panel.`,
+        `Snapshot bake succeeded on {{panelName}}.`,
         ``,
         `Build ID: ${buildId}`,
         `Environment: ${environment}`,
@@ -486,7 +534,7 @@ export const sendSnapshotBakeCompletedEmail = async (
         `View details: ${adminUrl}`,
       ].join("\n")
     : [
-        `Snapshot bake FAILED on NodeByte Panel.`,
+        `Snapshot bake FAILED on {{panelName}}.`,
         ``,
         `Build ID: ${buildId}`,
         `Environment: ${environment}`,
@@ -497,8 +545,8 @@ export const sendSnapshotBakeCompletedEmail = async (
       ].join("\n");
 
   const subject = success
-    ? "NodeByte: Snapshot bake succeeded"
-    : "NodeByte: Snapshot bake FAILED";
+    ? "{{panelName}}: Snapshot bake succeeded"
+    : "{{panelName}}: Snapshot bake FAILED";
 
   await Promise.all(
     toEmails.map((to) => sendMail({ html, subject, text, to }))
@@ -536,7 +584,7 @@ export const sendServerRescaledEmail = (
   `);
 
   const text = [
-    `Your NodeByte server "${serverName}" has been rescaled.`,
+    `Your {{panelName}} server "${serverName}" has been rescaled.`,
     ``,
     `New plan: ${newServerType}`,
     ``,
@@ -613,7 +661,7 @@ export const sendInvoicePaidEmail = (
     ${invoiceLink}
     <p class="meta">
       If you have any questions about your invoice, contact us at
-      <a href="https://nodebyte.host/contact" style="color:#737373">nodebyte.host/contact</a>.
+      <a href="{{supportUrl}}" style="color:#737373">{{supportUrl}}</a>.
     </p>
   `);
 
@@ -625,7 +673,7 @@ export const sendInvoicePaidEmail = (
   }
 
   const text = [
-    `Payment confirmed — NodeByte`,
+    `Payment confirmed — {{panelName}}`,
     ``,
     `Hi ${displayName}, your payment has been received.`,
     ``,
@@ -695,12 +743,12 @@ export const sendInvoiceFailedEmail = (
     </p>
     <p class="meta">
       Update your payment details in the billing portal or contact us at
-      <a href="https://nodebyte.host/contact" style="color:#737373">nodebyte.host/contact</a>.
+      <a href="{{supportUrl}}" style="color:#737373">{{supportUrl}}</a>.
     </p>
   `);
 
   const text = [
-    `Payment failed — NodeByte`,
+    `Payment failed — {{panelName}}`,
     ``,
     `Hi ${displayName}, we were unable to collect your latest payment of ${amountLabel}.`,
     ``,
@@ -708,7 +756,7 @@ export const sendInvoiceFailedEmail = (
     ``,
     invoiceUrl ? `Pay now: ${invoiceUrl}` : "",
     ``,
-    `Contact support: https://nodebyte.host/contact`,
+    `Contact support: {{supportUrl}}`,
   ]
     .filter((l) => l !== undefined)
     .join("\n");
@@ -760,30 +808,30 @@ export const sendSuspensionWarningEmail = (
     ${invoiceUrl ? `<a class="btn" href="${invoiceUrl}">Pay now to restore</a>` : ""}
     <p class="meta">
       If you believe this is a mistake, contact us at
-      <a href="https://nodebyte.host/contact" style="color:#737373">nodebyte.host/contact</a>.
+      <a href="{{supportUrl}}" style="color:#737373">{{supportUrl}}</a>.
     </p>
   `);
 
   const text = suspended
     ? [
-        `Your NodeByte server has been suspended.`,
+        `Your {{panelName}} server has been suspended.`,
         ``,
         `Plan: ${planName}`,
         `Reason: Failed payment — grace period exceeded`,
         ``,
         invoiceUrl ? `Pay now to restore: ${invoiceUrl}` : "",
-        `Contact support: https://nodebyte.host/contact`,
+        `Contact support: {{supportUrl}}`,
       ]
         .filter(Boolean)
         .join("\n")
     : [
-        `Your NodeByte server will be suspended on ${deadlineLabel}.`,
+        `Your {{panelName}} server will be suspended on ${deadlineLabel}.`,
         ``,
         `Plan: ${planName}`,
         `Reason: Unpaid invoice`,
         ``,
         invoiceUrl ? `Pay now: ${invoiceUrl}` : "",
-        `Contact support: https://nodebyte.host/contact`,
+        `Contact support: {{supportUrl}}`,
       ]
         .filter(Boolean)
         .join("\n");
@@ -791,7 +839,7 @@ export const sendSuspensionWarningEmail = (
   return sendMail({
     html,
     subject: suspended
-      ? `Your server has been suspended — NodeByte`
+      ? `Your server has been suspended — {{panelName}}`
       : `Action required: your server will be suspended on ${deadlineLabel}`,
     text,
     to: toEmail,
@@ -834,7 +882,7 @@ export const sendServerReadyEmail = (
   `);
 
   const text = [
-    `Your NodeByte server "${serverName}" is ready!`,
+    `Your {{panelName}} server "${serverName}" is ready!`,
     ``,
     `Game: ${gameLabel}`,
     `Region: ${region}`,
@@ -882,7 +930,7 @@ export const sendServerProvisionFailedEmail = (
   `);
 
   const text = [
-    `Server provisioning failed — NodeByte`,
+    `Server provisioning failed — {{panelName}}`,
     ``,
     `Hi ${displayName}, we were unable to provision "${serverName}".`,
     ``,
@@ -946,7 +994,7 @@ export const sendServerProvisionInitiatedEmail = (
   `);
 
   const text = [
-    `Admin created a server for you — NodeByte`,
+    `Admin created a server for you — {{panelName}}`,
     ``,
     `Hi ${displayName}, an admin has set up a new game server on your account.`,
     ``,
@@ -990,7 +1038,7 @@ export const sendServerMemberAddedEmail = (
     <h1>You've been added to a server</h1>
     <p>
       <span class="hl">${addedByName}</span> has added you to the server
-      <span class="hl">${serverName}</span> on NodeByte Panel.
+      <span class="hl">${serverName}</span> on {{panelName}}.
     </p>
     <p>You have been granted the <span class="badge">${roleLabel}</span> role.</p>
     <a class="btn" href="${serverUrl}">View server</a>
@@ -1001,7 +1049,7 @@ export const sendServerMemberAddedEmail = (
   `);
 
   const text = [
-    `You've been added to ${serverName} on NodeByte Panel by ${addedByName}.`,
+    `You've been added to ${serverName} on {{panelName}} by ${addedByName}.`,
     ``,
     `Role: ${roleLabel}`,
     ``,
@@ -1010,7 +1058,7 @@ export const sendServerMemberAddedEmail = (
 
   return sendMail({
     html,
-    subject: `You've been added to ${serverName} on NodeByte`,
+    subject: `You've been added to ${serverName} on {{panelName}}`,
     text,
     to: toEmail,
   });
