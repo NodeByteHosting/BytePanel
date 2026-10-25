@@ -8,6 +8,7 @@ import type { Branding } from "@/lib/settings";
 const BrandingContext = createContext<Branding>({
   logoUrl: null,
   panelName: "NodeByte",
+  signUpEnabled: true,
   supportUrl: null,
   websiteUrl: null,
 });

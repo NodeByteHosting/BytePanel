@@ -24,9 +24,11 @@ export interface Branding {
   logoUrl: string | null;
   websiteUrl: string | null;
   supportUrl: string | null;
+  // False when an external billing system creates customer accounts.
+  signUpEnabled: boolean;
 }
 
-export interface PanelSettings extends Branding {
+export interface PanelSettings extends Omit<Branding, "signUpEnabled"> {
   landingPage: boolean;
   billingMode: BillingMode;
   storeUrl: string | null;
@@ -72,13 +74,19 @@ export const getPanelSettings = cache(async (): Promise<PanelSettings> => {
   return readPanelSettings();
 });
 
-export const getBranding = async (): Promise<Branding> => {
-  const { panelName, logoUrl, websiteUrl, supportUrl } =
-    await getPanelSettings();
-  return { logoUrl, panelName, supportUrl, websiteUrl };
-};
-
 export const isExternalBilling = (mode: BillingMode) => mode !== "panel";
+
+export const getBranding = async (): Promise<Branding> => {
+  const { panelName, logoUrl, websiteUrl, supportUrl, billingMode } =
+    await getPanelSettings();
+  return {
+    logoUrl,
+    panelName,
+    signUpEnabled: !isExternalBilling(billingMode),
+    supportUrl,
+    websiteUrl,
+  };
+};
 
 // ─── Application API key ─────────────────────────────────────────────────────
 

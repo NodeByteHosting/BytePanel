@@ -12,7 +12,7 @@ import { authClient, signIn } from "@/lib/auth-client";
 import { useBranding } from "@/providers/branding";
 
 const SignInPage = () => {
-  const { panelName } = useBranding();
+  const { panelName, signUpEnabled } = useBranding();
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [passkeyPending, setPasskeyPending] = useState(false);
@@ -136,15 +136,17 @@ const SignInPage = () => {
           <FingerprintIcon />
           {passkeyPending ? "Waiting…" : "Sign in with a passkey"}
         </Button>
-        <p className="text-muted-foreground text-center text-sm">
-          No account?{" "}
-          <Link
-            className="text-primary hover:text-primary/80 underline underline-offset-4"
-            href="/sign-up"
-          >
-            Create one
-          </Link>
-        </p>
+        {signUpEnabled && (
+          <p className="text-muted-foreground text-center text-sm">
+            No account?{" "}
+            <Link
+              className="text-primary hover:text-primary/80 underline underline-offset-4"
+              href="/sign-up"
+            >
+              Create one
+            </Link>
+          </p>
+        )}
       </form>
     </div>
   );
