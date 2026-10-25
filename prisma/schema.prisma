@@ -162,7 +162,7 @@ model Node {
   scheme             String       @default("https") // "https" | "http"
   behindProxy        Boolean      @default(false)
   daemonListen       Int          @default(8080)
-  daemonBase         String       @default("/var/lib/nodebyte/volumes")
+  daemonBase         String       @default("/var/lib/bytepanel/volumes")
   memory             Int // MiB
   memoryOverallocate Int          @default(0) // percent; -1 = unlimited
   disk               Int // MiB
@@ -680,7 +680,7 @@ enum BillingMode {
 // providers can rebrand the panel and pick their billing system.
 model PanelSettings {
   id                String      @id @default("default")
-  panelName         String      @default("NodeByte")
+  panelName         String      @default("BytePanel")
   // Effective logo URL: an external URL, or /api/branding/logo for an upload
   logoUrl           String?
   // Uploaded logo, served by /api/branding/logo
