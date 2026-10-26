@@ -4,6 +4,7 @@ import {
   installScriptSchema,
   serverConfigurationPageSchema,
   serverConfigurationSchema,
+  sftpAuthResponseSchema,
 } from "../../protocol";
 import type {
   BackupStatus,
@@ -11,6 +12,8 @@ import type {
   InstallScript,
   InstallStatus,
   ServerConfiguration,
+  SftpAuthRequest,
+  SftpAuthResponse,
 } from "../../protocol";
 import type { Config } from "./config";
 import { logger } from "./log";
@@ -124,6 +127,13 @@ export class PanelClient {
       `/api/remote/backups/${backupUuid}/restore`,
       { successful },
       5,
+    );
+  }
+
+  // Throws PanelError (403/429) when the login is refused.
+  async validateSftpCredentials(input: SftpAuthRequest): Promise<SftpAuthResponse> {
+    return sftpAuthResponseSchema.parse(
+      await this.request("POST", "/api/remote/sftp/auth", input, 1),
     );
   }
 

@@ -1,13 +1,13 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 
 import { z } from "zod";
 
 export const CONFIG_PATH =
   process.env.NODEBYTE_CONFIG_PATH ?? "/etc/nodebyte/daemon.json";
 
-export const VERSION = "0.0.1-dev";
+export const VERSION = "0.0.1-dev2";
 
 // Node configuration. The panel renders this file for each node (admin →
 // nodes → configuration) and `nodebyte-daemon configure` can fetch it.
@@ -88,6 +88,20 @@ export const configSchema = z.object({
       timezone: "UTC",
       tmp: "/tmp/nodebyte",
       user: { gid: 988, uid: 988 },
+    }),
+  sftp: z
+    .object({
+      enabled: z.boolean().default(true),
+      host: z.string().default("0.0.0.0"),
+      // Generated on first start when missing.
+      hostKey: z.string().default(join(dirname(CONFIG_PATH), "ssh_host_ed25519_key")),
+      port: z.number().int().min(1).max(65_535).default(2022),
+    })
+    .default({
+      enabled: true,
+      host: "0.0.0.0",
+      hostKey: join(dirname(CONFIG_PATH), "ssh_host_ed25519_key"),
+      port: 2022,
     }),
   token: z.string().min(32),
   tokenId: z.string().min(8),

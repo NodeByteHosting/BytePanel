@@ -29,6 +29,7 @@ import { FilesystemError } from "../server/filesystem";
 import type { ServerManager } from "../server/manager";
 import type { Server } from "../server/server";
 import { ServerError } from "../server/server";
+import type { SftpServer } from "../sftp";
 import { checkBearer, TokenError, verifyPanelJwt } from "./auth";
 import type { SocketData } from "./websocket";
 
@@ -67,6 +68,7 @@ interface Deps {
   docker: Docker;
   manager: ServerManager;
   backups: Backups;
+  sftp: SftpServer | null;
 }
 
 const details = async (server: Server): Promise<DaemonServerDetails> => ({
@@ -77,7 +79,7 @@ const details = async (server: Server): Promise<DaemonServerDetails> => ({
 });
 
 export const createFetchHandler = (deps: Deps) => {
-  const { config, docker, manager, backups } = deps;
+  const { config, docker, manager, backups, sftp } = deps;
   const panelOrigin = new URL(config.remote).origin;
   const allowedOrigins = new Set([panelOrigin, ...config.allowedOrigins]);
 
@@ -166,6 +168,7 @@ export const createFetchHandler = (deps: Deps) => {
       return json(await details(requireServer(uuid)));
     }
     if (rest === "" && method === "DELETE") {
+      sftp?.disconnect(uuid);
       await manager.remove(uuid);
       return noContent();
     }
@@ -192,6 +195,9 @@ export const createFetchHandler = (deps: Deps) => {
       }
       case "POST /sync": {
         await server.syncConfiguration();
+        if (server.config.suspended) {
+          sftp?.disconnect(uuid);
+        }
         if (server.config.suspended && server.state !== "offline") {
           await server.power("kill");
         }

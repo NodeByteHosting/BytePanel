@@ -9,6 +9,7 @@ import { logger } from "./log";
 import { ActivityBuffer, PanelClient } from "./panel";
 import { Backups } from "./server/backups";
 import { ServerManager } from "./server/manager";
+import { loadHostKey, SftpServer } from "./sftp";
 
 const log = logger("daemon");
 
@@ -60,8 +61,13 @@ const run = async () => {
   const abort = new AbortController();
   activity.start(abort.signal);
 
+  const sftp = config.sftp.enabled
+    ? new SftpServer(config, await loadHostKey(config.sftp.hostKey), panel, manager, activity)
+    : null;
+  await sftp?.listen();
+
   const server = Bun.serve<SocketData>({
-    fetch: createFetchHandler({ backups, config, docker, manager }),
+    fetch: createFetchHandler({ backups, config, docker, manager, sftp }),
     hostname: config.api.host,
     maxRequestBodySize: config.api.uploadLimitMb * 1024 * 1024 + 1024 * 1024,
     port: config.api.port,
@@ -75,6 +81,7 @@ const run = async () => {
   const shutdown = async () => {
     log.info("shutting down (game servers keep running)");
     abort.abort();
+    sftp?.close();
     await activity.flush();
     server.stop(true);
     process.exit(0);

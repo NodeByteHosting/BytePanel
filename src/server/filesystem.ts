@@ -112,7 +112,7 @@ export class Filesystem {
     }
   }
 
-  private async fixOwnership(path: string): Promise<void> {
+  async fixOwnership(path: string): Promise<void> {
     const owner = this.owner();
     if (!owner) {
       return;
@@ -153,6 +153,15 @@ export class Filesystem {
     }
     this.usageCheckedAt = Date.now();
     return this.cachedUsage;
+  }
+
+  // SFTP writes bypass write(); keep the cached usage roughly current.
+  noteWritten(bytes: number): void {
+    this.cachedUsage += bytes;
+  }
+
+  invalidateUsage(): void {
+    this.usageCheckedAt = 0;
   }
 
   async hasSpaceFor(bytes: number): Promise<boolean> {
