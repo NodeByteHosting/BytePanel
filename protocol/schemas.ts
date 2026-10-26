@@ -142,6 +142,21 @@ export const daemonActivityBatchSchema = z.object({
   data: z.array(daemonActivitySchema).max(500),
 });
 
+// SFTP logins: the daemon forwards the credentials, the panel checks the
+// account password and the user's role on the server.
+export const sftpAuthRequestSchema = z.object({
+  ip: z.string().nullable(),
+  password: z.string().min(1).max(1024),
+  username: z.string().min(1).max(320),
+});
+export type SftpAuthRequest = z.infer<typeof sftpAuthRequestSchema>;
+
+export const sftpAuthResponseSchema = z.object({
+  serverUuid: z.string().uuid(),
+  userUuid: z.string().min(1),
+});
+export type SftpAuthResponse = z.infer<typeof sftpAuthResponseSchema>;
+
 // ─── Panel → daemon: HTTP API bodies ─────────────────────────────────────────
 
 export const createServerRequestSchema = z.object({

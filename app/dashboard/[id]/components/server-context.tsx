@@ -50,6 +50,8 @@ export interface ServerView {
     allocationLimit: number;
   };
   planName: string | null;
+  // Present when the viewer may manage files and the server is on a node.
+  sftp: { host: string; port: number; username: string } | null;
   variables: VariableView[];
 }
 

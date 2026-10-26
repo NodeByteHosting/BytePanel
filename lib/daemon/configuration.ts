@@ -192,6 +192,7 @@ export const buildNodeDaemonConfig = (node: {
   daemonTokenId: string;
   daemonToken: string;
   daemonListen: number;
+  daemonSftp: number;
   daemonBase: string;
   scheme: string;
   behindProxy: boolean;
@@ -210,6 +211,7 @@ export const buildNodeDaemonConfig = (node: {
     uploadLimitMb: node.uploadSize,
   },
   remote: API_URL,
+  sftp: { port: node.daemonSftp },
   system: { data: node.daemonBase },
   token: nodeToken(node),
   tokenId: node.daemonTokenId,

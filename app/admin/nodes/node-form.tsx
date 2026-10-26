@@ -26,6 +26,7 @@ export interface NodeFormValues {
   scheme: "https" | "http";
   behindProxy: boolean;
   daemonListen: number;
+  daemonSftp: number;
   daemonBase: string;
   memory: number;
   memoryOverallocate: number;
@@ -40,6 +41,7 @@ export const EMPTY_NODE: NodeFormValues = {
   behindProxy: false,
   daemonBase: "/var/lib/nodebyte/volumes",
   daemonListen: 8080,
+  daemonSftp: 2022,
   description: "",
   disk: 102_400,
   diskOverallocate: 0,
@@ -171,6 +173,13 @@ export const NodeForm = ({
           type="number"
           value={v.daemonListen}
           onChange={(e) => set("daemonListen", Number(e.target.value))}
+        />
+      </Field>
+      <Field label="SFTP port">
+        <Input
+          type="number"
+          value={v.daemonSftp}
+          onChange={(e) => set("daemonSftp", Number(e.target.value))}
         />
       </Field>
       <Field label="Data directory">

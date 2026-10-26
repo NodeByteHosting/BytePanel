@@ -86,6 +86,7 @@ const nodeSchema = z.object({
   behindProxy: z.boolean().default(false),
   daemonBase: z.string().trim().min(1).default("/var/lib/nodebyte/volumes"),
   daemonListen: z.coerce.number().int().min(1).max(65_535).default(8080),
+  daemonSftp: z.coerce.number().int().min(1).max(65_535).default(2022),
   description: z.string().trim().max(500).optional(),
   disk: z.coerce.number().int().min(1024),
   diskOverallocate: z.coerce.number().int().min(-1).default(0),

@@ -113,7 +113,8 @@ const AdminNodePage = async ({
               <ol className="ml-4 list-decimal space-y-1.5">
                 <li>
                   Install Docker on the node and open the daemon port (
-                  {node.daemonListen}) plus your allocation ports.
+                  {node.daemonListen}), the SFTP port ({node.daemonSftp}) and
+                  your allocation ports.
                 </li>
                 <li>
                   Build the daemon with <code>bun run agent:build</code> and
@@ -164,6 +165,7 @@ const AdminNodePage = async ({
                   behindProxy: node.behindProxy,
                   daemonBase: node.daemonBase,
                   daemonListen: node.daemonListen,
+                  daemonSftp: node.daemonSftp,
                   description: node.description ?? "",
                   disk: node.disk,
                   diskOverallocate: node.diskOverallocate,

@@ -44,7 +44,7 @@ interface CopyableProps {
   reveal?: boolean;
 }
 
-const Copyable = ({ label, value, reveal }: CopyableProps) => {
+export const Copyable = ({ label, value, reveal }: CopyableProps) => {
   const [copied, setCopied] = useState(false);
   const [shown, setShown] = useState(!reveal);
 

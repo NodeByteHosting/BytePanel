@@ -7,6 +7,13 @@ import { daemonActivityBatchSchema } from "@/protocol";
 
 export const runtime = "nodejs";
 
+const SFTP_ACTIONS: Record<string, string> = {
+  "server:sftp.create-directory": "Created directories",
+  "server:sftp.delete": "Deleted",
+  "server:sftp.rename": "Renamed",
+  "server:sftp.write": "Wrote",
+};
+
 const describe = (
   event: string,
   metadata?: Record<string, unknown>
@@ -17,6 +24,13 @@ const describe = (
   const power = /^server:power\.(?<action>\w+)$/u.exec(event);
   if (power) {
     return `Sent power action: ${power.groups?.action}`;
+  }
+  const sftp = SFTP_ACTIONS[event];
+  if (sftp) {
+    const files = Array.isArray(metadata?.files) ? metadata.files : [];
+    const count = Number(metadata?.count ?? files.length);
+    const shown = files.slice(0, 5).join(", ");
+    return `${sftp} over SFTP: ${shown}${count > 5 ? ` and ${count - 5} more` : ""}`;
   }
   return event;
 };

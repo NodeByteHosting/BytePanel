@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "nodes" ADD COLUMN     "daemonSftp" INTEGER NOT NULL DEFAULT 2022;

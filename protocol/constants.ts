@@ -62,6 +62,10 @@ export const WS_EVENTS = {
 export const DAEMON_TOKEN_ID_LENGTH = 16;
 export const DAEMON_TOKEN_LENGTH = 64;
 
+export const DEFAULT_SFTP_PORT = 2022;
+// SFTP usernames are `<panel email>.<first 8 chars of the server uuid>`.
+export const SFTP_SERVER_ID_LENGTH = 8;
+
 export const WEBSOCKET_TOKEN_TTL_SECONDS = 10 * 60;
 export const TRANSFER_TOKEN_TTL_SECONDS = 15 * 60;
 
@@ -73,4 +77,5 @@ export const DEFAULT_INSTALL_CONTAINER =
 export const REDIS_KEYS = {
   activityChannel: (serverId: string) => `activity:${serverId}`,
   activitySeq: (serverId: string) => `activity-seq:${serverId}`,
+  sftpAuthAttempts: (ip: string) => `sftp-auth:${ip}`,
 } as const;

@@ -3,8 +3,10 @@ import type { ReactNode } from "react";
 
 import { prisma } from "@/lib/db";
 import { requireServerRole } from "@/lib/rbac";
+import { meetsMinServerRole } from "@/lib/server-roles";
 import type { ServerRole } from "@/lib/server-roles";
 import { requireUser } from "@/lib/session";
+import { sftpUsername } from "@/lib/sftp";
 
 import { ServerShell } from "./components/shell";
 
@@ -100,6 +102,14 @@ const ServerLayout = async ({
             }
           : null,
         planName: server.plan?.name ?? null,
+        sftp:
+          server.node && meetsMinServerRole(serverRole, "admin")
+            ? {
+                host: server.node.fqdn,
+                port: server.node.daemonSftp,
+                username: sftpUsername(user.email, server.uuid),
+              }
+            : null,
         startup: server.startup,
         status: server.status,
         uuid: server.uuid,
