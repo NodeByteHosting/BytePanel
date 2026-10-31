@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { z } from "zod";
 
 export const CONFIG_PATH =
-  process.env.NODEBYTE_CONFIG_PATH ?? "/etc/nodebyte/daemon.json";
+  process.env.NODEBYTE_CONFIG_PATH ?? "/etc/bytepanel/daemon.json";
 
 export const VERSION = "0.0.1-dev2";
 
@@ -37,15 +37,15 @@ export const configSchema = z.object({
       dns: z.array(z.string()).default(["1.1.1.1", "1.0.0.1"]),
       network: z
         .object({
-          bridge: z.string().default("nodebyte0"),
+          bridge: z.string().default("bytepanel0"),
           gateway: z.string().default("172.18.0.1"),
-          name: z.string().default("nodebyte_nw"),
+          name: z.string().default("bytepanel_nw"),
           subnet: z.string().default("172.18.0.0/16"),
         })
         .default({
-          bridge: "nodebyte0",
+          bridge: "bytepanel0",
           gateway: "172.18.0.1",
-          name: "nodebyte_nw",
+          name: "bytepanel_nw",
           subnet: "172.18.0.0/16",
         }),
       pidsLimit: z.number().int().positive().default(512),
@@ -55,9 +55,9 @@ export const configSchema = z.object({
     .default({
       dns: ["1.1.1.1", "1.0.0.1"],
       network: {
-        bridge: "nodebyte0",
+        bridge: "bytepanel0",
         gateway: "172.18.0.1",
-        name: "nodebyte_nw",
+        name: "bytepanel_nw",
         subnet: "172.18.0.0/16",
       },
       pidsLimit: 512,
@@ -67,12 +67,12 @@ export const configSchema = z.object({
   remote: z.string().url(),
   system: z
     .object({
-      backups: z.string().default("/var/lib/nodebyte/backups"),
-      data: z.string().default("/var/lib/nodebyte/volumes"),
+      backups: z.string().default("/var/lib/bytepanel/backups"),
+      data: z.string().default("/var/lib/bytepanel/volumes"),
       diskCheckIntervalSeconds: z.number().int().positive().default(60),
-      logs: z.string().default("/var/log/nodebyte"),
+      logs: z.string().default("/var/log/bytepanel"),
       timezone: z.string().default("UTC"),
-      tmp: z.string().default("/tmp/nodebyte"),
+      tmp: z.string().default("/tmp/bytepanel"),
       user: z
         .object({
           gid: z.number().int().nonnegative().default(988),
@@ -81,12 +81,12 @@ export const configSchema = z.object({
         .default({ gid: 988, uid: 988 }),
     })
     .default({
-      backups: "/var/lib/nodebyte/backups",
-      data: "/var/lib/nodebyte/volumes",
+      backups: "/var/lib/bytepanel/backups",
+      data: "/var/lib/bytepanel/volumes",
       diskCheckIntervalSeconds: 60,
-      logs: "/var/log/nodebyte",
+      logs: "/var/log/bytepanel",
       timezone: "UTC",
-      tmp: "/tmp/nodebyte",
+      tmp: "/tmp/bytepanel",
       user: { gid: 988, uid: 988 },
     }),
   sftp: z
