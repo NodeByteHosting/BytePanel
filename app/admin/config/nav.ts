@@ -5,35 +5,35 @@ export const ADMIN_NAV_ITEMS = [
     label: "Overview",
     matchExact: true,
   },
-  { 
-    href: "/admin/users", 
-    icon: "Users", 
-    label: "Users" 
+  {
+    href: "/admin/users",
+    icon: "Users",
+    label: "Users",
   },
-  { 
-    href: "/admin/servers", 
-    icon: "Server", 
-    label: "Servers" 
+  {
+    href: "/admin/servers",
+    icon: "Server",
+    label: "Servers",
   },
-  { 
-    href: "/admin/nodes", 
-    icon: "HardDrive", 
-    label: "Nodes" 
+  {
+    href: "/admin/nodes",
+    icon: "HardDrive",
+    label: "Nodes",
   },
-  { 
-    href: "/admin/locations", 
-    icon: "MapPin", 
-    label: "Locations" 
+  {
+    href: "/admin/locations",
+    icon: "MapPin",
+    label: "Locations",
   },
-  { 
-    href: "/admin/nests", 
-    icon: "Egg", 
-    label: "Nests & Eggs" 
+  {
+    href: "/admin/nests",
+    icon: "Egg",
+    label: "Nests & Eggs",
   },
-  { 
-    href: "/admin/plans", 
-    icon: "Package", 
-    label: "Plans" 
+  {
+    href: "/admin/plans",
+    icon: "Package",
+    label: "Plans",
   },
   {
     href: "/admin/subscriptions",

@@ -35,7 +35,6 @@ model User {
   accounts          Account[]
   passkeys          Passkey[]
   servers           Server[]
-  snapshotBuilds    SnapshotBuild[]
   billingCustomer   BillingCustomer?
   // Server sub-user relations
   serverMemberships ServerMember[]   @relation("MemberUser")
@@ -46,8 +45,8 @@ model User {
   @@map("users")
 }
 
-// System-level golden image managed by NodeByte (not per-user).
-// Scoped by deployment environment to avoid cross-env contamination.
+// System-level golden image, scoped by deployment environment. Read by
+// lib/providers (future Hetzner node provisioning); unused by the node model.
 model SystemSnapshot {
   id              String   @id
   environment     String   @unique
@@ -449,37 +448,6 @@ model ActivityEvent {
   @@map("activity_events")
 }
 
-enum SnapshotBuildStatus {
-  pending
-  compiling_agent
-  creating_vm
-  installing
-  snapshotting
-  ready
-  failed
-}
-
-model SnapshotBuild {
-  id                 String              @id
-  userId             String
-  status             SnapshotBuildStatus @default(pending)
-  statusTimeline     Json                @default("{}")
-  agentBlobUrl       String?
-  agentSha           String?
-  provider           String              @default("hetzner")
-  providerBuilderId  String?
-  snapshotId         String?
-  previousSnapshotId String?
-  errorReason        String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  finishedAt         DateTime?
-  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@map("snapshot_builds")
-}
-
 model BillingCustomer {
   id               String         @id
   userId           String         @unique
@@ -506,55 +474,35 @@ enum SubscriptionStatus {
 }
 
 model Subscription {
-  id                    String             @id
-  serverId              String             @unique
-  billingCustomerId     String
-  stripeSubscriptionId  String             @unique
-  stripePriceId         String
-  stripeProductId       String
-  status                SubscriptionStatus @default(incomplete)
+  id                   String             @id
+  serverId             String             @unique
+  billingCustomerId    String
+  stripeSubscriptionId String             @unique
+  stripePriceId        String
+  stripeProductId      String
+  status               SubscriptionStatus @default(incomplete)
   // NodeByte-facing plan metadata
-  planName              String // e.g. "CX21", "CPX31"
-  pricePerMonthCents    Int // NodeByte price (not Hetzner base)
-  // First-month fixed fee and subsequent Hetzner hourly cost-plus rate.
-  hourlyRateMilliCents  Int? // GBP thousandths of a penny per provider hour
-  usageBillingStartedAt DateTime?
-  usageLastBilledAt     DateTime?
-  currency              String             @default("GBP")
-  currentPeriodStart    DateTime?
-  currentPeriodEnd      DateTime?
-  canceledAt            DateTime?
-  suspendedAt           DateTime? // set when server is suspended due to non-payment
+  planName             String // Plan.name at checkout
+  pricePerMonthCents   Int
+  currency             String             @default("GBP")
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  canceledAt           DateTime?
+  suspendedAt          DateTime? // set when server is suspended due to non-payment
   // Promo / discount
-  promoCode             String? // human-readable promo code applied
-  discountAmountCents   Int? // flat GBP pence discount (if any)
-  trialEnd              DateTime?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  server                Server             @relation(fields: [serverId], references: [id], onDelete: Cascade)
-  billingCustomer       BillingCustomer    @relation(fields: [billingCustomerId], references: [id])
-  invoices              Invoice[]
-  addons                ServerAddon[]
-  usageInvoices         UsageInvoice[]
+  promoCode            String? // human-readable promo code applied
+  discountAmountCents  Int? // flat GBP pence discount (if any)
+  trialEnd             DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  server               Server             @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  billingCustomer      BillingCustomer    @relation(fields: [billingCustomerId], references: [id])
+  invoices             Invoice[]
+  addons               ServerAddon[]
 
   @@index([billingCustomerId])
   @@index([status])
   @@map("subscriptions")
-}
-
-model UsageInvoice {
-  id              String       @id @default(cuid())
-  subscriptionId  String
-  periodStart     DateTime
-  periodEnd       DateTime
-  amountCents     Int
-  stripeInvoiceId String?      @unique
-  createdAt       DateTime     @default(now())
-  subscription    Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-
-  @@unique([subscriptionId, periodStart])
-  @@index([subscriptionId])
-  @@map("usage_invoices")
 }
 
 enum InvoiceStatus {

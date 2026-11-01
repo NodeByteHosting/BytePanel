@@ -10,7 +10,7 @@ const DetailsTab = () => {
       <DetailsPanel server={server} />
       {server.sftp && <SftpPanel sftp={server.sftp} />}
     </div>
-  )
+  );
 };
 
 export default DetailsTab;

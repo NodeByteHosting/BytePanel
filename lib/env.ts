@@ -64,10 +64,9 @@ export const env = createEnv({
     DATABASE_URL: z.string().min(1).url().optional(),
     DATABASE_URL_UNPOOLED: z.string().min(1).url().optional(),
 
-    // Hetzner credentials for lib/providers. Not used by the node model, so it
-    // may be left unset.
+    // Hetzner credentials for lib/providers (future node provisioning). Not
+    // used by the node model, so both may be left unset.
     HETZNER_API_TOKEN: z.string().default(""),
-    // Pre-built golden image ID; if unset the platform auto-manages a snapshot
     HETZNER_SNAPSHOT_IMAGE_ID: z.string().min(1).optional(),
 
     NEXT_RUNTIME: z.enum(["nodejs", "edge"]).optional(),
@@ -77,9 +76,9 @@ export const env = createEnv({
       .enum(["true", "false", "1", "0"])
       .optional()
       .transform((v) => v === "true" || v === "1"),
-    // Overrides the computed API_URL for local dev bakes — set this to a
-    // publicly reachable URL (e.g. ngrok/Cloudflare Tunnel) so the builder VM
-    // on Hetzner can download the agent binary. Not needed on Vercel.
+    // Overrides the computed API_URL — the URL nodes use to reach the panel.
+    // Set this to a publicly reachable URL (e.g. ngrok/Cloudflare Tunnel) in
+    // local dev so daemons can call /api/remote/*. Not needed on Vercel.
     NODEBYTE_PUBLIC_URL: z.string().min(1).url().optional(),
     // redis:// or rediss:// (TLS), e.g. redis://:password@host:6379/0
     REDIS_URL: z.string().min(1).url().default("redis://localhost:6379"),

@@ -26,8 +26,6 @@ export type AuditAction =
   | "server.member_invited"
   | "server.member_removed"
   | "server.member_role_changed"
-  | "server.snapshot_created"
-  | "server.snapshot_restored"
   // ── Billing ─────────────────────────────────────────────────────────────
   | "billing.subscription_created"
   | "billing.subscription_canceled"
@@ -75,9 +73,6 @@ export type AuditAction =
   | "admin.email.broadcast_sent"
   // ── Admin: sessions ──────────────────────────────────────────────────────
   | "admin.session.revoked"
-  // ── Admin: snapshot ──────────────────────────────────────────────────────
-  | "admin.snapshot.bake_started"
-  | "admin.snapshot.bake_completed"
   // ── Admin: panel settings ────────────────────────────────────────────────
   | "admin.settings.branding_changed"
   | "admin.settings.billing_changed"

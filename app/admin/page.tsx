@@ -177,20 +177,20 @@ const AdminOverviewPage = async () => {
       label: "Failed",
       text: "text-red-600 dark:text-red-400",
     },
-    running: {
+    installed: {
       dot: "bg-emerald-500",
       label: "Installed",
       text: "text-emerald-600 dark:text-emerald-400",
     },
-    stopped: {
-      dot: "bg-zinc-400",
-      label: "Not deployed",
-      text: "text-zinc-500 dark:text-zinc-400",
-    },
-    unhealthy: {
+    installing: {
       dot: "bg-amber-500",
       label: "Installing",
       text: "text-amber-600 dark:text-amber-400",
+    },
+    not_deployed: {
+      dot: "bg-zinc-400",
+      label: "Not deployed",
+      text: "text-zinc-500 dark:text-zinc-400",
     },
   };
 
@@ -427,17 +427,17 @@ const AdminOverviewPage = async () => {
                 <div className="divide-border/50 divide-y">
                   {recentServers.map((server) => {
                     const game = server.egg;
-                    let stateKey = "stopped";
+                    let stateKey = "not_deployed";
                     if (server.status === null && server.nodeId) {
-                      stateKey = "running";
+                      stateKey = "installed";
                     } else if (server.status === "installing") {
-                      stateKey = "unhealthy";
+                      stateKey = "installing";
                     } else if (server.status) {
                       stateKey = "failed";
                     }
                     const stateConf =
                       SERVER_STATE_CONFIG[stateKey] ??
-                      SERVER_STATE_CONFIG.stopped;
+                      SERVER_STATE_CONFIG.not_deployed;
                     return (
                       <div
                         key={server.id}
