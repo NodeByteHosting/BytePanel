@@ -253,6 +253,8 @@ export type DaemonServerDetails = z.infer<typeof daemonServerDetailsSchema>;
 
 export const systemInfoSchema = z.object({
   architecture: z.string(),
+  // Build commit SHA. Optional so daemons built before it was added still parse.
+  commit: z.string().nullable().optional(),
   cpuCount: z.number().int(),
   dockerVersion: z.string().nullable(),
   kernelVersion: z.string(),

@@ -59,6 +59,11 @@ export const ADMIN_NAV_ITEMS = [
     superAdminOnly: true,
   },
   {
+    href: "/admin/updates",
+    icon: "RefreshCw",
+    label: "Updates",
+  },
+  {
     href: "/admin/settings",
     icon: "Settings",
     label: "Settings",

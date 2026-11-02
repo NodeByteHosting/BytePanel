@@ -1,4 +1,5 @@
 import type { Node } from "@prisma/client";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Panel, PanelCard } from "@/components/panel";
@@ -8,12 +9,14 @@ import { buildNodeDaemonConfig } from "@/lib/daemon/configuration";
 import { prisma } from "@/lib/db";
 import { API_URL } from "@/lib/env";
 import { requireAdmin } from "@/lib/session";
+import { getLatestRelease, shortSha, updateStatus } from "@/lib/version";
 import type { SystemInfo } from "@/protocol";
 
 import {
   PageBody,
   PageHeader,
 } from "../../../dashboard/components/page-header";
+import { StatusBadge } from "../../updates/status-badge";
 import { NodeForm } from "../node-form";
 import { AllocationManager, CopyBlock, NodeDangerZone } from "./node-client";
 
@@ -26,6 +29,14 @@ const fetchSystem = async (node: Node) => {
       ok: false as const,
     };
   }
+};
+
+const fetchAgentStatus = async (info: SystemInfo) => {
+  const latest = await getLatestRelease("agent");
+  if (!latest.ok) {
+    return "unknown";
+  }
+  return updateStatus(info, latest.data);
 };
 
 const AdminNodePage = async ({
@@ -56,18 +67,27 @@ const AdminNodePage = async ({
   const config = buildNodeDaemonConfig(node);
   const configureCommand = `nodebyte-daemon configure --panel ${API_URL} --token ${node.daemonTokenId}.${config.token}`;
   const info: SystemInfo | null = system.ok ? system.info : null;
+  const agentStatus = info ? await fetchAgentStatus(info) : null;
 
   return (
     <>
       <PageHeader
         meta={
           system.ok ? (
-            <Badge
-              className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600"
-              variant="outline"
-            >
-              Online · v{info?.version}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge
+                className="border-emerald-500/40 bg-emerald-500/10 text-emerald-600"
+                variant="outline"
+              >
+                Online · v{info?.version}
+                {info?.commit && ` (${shortSha(info.commit)})`}
+              </Badge>
+              {agentStatus && agentStatus !== "unknown" && (
+                <Link href="/admin/updates">
+                  <StatusBadge status={agentStatus} />
+                </Link>
+              )}
+            </div>
           ) : (
             <Badge
               className="border-red-500/40 bg-red-500/10 text-red-600"

@@ -26,6 +26,7 @@ export const env = createEnv({
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
     DATABASE_URL: process.env.DATABASE_URL,
     DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_UNPOOLED,
+    GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     HETZNER_API_TOKEN: process.env.HETZNER_API_TOKEN,
     HETZNER_SNAPSHOT_IMAGE_ID: process.env.HETZNER_SNAPSHOT_IMAGE_ID,
     NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
@@ -47,6 +48,8 @@ export const env = createEnv({
     SMTP_USER: process.env.SMTP_USER,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    UPDATE_CHECK_AGENT_REPO: process.env.UPDATE_CHECK_AGENT_REPO,
+    UPDATE_CHECK_PANEL_REPO: process.env.UPDATE_CHECK_PANEL_REPO,
     VERCEL_AUTOMATION_BYPASS_SECRET:
       process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
   },
@@ -63,6 +66,10 @@ export const env = createEnv({
 
     DATABASE_URL: z.string().min(1).url().optional(),
     DATABASE_URL_UNPOOLED: z.string().min(1).url().optional(),
+
+    // Optional read-only token (contents: read) for the admin update check.
+    // Only needed for private repos or to lift GitHub's anonymous rate limit.
+    GITHUB_TOKEN: z.string().min(1).optional(),
 
     // Hetzner credentials for lib/providers (future node provisioning). Not
     // used by the node model, so both may be left unset.
@@ -94,6 +101,15 @@ export const env = createEnv({
 
     STRIPE_SECRET_KEY: z.string().min(1).startsWith("sk_").optional(),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).startsWith("whsec_").optional(),
+    // owner/name of the GitHub repos the admin update check reads from.
+    UPDATE_CHECK_AGENT_REPO: z
+      .string()
+      .regex(/^[\w.-]+\/[\w.-]+$/u)
+      .default("NodeByteHosting/GSA"),
+    UPDATE_CHECK_PANEL_REPO: z
+      .string()
+      .regex(/^[\w.-]+\/[\w.-]+$/u)
+      .default("NodeByteHosting/GSM"),
     VERCEL_AUTOMATION_BYPASS_SECRET: z.string().min(1).optional(),
   },
 });

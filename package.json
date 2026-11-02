@@ -14,7 +14,7 @@
     "db:generate": "bunx --bun prisma generate",
     "db:studio": "bunx --bun prisma studio",
     "migrate": "bunx --bun prisma migrate dev && bunx --bun prisma generate",
-    "agent:build": "node --eval \"const fs=require('fs');fs.mkdirSync(require('os').homedir()+'/.bun/install/cache',{recursive:true});fs.mkdirSync('dist',{recursive:true})\" && cd agent && bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile ../dist/nodebyte-daemon",
+    "agent:build": "node --eval \"const fs=require('fs');fs.mkdirSync(require('os').homedir()+'/.bun/install/cache',{recursive:true});fs.mkdirSync('dist',{recursive:true})\" && cd agent && bun run scripts/build.ts",
     "agent:dev": "cd agent && bun run src/index.ts",
     "codegen": "openapi-typescript https://docs.hetzner.cloud/cloud.spec.json -o lib/providers/hetzner/schema.ts",
     "check": "ultracite check",
