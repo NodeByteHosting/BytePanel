@@ -21,7 +21,7 @@ import {
 } from "../../../protocol";
 import type { DaemonServerDetails, SystemInfo } from "../../../protocol";
 import type { Config } from "../config";
-import { VERSION } from "../config";
+import { COMMIT, VERSION } from "../config";
 import type { Docker } from "../docker";
 import { errorMessage, logger } from "../log";
 import type { Backups } from "../server/backups";
@@ -327,6 +327,7 @@ export const createFetchHandler = (deps: Deps) => {
       if (url.pathname === "/api/system" && req.method === "GET") {
         const info: SystemInfo = {
           architecture: arch(),
+          commit: COMMIT,
           cpuCount: availableParallelism(),
           dockerVersion: await docker.version(),
           kernelVersion: release(),

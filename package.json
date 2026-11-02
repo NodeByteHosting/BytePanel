@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun run src/index.ts",
-    "build": "node --eval \"require('fs').mkdirSync('../dist',{recursive:true})\" && bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile ../dist/nodebyte-daemon",
+    "build": "bun run scripts/build.ts",
     "types": "tsc --noEmit",
     "lint": "ultracite check",
     "check": "bun run lint && bun run types && bun run test",

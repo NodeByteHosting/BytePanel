@@ -4,10 +4,21 @@ import { dirname, join } from "node:path";
 
 import { z } from "zod";
 
+import pkg from "../package.json";
+
+// Injected by scripts/build.ts (`--define`); absent under `bun run`.
+declare const __AGENT_COMMIT__: string | undefined;
+
 export const CONFIG_PATH =
   process.env.NODEBYTE_CONFIG_PATH ?? "/etc/bytepanel/daemon.json";
 
-export const VERSION = "0.0.1-dev2";
+export const VERSION = pkg.version;
+
+// Git commit the binary was built from, reported to the panel for update checks.
+export const COMMIT =
+  typeof __AGENT_COMMIT__ === "string" && __AGENT_COMMIT__
+    ? __AGENT_COMMIT__
+    : null;
 
 // Node configuration. The panel renders this file for each node (admin →
 // nodes → configuration) and `nodebyte-daemon configure` can fetch it.
