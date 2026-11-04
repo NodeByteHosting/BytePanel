@@ -4,24 +4,12 @@ import { SearchIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
-import { games } from "@/games";
 
 import { ServerCard } from "./server-card";
-
-interface Server {
-  id: string;
-  name: string;
-  game: string;
-  observedState: string;
-  desiredState: string;
-  phase: string;
-  ipv4: string | null;
-  serverType: string;
-  location: string;
-}
+import type { ServerCardData } from "./server-card";
 
 interface Props {
-  servers: Server[];
+  servers: ServerCardData[];
 }
 
 export const ServerGrid = ({ servers }: Props) => {
@@ -35,8 +23,8 @@ export const ServerGrid = ({ servers }: Props) => {
     return servers.filter(
       (s) =>
         s.name.toLowerCase().includes(q) ||
-        s.game.toLowerCase().includes(q) ||
-        s.location.toLowerCase().includes(q)
+        (s.game?.name.toLowerCase().includes(q) ?? false) ||
+        (s.nodeName?.toLowerCase().includes(q) ?? false)
     );
   }, [servers, search]);
 
@@ -44,7 +32,7 @@ export const ServerGrid = ({ servers }: Props) => {
     <div className="flex flex-col gap-4">
       {servers.length > 4 && (
         <div className="relative">
-          <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <Input
             className="pl-9"
             placeholder="Search servers…"
@@ -54,18 +42,14 @@ export const ServerGrid = ({ servers }: Props) => {
         </div>
       )}
       {filtered.length === 0 && search && (
-        <p className="py-8 text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground py-8 text-center text-sm">
           No servers match &ldquo;{search}&rdquo;.
         </p>
       )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((server) => {
-          const fullGame = games.find((g) => g.id === server.game);
-          const game = fullGame
-            ? { id: fullGame.id, image: fullGame.image, name: fullGame.name }
-            : undefined;
-          return <ServerCard key={server.id} game={game} server={server} />;
-        })}
+        {filtered.map((server) => (
+          <ServerCard key={server.id} server={server} />
+        ))}
       </div>
     </div>
   );

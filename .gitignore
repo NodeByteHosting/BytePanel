@@ -54,3 +54,7 @@ generated/
 tsconfig.tsbuildinfo
 .vercel
 .env*.local
+
+.vscode/
+
+next-env.d.ts

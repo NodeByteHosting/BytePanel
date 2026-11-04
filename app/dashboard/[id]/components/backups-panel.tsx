@@ -1,9 +1,13 @@
 "use client";
 import {
-  CameraIcon,
+  ArchiveIcon,
+  DownloadIcon,
+  Loader2Icon,
+  LockIcon,
   MoreHorizontalIcon,
   RotateCcwIcon,
   Trash2Icon,
+  UnlockIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -21,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -38,358 +43,281 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { formatBytes } from "@/lib/format";
 
-interface Image {
-  id: number;
-  type: "snapshot" | "backup" | "system" | "app";
-  status: "available" | "creating" | "unavailable";
-  description: string;
-  created: string;
-  imageSize: number | null;
-  diskSize: number;
-  protection: boolean;
+interface BackupView {
+  id: string;
+  uuid: string;
+  name: string;
+  isSuccessful: boolean;
+  isLocked: boolean;
+  checksum: string | null;
+  bytes: number;
+  completedAt: string | null;
+  createdAt: string;
 }
 
-interface Props {
-  serverId: string;
-  backupsEnabled: boolean;
-  onBackupsChange: (enabled: boolean) => void;
-}
-
-const formatDate = (iso: string): string =>
-  new Date(iso).toLocaleString([], {
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "short",
-    year: "numeric",
+const request = async <T,>(url: string, init?: RequestInit): Promise<T> => {
+  const res = await fetch(url, {
+    ...init,
+    headers: init?.body ? { "content-type": "application/json" } : undefined,
   });
-
-const formatSize = (gb: number | null): string => {
-  if (gb === null) {
-    return "—";
+  const body = (await res.json().catch(() => ({}))) as T & { error?: string };
+  if (!res.ok) {
+    throw new Error(body.error ?? `Request failed (${res.status})`);
   }
-  if (gb < 1) {
-    return `${(gb * 1024).toFixed(0)} MB`;
-  }
-  return `${gb.toFixed(1)} GB`;
+  return body;
 };
 
-interface RowProps {
-  image: Image;
-  onRestore: () => void;
-  onDelete: () => void;
-}
-
-const BackupRow = ({ image, onRestore, onDelete }: RowProps) => {
-  const isManual = image.type === "snapshot";
-  const isReady = image.status === "available";
-
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-lg px-3 py-2">
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="capitalize">
-            {isManual ? "Manual" : "Automatic"}
-          </Badge>
-          <span className="truncate text-sm font-medium">
-            {image.description || "Backup"}
-          </span>
-          {!isReady && (
-            <Badge variant="secondary" className="capitalize">
-              {image.status}
-            </Badge>
-          )}
-        </div>
-        <span className="text-xs text-muted-foreground">
-          {formatDate(image.created)} · {formatSize(image.imageSize)}
-        </span>
-      </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Backup actions">
-            <MoreHorizontalIcon />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={onRestore} disabled={!isReady}>
-            <RotateCcwIcon />
-            Restore
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            variant="destructive"
-            onSelect={onDelete}
-            disabled={image.protection}
-          >
-            <Trash2Icon />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
-};
-
-interface ListProps {
-  images: Image[] | null;
-  loadError: string | null;
-  onRestore: (image: Image) => void;
-  onDelete: (image: Image) => void;
-}
-
-const renderImageList = ({
-  images,
-  loadError,
-  onRestore,
-  onDelete,
-}: ListProps) => {
-  if (loadError) {
-    return (
-      <div className="px-3 py-4 text-destructive text-sm">{loadError}</div>
-    );
-  }
-  if (images === null) {
-    return (
-      <div className="px-3 py-4 text-muted-foreground text-sm">Loading…</div>
-    );
-  }
-  if (images.length === 0) {
-    return (
-      <div className="px-3 py-4 text-muted-foreground text-sm">
-        No backups yet. Enable automatic backups or create one manually.
-      </div>
-    );
-  }
-  return images.map((image) => (
-    <BackupRow
-      key={image.id}
-      image={image}
-      onDelete={() => onDelete(image)}
-      onRestore={() => onRestore(image)}
-    />
-  ));
-};
-
-export const BackupsPanel = ({
-  serverId,
-  backupsEnabled,
-  onBackupsChange,
-}: Props) => {
-  const [images, setImages] = useState<Image[] | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [toggling, setToggling] = useState(false);
+export const BackupsPanel = ({ serverId }: { serverId: string }) => {
+  const base = `/api/servers/${serverId}/backups`;
+  const [backups, setBackups] = useState<BackupView[] | null>(null);
+  const [limit, setLimit] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
-  const [createDescription, setCreateDescription] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [restoreTarget, setRestoreTarget] = useState<Image | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Image | null>(null);
-  const [actionPending, setActionPending] = useState(false);
+  const [name, setName] = useState("");
+  const [ignored, setIgnored] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [restoreTarget, setRestoreTarget] = useState<BackupView | null>(null);
+  const [truncate, setTruncate] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<BackupView | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/servers/${serverId}/backups`);
-    if (!res.ok) {
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-      setLoadError(body.error ?? "Could not load backups");
-      return;
+    try {
+      const result = await request<{ backups: BackupView[]; limit: number }>(
+        base
+      );
+      setBackups(result.backups);
+      setLimit(result.limit);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not load backups"
+      );
+      setBackups([]);
     }
-    const body = (await res.json()) as { images: Image[] };
-    setImages(body.images);
-    setLoadError(null);
-  }, [serverId]);
+  }, [base]);
 
   useEffect(() => {
-    load();
+    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
+    void load();
   }, [load]);
 
+  // Poll while a backup is still running.
+  const pending = backups?.some((b) => !b.completedAt) ?? false;
   useEffect(() => {
-    const hasCreating = images?.some((i) => i.status === "creating");
-    if (!hasCreating) {
+    if (!pending) {
       return;
     }
-    const t = setInterval(load, 5000);
-    return () => clearInterval(t);
-  }, [images, load]);
+    const timer = setInterval(() => load(), 5000);
+    return () => clearInterval(timer);
+  }, [load, pending]);
 
-  const toggleBackups = async (enabled: boolean) => {
-    setToggling(true);
+  const run = async (fn: () => Promise<unknown>, success: string) => {
+    setBusy(true);
     try {
-      const res = await fetch(`/api/servers/${serverId}/backups`, {
-        body: JSON.stringify({ enabled }),
-        headers: { "Content-Type": "application/json" },
-        method: "PATCH",
-      });
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(err.error ?? "Could not update backups");
-      }
-      onBackupsChange(enabled);
-      toast.success(
-        enabled ? "Automatic backups enabled" : "Automatic backups disabled"
-      );
+      await fn();
+      toast.success(success);
+      await load();
+      return true;
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Could not update backups"
-      );
+      toast.error(error instanceof Error ? error.message : "Action failed");
+      return false;
     } finally {
-      setToggling(false);
+      setBusy(false);
     }
   };
 
-  const submitCreate = async () => {
-    setCreating(true);
-    try {
-      const res = await fetch(`/api/servers/${serverId}/backups`, {
-        body: JSON.stringify({
-          description: createDescription.trim() || undefined,
-        }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(err.error ?? "Could not create backup");
-      }
-      toast.success("Backup started");
-      setCreateOpen(false);
-      setCreateDescription("");
-      load();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Could not create backup"
-      );
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const runRestore = async () => {
-    if (!restoreTarget) {
-      return;
-    }
-    setActionPending(true);
-    try {
-      const res = await fetch(
-        `/api/servers/${serverId}/backups/${restoreTarget.id}/restore`,
-        {
+  const create = async () => {
+    const ok = await run(
+      () =>
+        request(base, {
+          body: JSON.stringify({ ignored, name: name || undefined }),
           method: "POST",
-        }
-      );
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(err.error ?? "Restore failed");
-      }
-      toast.success("Restore started — the server will reboot");
-      setRestoreTarget(null);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Restore failed");
-    } finally {
-      setActionPending(false);
+        }),
+      "Backup started"
+    );
+    if (ok) {
+      setCreateOpen(false);
+      setName("");
+      setIgnored("");
     }
   };
 
-  const runDelete = async () => {
-    if (!deleteTarget) {
-      return;
-    }
-    setActionPending(true);
+  const download = async (backup: BackupView) => {
     try {
-      const res = await fetch(
-        `/api/servers/${serverId}/backups/${deleteTarget.id}`,
-        {
-          method: "DELETE",
-        }
+      const { url } = await request<{ url: string }>(
+        `${base}/${backup.id}/download`
       );
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(err.error ?? "Delete failed");
-      }
-      toast.success("Backup deleted");
-      setDeleteTarget(null);
-      setImages(
-        (prev) => prev?.filter((i) => i.id !== deleteTarget.id) ?? null
-      );
+      window.location.assign(url);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Delete failed");
-    } finally {
-      setActionPending(false);
+      toast.error(error instanceof Error ? error.message : "Download failed");
     }
   };
+
+  const used = backups?.length ?? 0;
 
   return (
-    <div className="flex flex-col gap-3">
-      <Panel
-        title="Automatic backups"
-        action={
-          <Switch
-            checked={backupsEnabled}
-            disabled={toggling}
-            onCheckedChange={toggleBackups}
-            aria-label="Enable automatic backups"
-          />
-        }
-      >
-        <PanelCard className="text-sm text-muted-foreground">
-          Daily snapshots taken by Hetzner, retained for 7 days.
-        </PanelCard>
-      </Panel>
-
-      <Panel
-        title="Backups"
-        action={
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setCreateOpen(true)}
-          >
-            <CameraIcon />
-            Create backup
-          </Button>
-        }
-      >
-        <PanelCard className="flex flex-col gap-1">
-          {renderImageList({
-            images,
-            loadError,
-            onDelete: setDeleteTarget,
-            onRestore: setRestoreTarget,
-          })}
-        </PanelCard>
-      </Panel>
+    <Panel
+      action={
+        <Button
+          disabled={busy || used >= limit}
+          size="sm"
+          onClick={() => setCreateOpen(true)}
+        >
+          <ArchiveIcon />
+          Create backup
+        </Button>
+      }
+      title={`Backups (${used} of ${limit})`}
+    >
+      <PanelCard className="flex flex-col gap-1">
+        {backups === null && (
+          <div className="text-muted-foreground px-3 py-4 text-sm">
+            Loading…
+          </div>
+        )}
+        {backups?.length === 0 && (
+          <div className="text-muted-foreground px-3 py-4 text-sm">
+            {limit === 0
+              ? "Your plan doesn't include backups."
+              : "No backups yet."}
+          </div>
+        )}
+        {backups?.map((backup) => {
+          const running = !backup.completedAt;
+          return (
+            <div
+              className="flex items-center justify-between gap-4 rounded-lg px-3 py-2"
+              key={backup.id}
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                {running ? (
+                  <Loader2Icon className="text-muted-foreground size-4 shrink-0 animate-spin" />
+                ) : (
+                  <ArchiveIcon className="text-muted-foreground size-4 shrink-0" />
+                )}
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="flex items-center gap-2 truncate text-sm font-medium">
+                    {backup.name}
+                    {backup.isLocked && (
+                      <LockIcon className="text-muted-foreground size-3" />
+                    )}
+                    {!running && !backup.isSuccessful && (
+                      <Badge className="text-[10px]" variant="destructive">
+                        Failed
+                      </Badge>
+                    )}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {new Date(backup.createdAt).toLocaleString()}
+                    {backup.isSuccessful && ` · ${formatBytes(backup.bytes)}`}
+                    {running && " · in progress"}
+                  </span>
+                </div>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    aria-label="Backup actions"
+                    disabled={running}
+                    size="icon"
+                    variant="ghost"
+                  >
+                    <MoreHorizontalIcon />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {backup.isSuccessful && (
+                    <>
+                      <DropdownMenuItem onSelect={() => download(backup)}>
+                        <DownloadIcon />
+                        Download
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={() => setRestoreTarget(backup)}
+                      >
+                        <RotateCcwIcon />
+                        Restore
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      run(
+                        () =>
+                          request(`${base}/${backup.id}`, {
+                            body: JSON.stringify({
+                              isLocked: !backup.isLocked,
+                            }),
+                            method: "PATCH",
+                          }),
+                        backup.isLocked ? "Backup unlocked" : "Backup locked"
+                      )
+                    }
+                  >
+                    {backup.isLocked ? <UnlockIcon /> : <LockIcon />}
+                    {backup.isLocked ? "Unlock" : "Lock"}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    disabled={backup.isLocked}
+                    variant="destructive"
+                    onSelect={() => setDeleteTarget(backup)}
+                  >
+                    <Trash2Icon />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        })}
+      </PanelCard>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Create backup</DialogTitle>
             <DialogDescription>
-              Saves the current disk state. For the cleanest backup, stop the
-              server first.
+              Archives the server&apos;s files on its node. The server can keep
+              running.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="snapshot-description">Description (optional)</Label>
-            <Input
-              id="snapshot-description"
-              placeholder="e.g. Before 1.21 update"
-              maxLength={100}
-              value={createDescription}
-              onChange={(e) => setCreateDescription(e.target.value)}
-              disabled={creating}
-            />
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="backup-name">Name (optional)</Label>
+              <Input
+                id="backup-name"
+                maxLength={100}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="backup-ignored">Ignored files (optional)</Label>
+              <Textarea
+                className="font-mono text-xs"
+                id="backup-ignored"
+                placeholder={"logs/\n*.tmp"}
+                rows={4}
+                value={ignored}
+                onChange={(e) => setIgnored(e.target.value)}
+              />
+              <span className="text-muted-foreground text-xs">
+                One pattern per line, like .gitignore.
+              </span>
+            </div>
           </div>
           <DialogFooter>
             <Button
-              type="button"
+              disabled={busy}
               variant="ghost"
               onClick={() => setCreateOpen(false)}
-              disabled={creating}
             >
               Cancel
             </Button>
-            <Button type="button" onClick={submitCreate} disabled={creating}>
-              {creating ? "Starting…" : "Create"}
+            <Button disabled={busy} onClick={() => create()}>
+              {busy ? "Starting…" : "Start backup"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -401,18 +329,40 @@ export const BackupsPanel = ({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Restore from this backup?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Restore &quot;{restoreTarget?.name}&quot;?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This wipes the current disk and reboots the server from the
-              selected backup. Any changes since it was taken will be lost.
+              The server must be stopped. Files in the backup overwrite the
+              current ones.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <Label className="flex items-center gap-2 text-sm font-normal">
+            <Checkbox
+              checked={truncate}
+              onCheckedChange={(v) => setTruncate(v === true)}
+            />
+            Delete all current files before restoring
+          </Label>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={actionPending}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={runRestore} disabled={actionPending}>
-              {actionPending ? "Restoring…" : "Restore"}
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const target = restoreTarget;
+                setRestoreTarget(null);
+                if (target) {
+                  void run(
+                    () =>
+                      request(`${base}/${target.id}/restore`, {
+                        body: JSON.stringify({ truncate }),
+                        method: "POST",
+                      }),
+                    "Restore started"
+                  );
+                }
+              }}
+            >
+              Restore
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -424,21 +374,32 @@ export const BackupsPanel = ({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this backup?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Delete &quot;{deleteTarget?.name}&quot;?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the backup. You can't undo this.
+              This backup will be permanently removed from the node.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={actionPending}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={runDelete} disabled={actionPending}>
-              {actionPending ? "Deleting…" : "Delete"}
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const target = deleteTarget;
+                setDeleteTarget(null);
+                if (target) {
+                  void run(
+                    () => request(`${base}/${target.id}`, { method: "DELETE" }),
+                    "Backup deleted"
+                  );
+                }
+              }}
+            >
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Panel>
   );
 };

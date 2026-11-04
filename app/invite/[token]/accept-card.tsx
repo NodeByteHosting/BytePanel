@@ -36,8 +36,8 @@ interface Props {
 
 const STATE_ICON: Record<Exclude<InviteState, "pending">, React.ReactNode> = {
   expired: <Clock className="size-10 text-amber-500" />,
-  invalid: <XCircle className="size-10 text-destructive" />,
-  mismatch: <ShieldAlert className="size-10 text-destructive" />,
+  invalid: <XCircle className="text-destructive size-10" />,
+  mismatch: <ShieldAlert className="text-destructive size-10" />,
 };
 
 export const InviteAcceptCard = ({ state, message, invite }: Props) => {
@@ -74,16 +74,16 @@ export const InviteAcceptCard = ({ state, message, invite }: Props) => {
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-primary/10">
-              <Mail className="size-7 text-primary" />
+            <div className="bg-primary/10 mx-auto mb-4 flex size-14 items-center justify-center rounded-full">
+              <Mail className="text-primary size-7" />
             </div>
             <CardTitle>Server Invite</CardTitle>
             <CardDescription>
-              <span className="font-medium text-foreground">
+              <span className="text-foreground font-medium">
                 {invite.invitedByName}
               </span>{" "}
               has invited you to collaborate on{" "}
-              <span className="font-medium text-foreground">
+              <span className="text-foreground font-medium">
                 {invite.serverName}
               </span>
               .
@@ -91,12 +91,12 @@ export const InviteAcceptCard = ({ state, message, invite }: Props) => {
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-3">
             <div className="flex flex-col items-center gap-1">
-              <span className="text-sm text-muted-foreground">Your role</span>
+              <span className="text-muted-foreground text-sm">Your role</span>
               <Badge variant="secondary" className="text-sm capitalize">
                 {roleLabel}
               </Badge>
             </div>
-            <p className="text-center text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-center text-xs">
               Expires{" "}
               {new Date(invite.expiresAt).toLocaleDateString("en-US", {
                 day: "numeric",

@@ -1,192 +1,104 @@
+import { randomUUID } from "node:crypto";
+
 import { NextResponse } from "next/server";
+import { ulid } from "ulid";
 import { z } from "zod";
 
-import { checkSubscriptionForServer } from "@/lib/billing/subscription-check";
 import { prisma } from "@/lib/db";
-import { getProviderForUser } from "@/lib/providers";
-import {
-  MissingProviderCredentialsError,
-  ProviderApiError,
-} from "@/lib/providers/errors";
-import { requireUser } from "@/lib/session";
+import { emitActivity } from "@/lib/events/emit";
+import { requestIp } from "@/lib/servers/access";
+import { daemonRoute } from "@/lib/servers/route";
 
 export const runtime = "nodejs";
 
-const patchSchema = z.object({ enabled: z.boolean() });
-const postSchema = z.object({
-  description: z.string().trim().max(100).optional(),
+const serialize = (backup: {
+  id: string;
+  uuid: string;
+  name: string;
+  isSuccessful: boolean;
+  isLocked: boolean;
+  checksum: string | null;
+  bytes: bigint;
+  completedAt: Date | null;
+  createdAt: Date;
+}) => ({
+  bytes: Number(backup.bytes),
+  checksum: backup.checksum,
+  completedAt: backup.completedAt?.toISOString() ?? null,
+  createdAt: backup.createdAt.toISOString(),
+  id: backup.id,
+  isLocked: backup.isLocked,
+  isSuccessful: backup.isSuccessful,
+  name: backup.name,
+  uuid: backup.uuid,
 });
 
-const credsErrorResponse = () =>
-  NextResponse.json(
-    { error: "Configure your Hetzner credentials in account settings." },
-    { status: 412 }
-  );
+export type BackupView = ReturnType<typeof serialize>;
 
-const resolveProvider = async (userId: string) => {
-  try {
-    return await getProviderForUser(userId);
-  } catch (error) {
-    if (error instanceof MissingProviderCredentialsError) {
-      return null;
-    }
-    throw error;
-  }
-};
-
-const apiErrorResponse = (error: ProviderApiError) =>
-  NextResponse.json({ error: error.message }, { status: error.status });
-
-export const GET = async (
-  _request: Request,
-  context: { params: Promise<{ id: string }> }
-) => {
-  const user = await requireUser();
-  const { id } = await context.params;
-
-  const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id, userId: user.id },
+export const GET = daemonRoute("admin", async ({ access }) => {
+  const backups = await prisma.backup.findMany({
+    orderBy: { createdAt: "desc" },
+    where: { deletedAt: null, serverId: access.server.id },
   });
+  return NextResponse.json({
+    backups: backups.map(serialize),
+    limit: access.server.backupLimit,
+  });
+});
 
-  if (!server) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+const createSchema = z.object({
+  ignored: z.string().max(10_000).default(""),
+  name: z.string().trim().max(100).optional(),
+});
 
-  if (!server.providerServerId) {
-    return NextResponse.json({ images: [] });
-  }
-
-  const provider = await resolveProvider(user.id);
-  if (!provider) {
-    return credsErrorResponse();
-  }
-
-  try {
-    const images = await provider.listImagesForServer(server.providerServerId);
-    return NextResponse.json({
-      images: images.map((img) => ({
-        created: img.createdAt,
-        description: img.description,
-        diskSize: img.diskSizeGb,
-        id: img.id,
-        imageSize: img.imageSizeGb,
-        protection: img.protected,
-        status: img.status,
-        type: img.type,
-      })),
+export const POST = daemonRoute(
+  "admin",
+  async ({ access, daemon, request }) => {
+    const parsed = createSchema.safeParse(
+      await request.json().catch(() => ({}))
+    );
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+    }
+    const { server } = access;
+    const count = await prisma.backup.count({
+      where: { deletedAt: null, serverId: server.id },
     });
-  } catch (error) {
-    if (error instanceof ProviderApiError) {
-      return apiErrorResponse(error);
+    if (count >= server.backupLimit) {
+      return NextResponse.json(
+        {
+          error:
+            server.backupLimit === 0
+              ? "Your plan doesn't include backups."
+              : `Backup limit reached (${server.backupLimit}). Delete an old backup first.`,
+        },
+        { status: 400 }
+      );
     }
-    throw error;
-  }
-};
-
-export const POST = async (
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) => {
-  const user = await requireUser();
-  const { id } = await context.params;
-
-  const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id, userId: user.id },
-  });
-
-  if (!server) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  // ⚠️ BILLING: Verify subscription is active before allowing backup creation
-  const subscriptionCheck = await checkSubscriptionForServer(id);
-  if (!subscriptionCheck.isValid) {
-    return NextResponse.json(
-      { error: subscriptionCheck.message },
-      { status: 402 }
-    );
-  }
-
-  if (!server.providerServerId) {
-    return NextResponse.json(
-      { error: "Server is not provisioned yet" },
-      { status: 409 }
-    );
-  }
-
-  const body = await request.json().catch(() => null);
-  const parsed = postSchema.safeParse(body ?? {});
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
-  }
-
-  const provider = await resolveProvider(user.id);
-  if (!provider) {
-    return credsErrorResponse();
-  }
-
-  try {
-    const imageId = await provider.createSnapshot(server.providerServerId, {
-      description: parsed.data.description,
+    const backup = await prisma.backup.create({
+      data: {
+        id: ulid(),
+        ignoredFiles: parsed.data.ignored,
+        name:
+          parsed.data.name ||
+          `Backup ${new Date().toISOString().slice(0, 16).replace("T", " ")}`,
+        serverId: server.id,
+        uuid: randomUUID(),
+      },
     });
-    return NextResponse.json({ image: { id: imageId } });
-  } catch (error) {
-    if (error instanceof ProviderApiError) {
-      return apiErrorResponse(error);
+    try {
+      await daemon.createBackup(server.uuid, backup.uuid, parsed.data.ignored);
+    } catch (error) {
+      await prisma.backup.delete({ where: { id: backup.id } });
+      throw error;
     }
-    throw error;
+    await emitActivity({
+      actorId: access.user.id,
+      ip: requestIp(request.headers),
+      message: `Started backup "${backup.name}"`,
+      phase: "server:backup.start",
+      serverId: server.id,
+    });
+    return NextResponse.json({ backup: serialize(backup) }, { status: 202 });
   }
-};
-
-export const PATCH = async (
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) => {
-  const user = await requireUser();
-  const { id } = await context.params;
-
-  const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id, userId: user.id },
-  });
-
-  if (!server) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  const body = await request.json().catch(() => null);
-  const parsed = patchSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
-  }
-
-  if (!server.providerServerId) {
-    return NextResponse.json(
-      { error: "Server is not provisioned yet" },
-      { status: 409 }
-    );
-  }
-
-  const provider = await resolveProvider(user.id);
-  if (!provider) {
-    return credsErrorResponse();
-  }
-
-  try {
-    await provider.setBackupsEnabled(
-      server.providerServerId,
-      parsed.data.enabled
-    );
-  } catch (error) {
-    if (error instanceof ProviderApiError) {
-      return apiErrorResponse(error);
-    }
-    throw error;
-  }
-
-  await prisma.server.update({
-    data: { backupsEnabled: parsed.data.enabled },
-    where: { id },
-  });
-
-  return NextResponse.json({ backupsEnabled: parsed.data.enabled });
-};
+);

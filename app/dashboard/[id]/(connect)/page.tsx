@@ -2,13 +2,25 @@
 import { ConnectPanel } from "../components/connect-panel";
 import { useServer } from "../components/server-context";
 
+// Join password = a password-like variable that isn't for remote admin.
+const JOIN_PASSWORD = /pass(?:word)?$|_pw$/iu;
+const ADMIN_PASSWORD = /rcon|admin/iu;
+
 const ConnectTab = () => {
   const { server } = useServer();
+  const joinPassword =
+    server.variables.find(
+      (v) =>
+        JOIN_PASSWORD.test(v.envVariable) &&
+        !ADMIN_PASSWORD.test(v.envVariable) &&
+        v.value
+    )?.value ?? null;
   return (
     <ConnectPanel
-      game={server.game}
-      ipv4={server.ipv4}
-      joinPassword={server.joinPassword}
+      allocations={server.allocations}
+      gameName={server.game?.name ?? "the game"}
+      gameSlug={server.game?.slug ?? null}
+      joinPassword={joinPassword}
     />
   );
 };

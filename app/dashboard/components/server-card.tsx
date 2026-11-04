@@ -25,30 +25,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
+import type { PowerAction, ResourceUsage } from "@/protocol";
 
-import { runServerCommand } from "../[id]/actions/commands";
+import { sendPowerAction } from "../[id]/actions/power";
 
-interface Server {
+export interface ServerCardData {
   id: string;
   name: string;
-  game: string;
-  observedState: string;
-  desiredState: string;
-  phase: string;
-  ipv4: string | null;
-  serverType: string;
-  location: string;
-}
-
-interface GameInfo {
-  id: string;
-  name: string;
-  image: string;
+  status: string | null;
+  deployed: boolean;
+  address: string | null;
+  nodeName: string | null;
+  memory: number;
+  cpu: number;
+  game: { name: string; image: string | null } | null;
 }
 
 interface Props {
-  server: Server;
-  game: GameInfo | undefined;
+  server: ServerCardData;
 }
 
 interface Metrics {
@@ -94,56 +88,41 @@ const statusConfig = {
   },
 };
 
-const metricsCache = new Map<string, { data: Metrics; timestamp: number }>();
-
-const fetchMetrics = async (serverId: string): Promise<Metrics> => {
-  const cached = metricsCache.get(serverId);
-  if (cached && Date.now() - cached.timestamp < 5000) {
-    return cached.data;
-  }
-
+const fetchResources = async (
+  serverId: string
+): Promise<ResourceUsage | null> => {
   try {
-    const now = new Date();
-    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
-
-    const response = await fetch(
-      `/api/servers/${serverId}/metrics?type=cpu&start=${fiveMinutesAgo.toISOString()}&end=${now.toISOString()}`
-    );
-
+    const response = await fetch(`/api/servers/${serverId}/resources`, {
+      cache: "no-store",
+    });
     if (!response.ok) {
-      return {};
+      return null;
     }
-
-    const data = await response.json();
-    const timeSeries = data.metrics?.time_series || {};
-    const cpuValues = timeSeries["node_cpu_seconds_total"]?.values || [];
-    const memoryValues =
-      timeSeries["node_memory_MemAvailable_bytes"]?.values || [];
-
-    let cpu = 0;
-    if (cpuValues.length > 0) {
-      cpu = Math.min(
-        Math.round(Number.parseFloat(cpuValues.at(-1)[1]) * 100) / 100,
-        100
-      );
-    }
-
-    let memory = 0;
-    if (memoryValues.length > 0) {
-      memory = Math.min(
-        Math.round(
-          Number.parseFloat(memoryValues.at(-1)[1]) / 1024 / 1024 / 10
-        ),
-        100
-      );
-    }
-
-    const metrics = { cpu: cpu || undefined, memory: memory || undefined };
-    metricsCache.set(serverId, { data: metrics, timestamp: Date.now() });
-    return metrics;
+    return ((await response.json()) as { resources: ResourceUsage }).resources;
   } catch {
-    return {};
+    return null;
   }
+};
+
+// Panel-side status first; otherwise the daemon's live power state.
+const statusKey = (
+  server: ServerCardData,
+  state: ResourceUsage["state"] | null
+): keyof typeof statusConfig => {
+  if (
+    !server.deployed ||
+    server.status === "installing" ||
+    server.status === "restoring_backup"
+  ) {
+    return "unhealthy";
+  }
+  if (server.status) {
+    return "failed";
+  }
+  if (state === "running" || state === "starting" || state === "stopping") {
+    return "running";
+  }
+  return "stopped";
 };
 
 const getMetricColor = (value: number) => {
@@ -160,11 +139,11 @@ const MetricBar = ({ label, value }: { label: string; value: number }) => (
   <div className="flex flex-col gap-1">
     <div className="flex items-center justify-between text-xs">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-mono font-medium text-foreground/80">
+      <span className="text-foreground/80 font-mono font-medium">
         {Math.round(value)}%
       </span>
     </div>
-    <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+    <div className="bg-muted h-1 w-full overflow-hidden rounded-full">
       <div
         className={cn(
           "h-full rounded-full transition-all",
@@ -176,53 +155,96 @@ const MetricBar = ({ label, value }: { label: string; value: number }) => (
   </div>
 );
 
-export const ServerCard = ({ server, game }: Props) => {
+const statusLabel = (
+  server: ServerCardData,
+  state: ResourceUsage["state"] | null,
+  key: keyof typeof statusConfig
+): string => {
+  if (!server.deployed) {
+    return "Deploying";
+  }
+  if (server.status) {
+    return server.status.replaceAll("_", " ");
+  }
+  return state ?? statusConfig[key].label;
+};
+
+// CPU as a share of the server's limit; memory as a share of the container limit.
+const toMetrics = (usage: ResourceUsage, cpuLimit: number): Metrics => {
+  if (usage.state === "offline") {
+    return {};
+  }
+  return {
+    cpu:
+      cpuLimit > 0 ? (usage.cpuAbsolute / cpuLimit) * 100 : usage.cpuAbsolute,
+    memory:
+      usage.memoryLimitBytes > 0
+        ? (usage.memoryBytes / usage.memoryLimitBytes) * 100
+        : undefined,
+  };
+};
+
+export const ServerCard = ({ server }: Props) => {
+  const { game } = server;
   const [metrics, setMetrics] = useState<Metrics>({});
-  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [powerState, setPowerState] = useState<ResourceUsage["state"] | null>(
+    null
+  );
+  const [metricsLoading, setMetricsLoading] = useState(server.deployed);
   const [actionPending, setActionPending] = useState<string | null>(null);
   const [copiedIP, setCopiedIP] = useState(false);
 
-  const deleting = server.desiredState === "deleted";
-  const isRunning = server.observedState === "running";
-  const isStopped = server.observedState === "stopped";
-  const canControl = !deleting;
+  const key = statusKey(server, powerState);
+  const isRunning = key === "running";
+  const isStopped = key === "stopped";
+  const canControl = server.deployed && !server.status;
 
-  const status =
-    statusConfig[server.observedState as keyof typeof statusConfig] ??
-    statusConfig.stopped;
+  const status = {
+    ...statusConfig[key],
+    label: statusLabel(server, powerState, key),
+  };
 
   useEffect(() => {
-    if (server.observedState === "running") {
-      setMetricsLoading(true);
-      const load = async () => {
-        try {
-          const m = await fetchMetrics(server.id);
-          setMetrics(m);
-        } finally {
-          setMetricsLoading(false);
-        }
-      };
-      void load();
-    } else {
-      setMetrics({});
+    if (!server.deployed) {
+      return;
     }
-  }, [server.id, server.observedState]);
+    let cancelled = false;
+    const load = async () => {
+      const usage = await fetchResources(server.id);
+      if (cancelled) {
+        return;
+      }
+      setMetricsLoading(false);
+      if (!usage) {
+        return;
+      }
+      setPowerState(usage.state);
+      setMetrics(toMetrics(usage, server.cpu));
+    };
+    void load();
+    // Poll every 10s, like Pterodactyl's server list.
+    const interval = setInterval(() => load(), 10_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [server.id, server.deployed, server.cpu]);
 
   const handleCommand = useCallback(
-    async (type: "START" | "STOP" | "RESTART") => {
+    async (action: PowerAction) => {
       if (!canControl) {
         return;
       }
-      setActionPending(type);
+      setActionPending(action);
       try {
-        const result = await runServerCommand({ serverId: server.id, type });
+        const result = await sendPowerAction({ action, serverId: server.id });
         if (result.ok) {
-          toast.success(`${type.toLowerCase()} queued`);
+          toast.success(`Sent ${action}`);
         } else {
-          toast.error(result.error || "Failed to queue command");
+          toast.error(result.error || "Power action failed");
         }
       } catch {
-        toast.error("Failed to queue command");
+        toast.error("Power action failed");
       } finally {
         setActionPending(null);
       }
@@ -231,8 +253,8 @@ export const ServerCard = ({ server, game }: Props) => {
   );
 
   const handleCopyIP = () => {
-    if (server.ipv4) {
-      navigator.clipboard.writeText(server.ipv4);
+    if (server.address) {
+      navigator.clipboard.writeText(server.address);
       setCopiedIP(true);
       setTimeout(() => setCopiedIP(false), 2000);
     }
@@ -241,14 +263,14 @@ export const ServerCard = ({ server, game }: Props) => {
   return (
     <div
       className={cn(
-        "group relative flex flex-col rounded-xl border border-border/60 bg-card overflow-hidden transition-all duration-200",
+        "group border-border/60 bg-card relative flex flex-col overflow-hidden rounded-xl border transition-all duration-200",
         "hover:border-primary/30 hover:shadow-lg",
         status.glow && `hover:shadow-md hover:${status.glow}`
       )}
     >
       {/* Game image banner */}
-      <div className="relative h-28 w-full overflow-hidden bg-muted">
-        {game ? (
+      <div className="bg-muted relative h-28 w-full overflow-hidden">
+        {game?.image ? (
           <Image
             src={game.image}
             alt={game.name}
@@ -257,12 +279,12 @@ export const ServerCard = ({ server, game }: Props) => {
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-linear-to-br from-primary/5 to-primary/20">
-            <ServerIcon className="h-12 w-12 text-primary/30" />
+          <div className="from-primary/5 to-primary/20 flex h-full items-center justify-center bg-linear-to-br">
+            <ServerIcon className="text-primary/30 h-12 w-12" />
           </div>
         )}
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-linear-to-t from-card/90 via-card/20 to-transparent" />
+        <div className="from-card/90 via-card/20 absolute inset-0 bg-linear-to-t to-transparent" />
 
         {/* Status pill — top right */}
         <div className="absolute top-3 right-3">
@@ -291,31 +313,27 @@ export const ServerCard = ({ server, game }: Props) => {
       <div className="flex flex-1 flex-col gap-3 p-4">
         {/* Server name + location */}
         <div>
-          <h3 className="font-semibold text-sm text-foreground truncate">
+          <h3 className="text-foreground truncate text-sm font-semibold">
             {server.name}
           </h3>
-          <div className="flex items-center gap-1.5 mt-1">
-            <span className="text-xs text-muted-foreground font-mono uppercase">
-              {server.location}
-            </span>
-            <span className="text-muted-foreground/40">·</span>
-            <span className="text-xs text-muted-foreground">
-              {server.serverType}
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="text-muted-foreground text-xs">
+              {server.nodeName ?? "Awaiting deployment"}
             </span>
           </div>
         </div>
 
         {/* IP address */}
-        {server.ipv4 ? (
+        {server.address ? (
           <button
             type="button"
             onClick={handleCopyIP}
-            className="group/ip flex items-center justify-between rounded-lg border border-border/50 bg-muted/40 px-3 py-2 transition-colors hover:bg-muted/70 hover:border-border"
+            className="group/ip border-border/50 bg-muted/40 hover:bg-muted/70 hover:border-border flex items-center justify-between rounded-lg border px-3 py-2 transition-colors"
           >
-            <code className="text-xs font-mono text-foreground/70 truncate">
-              {server.ipv4}
+            <code className="text-foreground/70 truncate font-mono text-xs">
+              {server.address}
             </code>
-            <span className="ml-2 shrink-0 text-muted-foreground transition-colors group-hover/ip:text-foreground">
+            <span className="text-muted-foreground group-hover/ip:text-foreground ml-2 shrink-0 transition-colors">
               {copiedIP ? (
                 <Check className="h-3.5 w-3.5 text-emerald-500" />
               ) : (
@@ -324,9 +342,9 @@ export const ServerCard = ({ server, game }: Props) => {
             </span>
           </button>
         ) : (
-          <div className="flex items-center rounded-lg border border-dashed border-border/40 bg-muted/20 px-3 py-2">
-            <code className="text-xs font-mono text-muted-foreground/50">
-              No IP assigned
+          <div className="border-border/40 bg-muted/20 flex items-center rounded-lg border border-dashed px-3 py-2">
+            <code className="text-muted-foreground/50 font-mono text-xs">
+              No address yet
             </code>
           </div>
         )}
@@ -335,7 +353,7 @@ export const ServerCard = ({ server, game }: Props) => {
         {isRunning && (
           <div className="space-y-2">
             {metricsLoading ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-2 text-xs">
                 <Spinner className="h-3 w-3" />
                 <span>Loading metrics…</span>
               </div>
@@ -356,7 +374,7 @@ export const ServerCard = ({ server, game }: Props) => {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center gap-2 border-t border-border/40 bg-muted/20 px-4 py-3">
+      <div className="border-border/40 bg-muted/20 flex items-center gap-2 border-t px-4 py-3">
         <Link href={`/dashboard/${server.id}`} className="flex-1">
           <Button variant="secondary" size="sm" className="w-full gap-2">
             <ArrowRightIcon className="h-3.5 w-3.5" />
@@ -383,7 +401,7 @@ export const ServerCard = ({ server, game }: Props) => {
             <DropdownMenuContent align="end" className="w-40">
               {isStopped && (
                 <DropdownMenuItem
-                  onClick={() => handleCommand("START")}
+                  onClick={() => handleCommand("start")}
                   disabled={actionPending !== null}
                   className="cursor-pointer gap-2"
                 >
@@ -394,16 +412,16 @@ export const ServerCard = ({ server, game }: Props) => {
               {isRunning && (
                 <>
                   <DropdownMenuItem
-                    onClick={() => handleCommand("RESTART")}
+                    onClick={() => handleCommand("restart")}
                     disabled={actionPending !== null}
                     className="cursor-pointer gap-2"
                   >
-                    <RotateCcwIcon className="h-3.5 w-3.5 text-primary" />
+                    <RotateCcwIcon className="text-primary h-3.5 w-3.5" />
                     Restart
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => handleCommand("STOP")}
+                    onClick={() => handleCommand("stop")}
                     disabled={actionPending !== null}
                     className="cursor-pointer gap-2"
                   >

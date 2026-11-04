@@ -147,7 +147,7 @@ export const ActivityFeed = ({
       <CardContent>
         <div className="space-y-4">
           {displayItems.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
+            <p className="text-muted-foreground py-8 text-center text-sm">
               No activity yet
             </p>
           ) : (
@@ -158,12 +158,12 @@ export const ActivityFeed = ({
               return (
                 <div
                   key={item.id}
-                  className="flex gap-3 pb-4 border-b border-border/50 last:border-0 last:pb-0"
+                  className="border-border/50 flex gap-3 border-b pb-4 last:border-0 last:pb-0"
                 >
                   {/* Icon */}
                   <div
                     className={cn(
-                      "flex items-center justify-center rounded-lg p-2 flex-shrink-0",
+                      "flex flex-shrink-0 items-center justify-center rounded-lg p-2",
                       config.bgColor
                     )}
                   >
@@ -171,14 +171,14 @@ export const ActivityFeed = ({
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="text-foreground text-sm font-medium">
                           {item.title}
                         </p>
                         {item.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
+                          <p className="text-muted-foreground mt-0.5 text-xs">
                             {item.description}
                           </p>
                         )}
@@ -188,11 +188,11 @@ export const ActivityFeed = ({
                         <Badge
                           variant="outline"
                           className={cn(
-                            "text-xs flex-shrink-0",
+                            "flex-shrink-0 text-xs",
                             item.status === "success" &&
-                              "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
+                              "border-emerald-200 bg-emerald-500/10 text-emerald-600 dark:border-emerald-800 dark:text-emerald-400",
                             item.status === "warning" &&
-                              "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800",
+                              "border-amber-200 bg-amber-500/10 text-amber-600 dark:border-amber-800 dark:text-amber-400",
                             item.status === "error" &&
                               "bg-destructive/10 text-destructive border-destructive/20"
                           )}
@@ -202,13 +202,13 @@ export const ActivityFeed = ({
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 mt-2">
-                      <p className="text-xs text-muted-foreground">
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <p className="text-muted-foreground text-xs">
                         {timeAgo(item.timestamp)}
                       </p>
 
                       {item.user && (
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                           by{" "}
                           <span className="font-medium">{item.user.name}</span>
                         </p>
@@ -223,7 +223,10 @@ export const ActivityFeed = ({
 
         {items.length > maxItems && (
           <div className="mt-4 text-center">
-            <button className="text-sm text-primary hover:underline">
+            <button
+              type="button"
+              className="text-primary text-sm hover:underline"
+            >
               View all activity ({items.length})
             </button>
           </div>
@@ -252,20 +255,22 @@ export const ActivityFeedItem = ({
 
   return (
     <button
+      type="button"
+      aria-label={title}
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors text-left",
+        "hover:bg-muted/50 flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors",
         onClick && "cursor-pointer",
         className
       )}
     >
-      <div className={cn("flex-shrink-0 p-2 rounded-lg", config.bgColor)}>
+      <div className={cn("flex-shrink-0 rounded-lg p-2", config.bgColor)}>
         <div className={config.color}>{config.icon}</div>
       </div>
 
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{title}</p>
-        <p className="text-xs text-muted-foreground">{timeAgo(timestamp)}</p>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{title}</p>
+        <p className="text-muted-foreground text-xs">{timeAgo(timestamp)}</p>
       </div>
     </button>
   );

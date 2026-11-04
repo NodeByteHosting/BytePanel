@@ -3,13 +3,18 @@
 import {
   ArrowLeftIcon,
   DollarSign,
+  Egg,
   HardDrive,
   LayoutDashboard,
   Lock,
   Mail,
+  MapPin,
   Monitor,
+  Package,
+  RefreshCw,
   ScrollText,
   Server,
+  Settings,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -27,6 +32,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { signOut } from "@/lib/auth-client";
+import { useBranding } from "@/providers/branding";
 
 interface AdminSidebarEnhancedProps {
   user: SidebarUserConfig;
@@ -41,14 +47,22 @@ interface AdminSidebarEnhancedProps {
 
 const ICON_MAP: Record<string, LucideIcon> = {
   DollarSign,
+  Egg,
   HardDrive,
   LayoutDashboard,
   Mail,
+  MapPin,
   Monitor,
+  Package,
+  RefreshCw,
   ScrollText,
   Server,
+  Settings,
   Users,
 };
+
+const getIcon = (iconName: string): LucideIcon =>
+  ICON_MAP[iconName] || LayoutDashboard;
 
 export const AdminSidebarEnhanced = ({
   user,
@@ -56,6 +70,7 @@ export const AdminSidebarEnhanced = ({
 }: AdminSidebarEnhancedProps) => {
   const pathname = usePathname();
   const router = useRouter();
+  const { panelName } = useBranding();
 
   const handleSignOut = async () => {
     await signOut();
@@ -63,21 +78,18 @@ export const AdminSidebarEnhanced = ({
     router.refresh();
   };
 
-  const getIcon = (iconName: string): LucideIcon =>
-    ICON_MAP[iconName] || LayoutDashboard;
-
   return (
     <SharedSidebar
       user={user}
-      headerTitle="NodeByte"
+      headerTitle={panelName}
       headerSubtitle="Admin Panel"
-      headerHref="/admin"
+      headerHref="/"
       showAdminLink={false}
       onSignOut={handleSignOut}
     >
       {/* Admin Navigation */}
-      <SidebarGroup className="border-b border-border/40 px-0 py-3">
-        <SidebarGroupLabel className="px-4 h-9 flex items-center text-xs font-semibold text-muted-foreground">
+      <SidebarGroup className="border-border/40 border-b px-0 py-3">
+        <SidebarGroupLabel className="text-muted-foreground flex h-9 items-center px-4 text-xs font-semibold">
           Admin
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -103,7 +115,7 @@ export const AdminSidebarEnhanced = ({
                         <Icon className="h-4 w-4" />
                         <span>{label}</span>
                         {superAdminOnly && (
-                          <Lock className="size-3 shrink-0 opacity-40 ml-auto" />
+                          <Lock className="ml-auto size-3 shrink-0 opacity-40" />
                         )}
                       </Link>
                     </SidebarMenuButton>

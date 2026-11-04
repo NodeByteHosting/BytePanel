@@ -118,11 +118,11 @@ export const ProfilePanel = ({ user }: Props) => {
   return (
     <div className="max-w-xl space-y-6">
       {/* Avatar card */}
-      <div className="rounded-xl border border-border/60 bg-card p-5">
-        <h2 className="text-sm font-semibold mb-4">Profile photo</h2>
+      <div className="border-border/60 bg-card rounded-xl border p-5">
+        <h2 className="mb-4 text-sm font-semibold">Profile photo</h2>
         <div className="flex items-center gap-5">
           <Avatar
-            className="size-16 rounded-xl after:rounded-xl ring-2 ring-border/60"
+            className="ring-border/60 size-16 rounded-xl ring-2 after:rounded-xl"
             size="lg"
           >
             {imageSrc ? (
@@ -132,7 +132,7 @@ export const ProfilePanel = ({ user }: Props) => {
                 src={imageSrc}
               />
             ) : null}
-            <AvatarFallback className="rounded-xl text-lg font-semibold bg-primary/10 text-primary">
+            <AvatarFallback className="bg-primary/10 text-primary rounded-xl text-lg font-semibold">
               {getInitials(name, user.email)}
             </AvatarFallback>
           </Avatar>
@@ -143,9 +143,9 @@ export const ProfilePanel = ({ user }: Props) => {
             ref={imageInputRef}
             type="file"
           />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium mb-1">{name || user.email}</p>
-            <p className="text-xs text-muted-foreground mb-3">{user.email}</p>
+          <div className="min-w-0 flex-1">
+            <p className="mb-1 text-sm font-medium">{name || user.email}</p>
+            <p className="text-muted-foreground mb-3 text-xs">{user.email}</p>
             <div className="flex flex-wrap gap-2">
               <Button
                 disabled={imagePending}
@@ -174,8 +174,8 @@ export const ProfilePanel = ({ user }: Props) => {
       </div>
 
       {/* Profile details card */}
-      <div className="rounded-xl border border-border/60 bg-card p-5">
-        <h2 className="text-sm font-semibold mb-4">Profile details</h2>
+      <div className="border-border/60 bg-card rounded-xl border p-5">
+        <h2 className="mb-4 text-sm font-semibold">Profile details</h2>
         <form className="flex flex-col gap-4" onSubmit={handleProfileSubmit}>
           <div className="space-y-2">
             <Label htmlFor="name">Display name</Label>

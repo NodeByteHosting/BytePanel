@@ -20,13 +20,13 @@ export const SensitiveDataRevealer = ({
   const [isRevealed, setIsRevealed] = useState(false);
 
   if (!sensitive) {
-    return <>{children}</>;
+    return children;
   }
 
   return (
     <div
       className={cn(
-        "relative rounded-lg border border-border/50 bg-muted/20 p-4",
+        "border-border/50 bg-muted/20 relative rounded-lg border p-4",
         className
       )}
     >
@@ -37,7 +37,7 @@ export const SensitiveDataRevealer = ({
       </div>
 
       {!isRevealed && (
-        <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/50 backdrop-blur-sm">
+        <div className="bg-background/50 absolute inset-0 flex items-center justify-center rounded-lg backdrop-blur-sm">
           <Button
             variant="outline"
             size="sm"

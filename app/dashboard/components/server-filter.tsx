@@ -32,15 +32,18 @@ export interface ServerFilterProps {
   showMobileCompact?: boolean;
 }
 
+const NO_OPTIONS: FilterOption[] = [];
+const NO_SELECTION: string[] = [];
+
 export const ServerFilter = ({
   onSearchChange,
   onStatusFilterChange,
   onGameFilterChange,
-  statusOptions = [],
-  gameOptions = [],
+  statusOptions = NO_OPTIONS,
+  gameOptions = NO_OPTIONS,
   search = "",
-  selectedStatuses = [],
-  selectedGames = [],
+  selectedStatuses = NO_SELECTION,
+  selectedGames = NO_SELECTION,
   showMobileCompact: _showMobileCompact = true,
 }: ServerFilterProps) => {
   const hasActiveFilters =
@@ -52,17 +55,19 @@ export const ServerFilter = ({
     <div className="space-y-4">
       {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
         <Input
           placeholder="Search servers..."
           value={search}
           onChange={(e) => onSearchChange?.(e.target.value)}
-          className="pl-10 pr-8"
+          className="pr-8 pl-10"
         />
         {search && (
           <button
+            type="button"
+            aria-label="Clear search"
             onClick={() => onSearchChange?.("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
           >
             <X className="h-4 w-4" />
           </button>
@@ -78,7 +83,7 @@ export const ServerFilter = ({
               <Button variant="outline" size="sm" className="gap-2">
                 <span>Status</span>
                 {selectedStatuses.length > 0 && (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-medium">
+                  <span className="bg-primary text-primary-foreground flex h-5 w-5 items-center justify-center rounded-full text-xs font-medium">
                     {selectedStatuses.length}
                   </span>
                 )}
@@ -99,10 +104,10 @@ export const ServerFilter = ({
                     onStatusFilterChange?.(newStatuses);
                   }}
                 >
-                  <div className="flex items-center justify-between w-full gap-2">
+                  <div className="flex w-full items-center justify-between gap-2">
                     <span>{option.label}</span>
                     {option.count !== undefined && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         {option.count}
                       </span>
                     )}
@@ -120,7 +125,7 @@ export const ServerFilter = ({
               <Button variant="outline" size="sm" className="gap-2">
                 <span>Game</span>
                 {selectedGames.length > 0 && (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-medium">
+                  <span className="bg-primary text-primary-foreground flex h-5 w-5 items-center justify-center rounded-full text-xs font-medium">
                     {selectedGames.length}
                   </span>
                 )}
@@ -141,10 +146,10 @@ export const ServerFilter = ({
                     onGameFilterChange?.(newGames);
                   }}
                 >
-                  <div className="flex items-center justify-between w-full gap-2">
+                  <div className="flex w-full items-center justify-between gap-2">
                     <span>{option.label}</span>
                     {option.count !== undefined && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         {option.count}
                       </span>
                     )}
@@ -176,7 +181,7 @@ export const ServerFilter = ({
       {hasActiveFilters && (
         <div className="flex flex-wrap gap-2 text-xs">
           {search && (
-            <div className="bg-muted px-2 py-1 rounded-full text-muted-foreground">
+            <div className="bg-muted text-muted-foreground rounded-full px-2 py-1">
               Search: <span className="font-semibold">{search}</span>
             </div>
           )}
@@ -185,7 +190,7 @@ export const ServerFilter = ({
             return label ? (
               <div
                 key={status}
-                className="bg-muted px-2 py-1 rounded-full text-muted-foreground"
+                className="bg-muted text-muted-foreground rounded-full px-2 py-1"
               >
                 Status: <span className="font-semibold">{label}</span>
               </div>
@@ -196,7 +201,7 @@ export const ServerFilter = ({
             return label ? (
               <div
                 key={game}
-                className="bg-muted px-2 py-1 rounded-full text-muted-foreground"
+                className="bg-muted text-muted-foreground rounded-full px-2 py-1"
               >
                 Game: <span className="font-semibold">{label}</span>
               </div>

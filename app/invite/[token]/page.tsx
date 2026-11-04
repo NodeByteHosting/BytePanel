@@ -16,7 +16,7 @@ const InvitePage = async ({
   const invite = await prisma.serverInvite.findUnique({
     include: {
       invitedBy: { select: { email: true, name: true } },
-      server: { select: { game: true, id: true, name: true } },
+      server: { select: { id: true, name: true } },
     },
     where: { token },
   });
@@ -34,6 +34,7 @@ const InvitePage = async ({
     redirect(`/dashboard/${invite.serverId}`);
   }
 
+  // oxlint-disable-next-line react/purity -- server component, renders once per request
   if (invite.expiresAt < new Date()) {
     return (
       <InviteAcceptCard

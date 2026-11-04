@@ -62,14 +62,14 @@ const CONNECTIONS = [
 // ─── Projection ───────────────────────────────────────────────────────────────
 
 const proj = (lat: number, lon: number, rot: number, r = R) => {
-  const phi = lat * 0.017_453;
-  const lam = lon * 0.017_453 + rot;
-  const cp = Math.cos(phi),
-    sp = Math.sin(phi);
-  const cl = Math.cos(lam),
-    sl = Math.sin(lam);
-  const y = sp,
-    z = cp * cl;
+  const phi = lat * 0.017453;
+  const lam = lon * 0.017453 + rot;
+  const cp = Math.cos(phi);
+  const sp = Math.sin(phi);
+  const cl = Math.cos(lam);
+  const sl = Math.sin(lam);
+  const y = sp;
+  const z = cp * cl;
   return {
     x: r * cp * sl + CX,
     y: -r * (y * cT - z * sT) + CY,
@@ -86,17 +86,17 @@ const gcPath = (
   lon2: number,
   n: number
 ) => {
-  const d2r = 0.017_453;
+  const d2r = 0.017453;
   const l1 = lon1 * d2r;
   const l2 = lon2 * d2r;
   const p1 = lat1 * d2r;
   const p2 = lat2 * d2r;
-  const ax = Math.cos(p1) * Math.cos(l1),
-    ay = Math.cos(p1) * Math.sin(l1),
-    az = Math.sin(p1);
-  const bx = Math.cos(p2) * Math.cos(l2),
-    by = Math.cos(p2) * Math.sin(l2),
-    bz = Math.sin(p2);
+  const ax = Math.cos(p1) * Math.cos(l1);
+  const ay = Math.cos(p1) * Math.sin(l1);
+  const az = Math.sin(p1);
+  const bx = Math.cos(p2) * Math.cos(l2);
+  const by = Math.cos(p2) * Math.sin(l2);
+  const bz = Math.sin(p2);
   const omega = Math.acos(
     Math.max(-1, Math.min(1, ax * bx + ay * by + az * bz))
   );
@@ -110,11 +110,11 @@ const gcPath = (
   const pts: { lat: number; lon: number }[] = [];
   for (let i = 0; i <= n; i += 1) {
     const t = i / n;
-    const A = Math.sin((1 - t) * omega) / sinO,
-      B = Math.sin(t * omega) / sinO;
-    const x = A * ax + B * bx,
-      y = A * ay + B * by,
-      z = A * az + B * bz;
+    const A = Math.sin((1 - t) * omega) / sinO;
+    const B = Math.sin(t * omega) / sinO;
+    const x = A * ax + B * bx;
+    const y = A * ay + B * by;
+    const z = A * az + B * bz;
     pts.push({
       lat: Math.atan2(z, Math.hypot(x, y)) / d2r,
       lon: Math.atan2(y, x) / d2r,
@@ -127,8 +127,8 @@ const popLookup: Record<string, Pop> = Object.fromEntries(
   POPS.map((p) => [p.id, p])
 );
 const ARC_PATHS = CONNECTIONS.map((c) => {
-  const a = popLookup[c.a],
-    b = popLookup[c.b];
+  const a = popLookup[c.a];
+  const b = popLookup[c.b];
   return gcPath(a.lat, a.lon, b.lat, b.lon, 50);
 });
 
@@ -146,13 +146,19 @@ const cssHex = (v: string, el: HTMLElement): string => {
 };
 
 const useThemeColors = () => {
-  const [c, set] = useState({ accent: "#38bdf8", primary: "#6366f1" });
+  const [colors, setColors] = useState({
+    accent: "#38bdf8",
+    primary: "#6366f1",
+  });
   useEffect(() => {
     const el = document.createElement("span");
     el.style.cssText = "display:none;position:absolute";
     document.body.append(el);
     const read = () =>
-      set({ accent: cssHex("--accent", el), primary: cssHex("--primary", el) });
+      setColors({
+        accent: cssHex("--accent", el),
+        primary: cssHex("--primary", el),
+      });
     read();
     const mo = new MutationObserver(read);
     mo.observe(document.documentElement, {
@@ -164,7 +170,7 @@ const useThemeColors = () => {
       el.remove();
     };
   }, []);
-  return c;
+  return colors;
 };
 
 // ─── Colour helpers ───────────────────────────────────────────────────────────
@@ -181,7 +187,7 @@ const rgba = (hex: string, a: number) =>
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function HeroGraphic() {
+const HeroGraphic = () => {
   const ref = useRef<HTMLCanvasElement>(null);
   const { accent } = useThemeColors();
 
@@ -229,7 +235,7 @@ export default function HeroGraphic() {
 
       /* dot grid */
       for (let lat = -85; lat <= 85; lat += DOT_DEG) {
-        const step = DOT_DEG / Math.max(Math.cos(lat * 0.017_453), 0.28);
+        const step = DOT_DEG / Math.max(Math.cos(lat * 0.017453), 0.28);
         for (let lon = 0; lon < 360; lon += step) {
           const p = proj(lat, lon, rot);
           if (p.z <= 0) {
@@ -326,15 +332,15 @@ export default function HeroGraphic() {
   }, [accent]);
 
   return (
-    <div className="relative w-[420px] h-[420px]">
-      <canvas ref={ref} className="w-full h-full" />
-      <div className="absolute bottom-2 inset-x-0 flex flex-col items-center gap-1.5 pointer-events-none select-none">
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-background/60 border border-border/40 backdrop-blur-sm">
+    <div className="relative h-[420px] w-[420px]">
+      <canvas ref={ref} className="h-full w-full" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-2 flex flex-col items-center gap-1.5 select-none">
+        <div className="bg-background/60 border-border/40 flex items-center gap-1.5 rounded-full border px-3 py-1 backdrop-blur-sm">
           <span
-            className="w-1.5 h-1.5 rounded-full animate-pulse"
+            className="h-1.5 w-1.5 animate-pulse rounded-full"
             style={{ backgroundColor: accent }}
           />
-          <span className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground">
+          <span className="text-muted-foreground text-[10px] font-semibold tracking-widest uppercase">
             Global Network · 3+ Data Center Partners
           </span>
         </div>
@@ -346,10 +352,10 @@ export default function HeroGraphic() {
           ].map((r) => (
             <span key={r.label} className="flex items-center gap-1.5">
               <span
-                className="w-1.5 h-1.5 rounded-full"
+                className="h-1.5 w-1.5 rounded-full"
                 style={{ backgroundColor: r.color }}
               />
-              <span className="text-[9px] text-muted-foreground/75">
+              <span className="text-muted-foreground/75 text-[9px]">
                 {r.label}
               </span>
             </span>
@@ -358,4 +364,6 @@ export default function HeroGraphic() {
       </div>
     </div>
   );
-}
+};
+
+export default HeroGraphic;

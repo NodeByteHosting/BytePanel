@@ -38,10 +38,10 @@ const GlobalError = ({ error, reset }: GlobalErrorProperties) => {
         <ThemeProvider>
           <main className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col items-start justify-center gap-8 px-6 py-24">
             <AnimatedLogo className="size-20" />
-            <h1 className="max-w-[20ch] text-balance font-medium text-5xl tracking-tight sm:text-6xl">
+            <h1 className="max-w-[20ch] text-5xl font-medium tracking-tight text-balance sm:text-6xl">
               Something went wrong.
             </h1>
-            <p className="max-w-[60ch] text-balance text-lg text-muted-foreground">
+            <p className="text-muted-foreground max-w-[60ch] text-lg text-balance">
               An unexpected error has occurred and our team has been notified.
               You can try again, or head back home and pretend this never
               happened.
@@ -55,8 +55,8 @@ const GlobalError = ({ error, reset }: GlobalErrorProperties) => {
               </Button>
             </div>
             {error.digest ? (
-              <dl className="mt-4 flex flex-col gap-2 border-t border-foreground/10 pt-6">
-                <dt className="font-mono text-muted-foreground text-xs uppercase tracking-wide">
+              <dl className="border-foreground/10 mt-4 flex flex-col gap-2 border-t pt-6">
+                <dt className="text-muted-foreground font-mono text-xs tracking-wide uppercase">
                   Reference
                 </dt>
                 <dd className="font-mono text-sm tabular-nums">

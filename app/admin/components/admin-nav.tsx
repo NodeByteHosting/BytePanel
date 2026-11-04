@@ -81,7 +81,7 @@ export const AdminNav = ({ superAdmin }: { superAdmin: boolean }) => {
             <Icon className="size-4 shrink-0" />
             <span className="flex-1">{label}</span>
             {superAdminOnly && (
-              <Lock className="size-3 shrink-0 text-muted-foreground/50" />
+              <Lock className="text-muted-foreground/50 size-3 shrink-0" />
             )}
           </Link>
         );

@@ -16,4 +16,10 @@ export default defineConfig({
     "lib/providers/hetzner/schema.ts",
     "hooks/use-mobile.ts",
   ],
+  rules: {
+    // Reports code the React Compiler would skip optimising (try/finally,
+    // throw inside try, etc.). The compiler isn't enabled in next.config.ts,
+    // so these are informational, not bugs.
+    "react/todo": "off",
+  },
 });

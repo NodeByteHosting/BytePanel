@@ -1,14 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
-import {
-  ChevronsUpDown,
-  LogOut,
-  User,
-} from "lucide-react";
+import { ChevronsUpDown, LogOut, User } from "lucide-react";
 import Link from "next/link";
 
-import { Logo } from "@/components/logo";
+import { BrandLogo } from "@/components/brand-logo";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -77,12 +73,14 @@ export const SharedSidebar = ({
           href={headerHref}
           className="flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80"
         >
-          <Logo className="h-5 w-auto text-sidebar-foreground" />
+          <BrandLogo className="h-5 w-auto text-sidebar-foreground" />
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-bold tracking-tight text-sidebar-foreground">
               {headerTitle}
             </span>
-            <span className="text-xs text-muted-foreground">{headerSubtitle}</span>
+            <span className="text-xs text-muted-foreground">
+              {headerSubtitle}
+            </span>
           </div>
         </Link>
       </SidebarHeader>
@@ -96,7 +94,9 @@ export const SharedSidebar = ({
         <SidebarMenu className="px-2 gap-1">
           <SidebarMenuItem>
             <div className="flex items-center justify-between rounded-lg px-3 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
-              <span className="group-data-[collapsible=icon]:hidden">Theme</span>
+              <span className="group-data-[collapsible=icon]:hidden">
+                Theme
+              </span>
               <ModeToggle />
             </div>
           </SidebarMenuItem>
@@ -135,11 +135,7 @@ export const SharedSidebar = ({
                   <ChevronsUpDown className="ml-auto h-4 w-4 opacity-50 group-data-[collapsible=icon]:hidden" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                side="top"
-                align="end"
-                className="w-56"
-              >
+              <DropdownMenuContent side="top" align="end" className="w-56">
                 {/* User Info */}
                 <DropdownMenuLabel className="font-normal">
                   <div className="grid text-left leading-tight">

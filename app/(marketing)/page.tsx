@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import {
   Accordion,
@@ -25,16 +26,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { games } from "@/games";
 import { prisma } from "@/lib/db";
-import { SNAPSHOT_ENVIRONMENT } from "@/lib/env";
-import {
-  getProviderForUserWithImage,
-  MissingProviderCredentialsError,
-} from "@/lib/providers";
-import type { CatalogServerType } from "@/lib/providers/types";
+import { formatMib } from "@/lib/format";
 import { getSession } from "@/lib/session";
+import { getPanelSettings } from "@/lib/settings";
 
 import HeroGraphic from "./components/hero-graphic";
 import { PricingSection } from "./components/pricing-section";
+import type { PricingPlan } from "./components/pricing-section";
 
 const FAQS = [
   {
@@ -141,6 +139,11 @@ const STEPS = [
 ];
 
 const HomePage = async () => {
+  const { landingPage } = await getPanelSettings();
+  if (!landingPage) {
+    // /dashboard sends signed-out visitors on to /sign-in.
+    redirect("/dashboard");
+  }
   const session = await getSession();
   const isAuthenticated = Boolean(session?.user);
 
@@ -148,22 +151,22 @@ const HomePage = async () => {
     .count({ where: { deletedAt: null } })
     .catch(() => 0);
 
-  // Fetch live pricing catalog — silently skip if not yet configured.
-  let serverTypes: CatalogServerType[] = [];
-  let currency = "GBP";
-  try {
-    const { provider, imageId } = await getProviderForUserWithImage(
-      "public",
-      SNAPSHOT_ENVIRONMENT
-    );
-    const catalog = await provider.getCatalog(imageId);
-    ({ serverTypes } = catalog);
-    ({ currency } = catalog);
-  } catch (error) {
-    if (!(error instanceof MissingProviderCredentialsError)) {
-      console.error("[home] catalog fetch failed", error);
-    }
-  }
+  // Active plans for the pricing section — skipped if none are configured.
+  const plans = await prisma.plan
+    .findMany({
+      orderBy: [{ sort: "asc" }, { priceMonthCents: "asc" }],
+      where: { active: true },
+    })
+    .catch(() => []);
+  const currency = plans[0]?.currency ?? "GBP";
+  const serverTypes: PricingPlan[] = plans.map((plan) => ({
+    backups: plan.backupLimit,
+    cores: plan.cpu > 0 ? (plan.cpu / 100).toFixed(1) : "∞",
+    disk: formatMib(plan.disk),
+    memory: formatMib(plan.memory),
+    name: plan.name,
+    pricePerMonth: plan.priceMonthCents / 100,
+  }));
 
   const stats = [
     ...BASE_STATS,
@@ -191,33 +194,33 @@ const HomePage = async () => {
   return (
     <div className="flex flex-col">
       {/* ── Hero ── */}
-      <section className="relative flex min-h-screen items-center justify-center overflow-hidden pb-20 pt-32">
+      <section className="relative flex min-h-screen items-center justify-center overflow-hidden pt-32 pb-20">
         {/* Background gradient */}
-        <div className="absolute inset-0 bg-linear-to-b from-primary/5 via-background to-background" />
+        <div className="from-primary/5 via-background to-background absolute inset-0 bg-linear-to-b" />
 
         {/* Animated orbs */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute left-1/4 top-1/4 h-125 w-125 animate-pulse rounded-full bg-primary/10 blur-[120px]" />
+          <div className="bg-primary/10 absolute top-1/4 left-1/4 h-125 w-125 animate-pulse rounded-full blur-[120px]" />
           <div
-            className="absolute bottom-1/4 right-1/4 h-100 w-100 animate-pulse rounded-full bg-accent/10 blur-[100px]"
+            className="bg-accent/10 absolute right-1/4 bottom-1/4 h-100 w-100 animate-pulse rounded-full blur-[100px]"
             style={{ animationDelay: "1s" }}
           />
-          <div className="absolute left-1/2 top-1/2 h-150 w-150 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[150px]" />
+          <div className="bg-primary/5 absolute top-1/2 left-1/2 h-150 w-150 -translate-x-1/2 -translate-y-1/2 rounded-full blur-[150px]" />
         </div>
 
         {/* Subtle grid overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[64px_64px] mask-[radial-gradient(ellipse_60%_60%_at_50%_50%,black_40%,transparent_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] mask-[radial-gradient(ellipse_60%_60%_at_50%_50%,black_40%,transparent_100%)] bg-size-[64px_64px]" />
 
         <div className="relative z-10 mx-auto w-full max-w-6xl px-6">
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
             {/* Left: text + CTA */}
             <div className="flex flex-col gap-8 text-center lg:text-left">
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 self-center rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm backdrop-blur-sm lg:self-start">
-                <Sparkles className="size-4 text-primary" />
+              <div className="border-primary/20 bg-primary/10 inline-flex items-center gap-2 self-center rounded-full border px-4 py-2 text-sm backdrop-blur-sm lg:self-start">
+                <Sparkles className="text-primary size-4" />
                 <span className="text-muted-foreground">
                   Welcome to our{" "}
-                  <strong className="font-semibold text-primary">
+                  <strong className="text-primary font-semibold">
                     GAME SERVER MANAGER
                   </strong>
                 </span>
@@ -226,15 +229,15 @@ const HomePage = async () => {
               {/* Heading */}
               <div className="flex flex-col gap-4">
                 <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-5xl xl:text-6xl">
-                  <span className="bg-linear-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                  <span className="from-foreground to-foreground/80 bg-linear-to-r bg-clip-text text-transparent">
                     NodeByte Game
                   </span>
                   <br />
-                  <span className="bg-linear-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
+                  <span className="from-primary via-primary to-accent bg-linear-to-r bg-clip-text text-transparent">
                     Server Manager.
                   </span>
                 </h1>
-                <p className="mx-auto max-w-xl text-lg leading-relaxed text-muted-foreground lg:mx-0">
+                <p className="text-muted-foreground mx-auto max-w-xl text-lg leading-relaxed lg:mx-0">
                   Deploy, monitor, and manage your NodeByte game servers. Invite
                   team members, track performance, and keep your worlds running
                   all from one place.
@@ -268,7 +271,7 @@ const HomePage = async () => {
                       asChild
                       size="lg"
                       variant="outline"
-                      className="h-12 w-full rounded-full border-border/50 bg-card/30 px-8 text-base backdrop-blur-sm hover:border-primary/30 hover:bg-card/50 sm:w-auto"
+                      className="border-border/50 bg-card/30 hover:border-primary/30 hover:bg-card/50 h-12 w-full rounded-full px-8 text-base backdrop-blur-sm sm:w-auto"
                     >
                       <Link
                         href="https://nodebyte.host"
@@ -287,13 +290,13 @@ const HomePage = async () => {
                 {stats.map(({ icon: Icon, label, value }) => (
                   <div
                     key={label}
-                    className="flex flex-col gap-1 rounded-2xl border border-border/50 bg-card/30 p-4 backdrop-blur-sm"
+                    className="border-border/50 bg-card/30 flex flex-col gap-1 rounded-2xl border p-4 backdrop-blur-sm"
                   >
-                    <Icon className="mb-1 size-4 text-primary" />
+                    <Icon className="text-primary mb-1 size-4" />
                     <span className="text-2xl font-bold tracking-tight">
                       {value}
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       {label}
                     </span>
                   </div>
@@ -311,19 +314,19 @@ const HomePage = async () => {
 
       {/* ── Features ── */}
       <section className="relative py-24">
-        <div className="absolute inset-0 bg-linear-to-b from-background via-primary/5 to-background" />
+        <div className="from-background via-primary/5 to-background absolute inset-0 bg-linear-to-b" />
         <div className="relative z-10 mx-auto max-w-6xl px-6">
           <div className="mb-12 flex flex-col gap-3 text-center">
-            <div className="inline-flex items-center gap-2 self-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs backdrop-blur-sm">
-              <Sparkles className="size-3 text-primary" />
-              <span className="font-medium text-primary">
+            <div className="border-primary/20 bg-primary/10 inline-flex items-center gap-2 self-center rounded-full border px-3 py-1 text-xs backdrop-blur-sm">
+              <Sparkles className="text-primary size-3" />
+              <span className="text-primary font-medium">
                 Built for players
               </span>
             </div>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Everything you need to run game servers
             </h2>
-            <p className="mx-auto max-w-lg text-muted-foreground">
+            <p className="text-muted-foreground mx-auto max-w-lg">
               No DevOps experience required. NodeByte Panel handles the
               infrastructure so you can focus on playing.
             </p>
@@ -333,16 +336,16 @@ const HomePage = async () => {
             {FEATURES.map(({ icon: Icon, title, description, highlights }) => (
               <div
                 key={title}
-                className="group flex flex-col gap-4 rounded-2xl border border-border/50 bg-card/30 p-5 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 hover:bg-card/50"
+                className="group border-border/50 bg-card/30 hover:border-primary/30 hover:bg-card/50 flex flex-col gap-4 rounded-2xl border p-5 backdrop-blur-sm transition-all duration-300"
               >
-                <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors duration-300 group-hover:bg-primary/20">
+                <div className="bg-primary/10 text-primary group-hover:bg-primary/20 flex size-10 items-center justify-center rounded-xl transition-colors duration-300">
                   <Icon className="size-5" />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <h3 className="text-base font-semibold leading-snug">
+                  <h3 className="text-base leading-snug font-semibold">
                     {title}
                   </h3>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
+                  <p className="text-muted-foreground text-sm leading-relaxed">
                     {description}
                   </p>
                 </div>
@@ -350,9 +353,9 @@ const HomePage = async () => {
                   {highlights.map((h) => (
                     <li
                       key={h}
-                      className="flex items-center gap-2 text-xs text-muted-foreground"
+                      className="text-muted-foreground flex items-center gap-2 text-xs"
                     >
-                      <CheckCircle2 className="size-3 shrink-0 text-primary" />
+                      <CheckCircle2 className="text-primary size-3 shrink-0" />
                       {h}
                     </li>
                   ))}
@@ -365,20 +368,20 @@ const HomePage = async () => {
 
       {/* ── Dedicated infrastructure ── */}
       <section className="relative py-24">
-        <div className="absolute inset-0 bg-linear-to-b from-background via-accent/3 to-background" />
+        <div className="from-background via-accent/3 to-background absolute inset-0 bg-linear-to-b" />
         <div className="relative z-10 mx-auto max-w-6xl px-6">
           <div className="mb-12 flex flex-col gap-3 text-center">
-            <div className="inline-flex items-center gap-2 self-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs backdrop-blur-sm">
-              <Cpu className="size-3 text-primary" />
-              <span className="font-medium text-primary">Infrastructure</span>
+            <div className="border-primary/20 bg-primary/10 inline-flex items-center gap-2 self-center rounded-full border px-3 py-1 text-xs backdrop-blur-sm">
+              <Cpu className="text-primary size-3" />
+              <span className="text-primary font-medium">Infrastructure</span>
             </div>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Your server.{" "}
-              <span className="bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
+              <span className="from-primary to-accent bg-linear-to-r bg-clip-text text-transparent">
                 Not shared.
               </span>
             </h2>
-            <p className="mx-auto max-w-xl text-muted-foreground">
+            <p className="text-muted-foreground mx-auto max-w-xl">
               Most game hosting panels cram hundreds of servers onto a single
               machine. Every server on NodeByte runs on its own dedicated VM
               with its own IP address, CPU, and RAM. What you pay for is yours,
@@ -388,20 +391,20 @@ const HomePage = async () => {
 
           <div className="grid gap-6 md:grid-cols-2">
             {/* NodeByte: dedicated */}
-            <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-card/40 p-8 backdrop-blur-sm">
-              <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent" />
+            <div className="border-primary/30 bg-card/40 relative overflow-hidden rounded-2xl border p-8 backdrop-blur-sm">
+              <div className="from-primary/5 absolute inset-0 bg-linear-to-br to-transparent" />
               <div className="relative flex flex-col gap-6">
                 <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                  <div className="bg-primary/15 text-primary flex size-10 items-center justify-center rounded-xl">
                     <Shield className="size-5" />
                   </div>
                   <div>
                     <div className="text-sm font-semibold">NodeByte</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-muted-foreground text-xs">
                       Dedicated VM per server
                     </div>
                   </div>
-                  <div className="ml-auto rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                  <div className="border-primary/30 bg-primary/10 text-primary ml-auto rounded-full border px-2.5 py-0.5 text-xs font-medium">
                     How we do it
                   </div>
                 </div>
@@ -414,7 +417,7 @@ const HomePage = async () => {
                     "Consistent performance regardless of other users",
                   ].map((fact) => (
                     <li key={fact} className="flex items-start gap-2.5 text-sm">
-                      <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" />
+                      <CheckCircle2 className="text-primary mt-0.5 size-4 shrink-0" />
                       <span>{fact}</span>
                     </li>
                   ))}
@@ -423,17 +426,17 @@ const HomePage = async () => {
             </div>
 
             {/* Others: shared */}
-            <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-card/20 p-8 backdrop-blur-sm">
+            <div className="border-border/40 bg-card/20 relative overflow-hidden rounded-2xl border p-8 backdrop-blur-sm">
               <div className="relative flex flex-col gap-6">
                 <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-muted/50 text-muted-foreground">
+                  <div className="bg-muted/50 text-muted-foreground flex size-10 items-center justify-center rounded-xl">
                     <Server className="size-5" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-muted-foreground">
+                    <div className="text-muted-foreground text-sm font-semibold">
                       Most other hosts
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-muted-foreground text-xs">
                       Shared container model
                     </div>
                   </div>
@@ -448,9 +451,9 @@ const HomePage = async () => {
                   ].map((fact) => (
                     <li
                       key={fact}
-                      className="flex items-start gap-2.5 text-sm text-muted-foreground"
+                      className="text-muted-foreground flex items-start gap-2.5 text-sm"
                     >
-                      <X className="mt-0.5 size-4 shrink-0 text-destructive/60" />
+                      <X className="text-destructive/60 mt-0.5 size-4 shrink-0" />
                       <span>{fact}</span>
                     </li>
                   ))}
@@ -463,17 +466,17 @@ const HomePage = async () => {
 
       {/* ── Games showcase ── */}
       <section className="relative py-24">
-        <div className="absolute inset-0 bg-linear-to-b from-background via-accent/3 to-background" />
+        <div className="from-background via-accent/3 to-background absolute inset-0 bg-linear-to-b" />
         <div className="relative z-10 mx-auto max-w-6xl px-6">
           <div className="mb-12 flex flex-col gap-3 text-center">
-            <div className="inline-flex items-center gap-2 self-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs backdrop-blur-sm">
-              <Server className="size-3 text-primary" />
-              <span className="font-medium text-primary">Supported games</span>
+            <div className="border-primary/20 bg-primary/10 inline-flex items-center gap-2 self-center rounded-full border px-3 py-1 text-xs backdrop-blur-sm">
+              <Server className="text-primary size-3" />
+              <span className="text-primary font-medium">Supported games</span>
             </div>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               {games.length} games, ready to deploy
             </h2>
-            <p className="mx-auto max-w-lg text-muted-foreground">
+            <p className="text-muted-foreground mx-auto max-w-lg">
               From Minecraft to Rust spin up your game server in under a minute.
             </p>
           </div>
@@ -483,7 +486,7 @@ const HomePage = async () => {
             {featuredGames.map((game) => (
               <div
                 key={game.id}
-                className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
+                className="group border-border/50 bg-card/30 hover:border-primary/40 hover:shadow-primary/10 relative overflow-hidden rounded-2xl border backdrop-blur-sm transition-all duration-300 hover:shadow-lg"
               >
                 <div className="relative aspect-16/7 w-full overflow-hidden">
                   <Image
@@ -492,16 +495,16 @@ const HomePage = async () => {
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-linear-to-t from-card/90 via-card/20 to-transparent" />
+                  <div className="from-card/90 via-card/20 absolute inset-0 bg-linear-to-t to-transparent" />
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between p-4">
+                <div className="absolute right-0 bottom-0 left-0 flex items-end justify-between p-4">
                   <div className="flex flex-col gap-0.5">
                     <span className="text-base font-semibold">{game.name}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       Game server
                     </span>
                   </div>
-                  <div className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                  <div className="border-primary/30 bg-primary/10 text-primary rounded-full border px-2.5 py-0.5 text-xs font-medium">
                     Ready to deploy
                   </div>
                 </div>
@@ -515,7 +518,7 @@ const HomePage = async () => {
               {remainingGames.map((game) => (
                 <div
                   key={game.id}
-                  className="flex items-center gap-2 rounded-full border border-border/50 bg-card/30 px-3 py-1.5 backdrop-blur-sm transition-colors hover:border-primary/30 hover:bg-card/50"
+                  className="border-border/50 bg-card/30 hover:border-primary/30 hover:bg-card/50 flex items-center gap-2 rounded-full border px-3 py-1.5 backdrop-blur-sm transition-colors"
                 >
                   <Image
                     src={game.image}
@@ -534,17 +537,17 @@ const HomePage = async () => {
 
       {/* ── How it works ── */}
       <section className="relative py-24">
-        <div className="absolute inset-0 bg-linear-to-b from-background via-primary/5 to-background" />
+        <div className="from-background via-primary/5 to-background absolute inset-0 bg-linear-to-b" />
         <div className="relative z-10 mx-auto max-w-4xl px-6">
           <div className="mb-12 flex flex-col gap-3 text-center">
-            <div className="inline-flex items-center gap-2 self-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs backdrop-blur-sm">
-              <Terminal className="size-3 text-primary" />
-              <span className="font-medium text-primary">How it works</span>
+            <div className="border-primary/20 bg-primary/10 inline-flex items-center gap-2 self-center rounded-full border px-3 py-1 text-xs backdrop-blur-sm">
+              <Terminal className="text-primary size-3" />
+              <span className="text-primary font-medium">How it works</span>
             </div>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Up and running in three steps
             </h2>
-            <p className="mx-auto max-w-lg text-muted-foreground">
+            <p className="text-muted-foreground mx-auto max-w-lg">
               No VMs, no SSH, no configuration files. Just pick, deploy, and
               play.
             </p>
@@ -552,18 +555,18 @@ const HomePage = async () => {
 
           <div className="relative grid gap-6 sm:grid-cols-3">
             {/* Connector line visible on desktop */}
-            <div className="absolute left-[16.666%] right-[16.666%] top-8 hidden h-px bg-linear-to-r from-transparent via-border to-transparent sm:block" />
+            <div className="via-border absolute top-8 right-[16.666%] left-[16.666%] hidden h-px bg-linear-to-r from-transparent to-transparent sm:block" />
             {STEPS.map(({ num, title, body }) => (
               <div
                 key={num}
                 className="relative flex flex-col items-center gap-4 text-center"
               >
-                <div className="relative flex size-16 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10 text-2xl font-black text-primary shadow-lg shadow-primary/10">
+                <div className="border-primary/30 bg-primary/10 text-primary shadow-primary/10 relative flex size-16 items-center justify-center rounded-2xl border text-2xl font-black shadow-lg">
                   {num}
                 </div>
                 <div className="flex flex-col gap-2">
                   <h3 className="text-base font-semibold">{title}</h3>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
+                  <p className="text-muted-foreground text-sm leading-relaxed">
                     {body}
                   </p>
                 </div>
@@ -589,17 +592,17 @@ const HomePage = async () => {
       {/* ── Pricing ── */}
       {serverTypes.length > 0 && (
         <section className="relative py-24">
-          <div className="absolute inset-0 bg-linear-to-b from-background via-primary/5 to-background" />
+          <div className="from-background via-primary/5 to-background absolute inset-0 bg-linear-to-b" />
           <div className="relative z-10 mx-auto max-w-6xl px-6">
             <div className="mb-12 flex flex-col gap-3 text-center">
-              <div className="inline-flex items-center gap-2 self-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs backdrop-blur-sm">
-                <CreditCard className="size-3 text-primary" />
-                <span className="font-medium text-primary">Pricing</span>
+              <div className="border-primary/20 bg-primary/10 inline-flex items-center gap-2 self-center rounded-full border px-3 py-1 text-xs backdrop-blur-sm">
+                <CreditCard className="text-primary size-3" />
+                <span className="text-primary font-medium">Pricing</span>
               </div>
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
                 Simple, transparent pricing
               </h2>
-              <p className="mx-auto max-w-lg text-muted-foreground">
+              <p className="text-muted-foreground mx-auto max-w-lg">
                 Pick any server size. Pay monthly, cancel anytime. No contracts,
                 no hidden fees. All prices in GBP.
               </p>
@@ -615,24 +618,24 @@ const HomePage = async () => {
 
       {/* ── CTA ── */}
       <section className="relative py-24">
-        <div className="absolute inset-0 bg-linear-to-b from-background via-primary/5 to-background" />
+        <div className="from-background via-primary/5 to-background absolute inset-0 bg-linear-to-b" />
         <div className="relative z-10 mx-auto max-w-4xl px-6">
-          <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card/40 p-10 text-center backdrop-blur-sm md:p-16">
-            <div className="absolute inset-0 -z-10 bg-linear-to-br from-primary/10 via-transparent to-accent/10" />
-            <div className="absolute -left-20 -top-20 h-64 w-64 animate-pulse rounded-full bg-primary/15 blur-[80px]" />
-            <div className="absolute -bottom-20 -right-20 h-64 w-64 animate-pulse rounded-full bg-accent/15 blur-[80px]" />
+          <div className="border-primary/20 bg-card/40 relative overflow-hidden rounded-3xl border p-10 text-center backdrop-blur-sm md:p-16">
+            <div className="from-primary/10 to-accent/10 absolute inset-0 -z-10 bg-linear-to-br via-transparent" />
+            <div className="bg-primary/15 absolute -top-20 -left-20 h-64 w-64 animate-pulse rounded-full blur-[80px]" />
+            <div className="bg-accent/15 absolute -right-20 -bottom-20 h-64 w-64 animate-pulse rounded-full blur-[80px]" />
             <div className="relative flex flex-col items-center gap-6">
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm">
-                <Sparkles className="size-4 text-primary" />
-                <span className="font-medium text-primary">Ready to play?</span>
+              <div className="border-primary/20 bg-primary/10 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm">
+                <Sparkles className="text-primary size-4" />
+                <span className="text-primary font-medium">Ready to play?</span>
               </div>
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
                 Your server is{" "}
-                <span className="bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
+                <span className="from-primary to-accent bg-linear-to-r bg-clip-text text-transparent">
                   60 seconds away
                 </span>
               </h2>
-              <p className="max-w-xl text-muted-foreground">
+              <p className="text-muted-foreground max-w-xl">
                 Join NodeByte Panel today. Deploy your first server whenever
                 you&apos;re ready.
               </p>
@@ -652,7 +655,7 @@ const HomePage = async () => {
                     asChild
                     variant="ghost"
                     size="lg"
-                    className="h-12 rounded-full px-8 text-base text-muted-foreground hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground h-12 rounded-full px-8 text-base"
                   >
                     <Link
                       href="https://nodebyte.host"
@@ -671,12 +674,12 @@ const HomePage = async () => {
 
       {/* ── FAQ ── */}
       <section className="relative py-24">
-        <div className="absolute inset-0 bg-linear-to-b from-background via-accent/5 to-background" />
+        <div className="from-background via-accent/5 to-background absolute inset-0 bg-linear-to-b" />
         <div className="relative z-10 mx-auto max-w-3xl px-6">
           <div className="mb-12 flex flex-col gap-3 text-center">
-            <div className="inline-flex items-center gap-2 self-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs backdrop-blur-sm">
-              <HelpCircle className="size-3 text-primary" />
-              <span className="font-medium text-primary">FAQ</span>
+            <div className="border-primary/20 bg-primary/10 inline-flex items-center gap-2 self-center rounded-full border px-3 py-1 text-xs backdrop-blur-sm">
+              <HelpCircle className="text-primary size-3" />
+              <span className="text-primary font-medium">FAQ</span>
             </div>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Frequently asked questions
@@ -687,14 +690,14 @@ const HomePage = async () => {
                 href="https://nodebyte.host/contact"
                 target="_blank"
                 rel="noreferrer"
-                className="text-primary underline underline-offset-4 hover:text-primary/80"
+                className="text-primary hover:text-primary/80 underline underline-offset-4"
               >
                 Contact support
               </Link>
             </p>
           </div>
 
-          <div className="rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm">
+          <div className="border-border/50 bg-card/30 rounded-2xl border backdrop-blur-sm">
             <Accordion type="single" collapsible className="w-full">
               {FAQS.map((faq, i) => (
                 <AccordionItem
@@ -705,7 +708,7 @@ const HomePage = async () => {
                   <AccordionTrigger className="py-5 text-left font-medium hover:no-underline">
                     {faq.question}
                   </AccordionTrigger>
-                  <AccordionContent className="pb-5 text-muted-foreground">
+                  <AccordionContent className="text-muted-foreground pb-5">
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>

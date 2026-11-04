@@ -14,7 +14,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-import { Logo } from "@/components/logo";
+import { BrandLogo } from "@/components/brand-logo";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -38,16 +38,20 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { games } from "@/games";
 import { signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
+import { useBranding } from "@/providers/branding";
+
+// Panel-side health only; live power state comes from the node on the
+// server page.
+export type SidebarHealth = "ready" | "pending" | "issue";
 
 export interface SidebarServer {
   id: string;
   name: string;
-  game: string;
-  observedState: string;
-  desiredState: string;
+  gameName: string | null;
+  gameImage: string | null;
+  health: SidebarHealth;
 }
 
 export interface SidebarUser {
@@ -58,12 +62,10 @@ export interface SidebarUser {
   superAdmin: boolean;
 }
 
-const statusDot: Record<string, string> = {
-  failed: "bg-red-500",
-  lost: "bg-red-500",
-  running: "bg-emerald-500",
-  stopped: "bg-zinc-400",
-  unhealthy: "bg-amber-500",
+const statusDot: Record<SidebarHealth, string> = {
+  issue: "bg-red-500",
+  pending: "bg-amber-500",
+  ready: "bg-emerald-500",
 };
 
 const StatPill = ({
@@ -89,7 +91,7 @@ const StatPill = ({
         styles[color]
       )}
     >
-      <span className="text-sm font-bold leading-none">{value}</span>
+      <span className="text-sm leading-none font-bold">{value}</span>
       <span className="text-[10px] opacity-80">{label}</span>
     </div>
   );
@@ -104,43 +106,38 @@ export const AppSidebar = ({
 }) => {
   const pathname = usePathname();
   const router = useRouter();
+  const { panelName } = useBranding();
 
   const initial = (user.name ?? user.email ?? "?").charAt(0).toUpperCase();
   const isAdmin = user.superAdmin || user.role === "admin";
 
-  const runningCount = servers.filter(
-    (s) => s.observedState === "running"
-  ).length;
-  const stoppedCount = servers.filter(
-    (s) => s.observedState === "stopped"
-  ).length;
-  const issueCount = servers.filter(
-    (s) => s.observedState === "unhealthy" || s.observedState === "failed"
-  ).length;
+  const readyCount = servers.filter((s) => s.health === "ready").length;
+  const pendingCount = servers.filter((s) => s.health === "pending").length;
+  const issueCount = servers.filter((s) => s.health === "issue").length;
 
   return (
     <Sidebar collapsible="offcanvas" className="border-none">
       {/* Header */}
-      <SidebarHeader className="border-b border-sidebar-border px-4 py-3.5">
+      <SidebarHeader className="border-sidebar-border border-b px-4 py-3.5">
         <Link
-          href="/dashboard"
+          href="/"
           className="flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80"
         >
-          <Logo className="h-5 w-auto text-sidebar-foreground" />
+          <BrandLogo className="text-sidebar-foreground h-5 w-auto" />
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-bold tracking-tight text-sidebar-foreground">
-              NodeByte
+            <span className="text-sidebar-foreground text-sm font-bold tracking-tight">
+              {panelName}
             </span>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-muted-foreground text-[11px]">
               Game Servers
             </span>
           </div>
         </Link>
       </SidebarHeader>
 
-      <SidebarContent className="px-0 gap-0">
+      <SidebarContent className="gap-0 px-0">
         {/* Nav links */}
-        <SidebarGroup className="border-b border-sidebar-border px-2 py-2">
+        <SidebarGroup className="border-sidebar-border border-b px-2 py-2">
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -174,24 +171,24 @@ export const AppSidebar = ({
 
         {/* Stats strip */}
         {servers.length > 0 && (
-          <div className="px-3 py-3 border-b border-sidebar-border">
+          <div className="border-sidebar-border border-b px-3 py-3">
             <div className="grid grid-cols-3 gap-1.5 text-xs">
-              <StatPill label="Running" value={runningCount} color="emerald" />
+              <StatPill label="Ready" value={readyCount} color="emerald" />
               <StatPill label="Issues" value={issueCount} color="amber" />
-              <StatPill label="Stopped" value={stoppedCount} color="muted" />
+              <StatPill label="Pending" value={pendingCount} color="muted" />
             </div>
           </div>
         )}
 
         {/* Servers list */}
         <SidebarGroup className="flex-1 overflow-hidden px-0 py-2">
-          <SidebarGroupLabel className="px-3 h-8 flex items-center text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-wider">
-            <Server className="h-3 w-3 mr-1.5" />
+          <SidebarGroupLabel className="text-muted-foreground/70 flex h-8 items-center px-3 text-[11px] font-semibold tracking-wider uppercase">
+            <Server className="mr-1.5 h-3 w-3" />
             Servers
             {servers.length > 0 && (
               <Badge
                 variant="secondary"
-                className="ml-auto text-[10px] px-1.5 h-4"
+                className="ml-auto h-4 px-1.5 text-[10px]"
               >
                 {servers.length}
               </Badge>
@@ -201,12 +198,12 @@ export const AppSidebar = ({
             <SidebarMenu className="gap-0.5">
               {servers.length === 0 ? (
                 <div className="px-3 py-8 text-center">
-                  <Server className="h-7 w-7 mx-auto mb-2 text-muted-foreground/30" />
-                  <p className="text-xs text-muted-foreground">
+                  <Server className="text-muted-foreground/30 mx-auto mb-2 h-7 w-7" />
+                  <p className="text-muted-foreground text-xs">
                     No servers yet
                   </p>
                   <Link href="/dashboard/new">
-                    <span className="text-xs text-primary hover:underline mt-1.5 inline-block">
+                    <span className="text-primary mt-1.5 inline-block text-xs hover:underline">
                       Create one →
                     </span>
                   </Link>
@@ -214,11 +211,7 @@ export const AppSidebar = ({
               ) : (
                 servers.map((server) => {
                   const href = `/dashboard/${server.id}`;
-                  const game = games.find((g) => g.id === server.game);
-                  const deleting = server.desiredState === "deleted";
-                  const dotColor =
-                    statusDot[deleting ? "stopped" : server.observedState] ??
-                    "bg-zinc-400";
+                  const dotColor = statusDot[server.health];
                   const isActive = pathname.startsWith(href);
 
                   return (
@@ -230,34 +223,34 @@ export const AppSidebar = ({
                         className="mx-1"
                       >
                         <Link href={href} className="flex items-center gap-2.5">
-                          <div className="relative h-7 w-7 rounded-md overflow-hidden ring-1 ring-border/50 shrink-0">
-                            {game ? (
+                          <div className="ring-border/50 relative h-7 w-7 shrink-0 overflow-hidden rounded-md ring-1">
+                            {server.gameImage ? (
                               <Image
-                                src={game.image}
-                                alt={game.name}
+                                src={server.gameImage}
+                                alt={server.gameName ?? server.name}
                                 width={28}
                                 height={28}
                                 className="object-cover"
                               />
                             ) : (
-                              <div className="flex h-full w-full items-center justify-center bg-muted">
-                                <Server className="h-3.5 w-3.5 text-muted-foreground" />
+                              <div className="bg-muted flex h-full w-full items-center justify-center">
+                                <Server className="text-muted-foreground h-3.5 w-3.5" />
                               </div>
                             )}
                             {/* Status dot overlay */}
                             <span
                               className={cn(
-                                "absolute bottom-0.5 right-0.5 h-1.5 w-1.5 rounded-full ring-1 ring-sidebar",
+                                "ring-sidebar absolute right-0.5 bottom-0.5 h-1.5 w-1.5 rounded-full ring-1",
                                 dotColor
                               )}
                             />
                           </div>
-                          <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                            <p className="text-sm font-medium truncate">
+                          <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+                            <p className="truncate text-sm font-medium">
                               {server.name}
                             </p>
-                            <p className="text-[11px] text-muted-foreground truncate">
-                              {game?.name ?? server.game}
+                            <p className="text-muted-foreground truncate text-[11px]">
+                              {server.gameName ?? "Unknown game"}
                             </p>
                           </div>
                         </Link>
@@ -272,10 +265,10 @@ export const AppSidebar = ({
       </SidebarContent>
 
       {/* Footer */}
-      <SidebarFooter className="border-t border-sidebar-border px-2 py-2 gap-1">
+      <SidebarFooter className="border-sidebar-border gap-1 border-t px-2 py-2">
         {/* Theme + User */}
         <div className="flex items-center justify-between px-2 py-1">
-          <span className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+          <span className="text-muted-foreground text-xs group-data-[collapsible=icon]:hidden">
             Theme
           </span>
           <ModeToggle />
@@ -298,7 +291,7 @@ export const AppSidebar = ({
                         className="rounded-lg"
                       />
                     )}
-                    <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-semibold text-sm">
+                    <AvatarFallback className="bg-primary/10 text-primary rounded-lg text-sm font-semibold">
                       {initial}
                     </AvatarFallback>
                   </Avatar>
@@ -306,7 +299,7 @@ export const AppSidebar = ({
                     <span className="truncate text-sm font-semibold">
                       {user.name ?? "Account"}
                     </span>
-                    <span className="truncate text-xs text-muted-foreground">
+                    <span className="text-muted-foreground truncate text-xs">
                       {user.email}
                     </span>
                   </div>
@@ -314,7 +307,7 @@ export const AppSidebar = ({
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="top" align="end" className="w-56">
-                <DropdownMenuLabel className="font-normal py-2">
+                <DropdownMenuLabel className="py-2 font-normal">
                   <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8 rounded-lg">
                       {user.hasImage && (
@@ -324,15 +317,15 @@ export const AppSidebar = ({
                           className="rounded-lg"
                         />
                       )}
-                      <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-semibold text-sm">
+                      <AvatarFallback className="bg-primary/10 text-primary rounded-lg text-sm font-semibold">
                         {initial}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold truncate">
+                      <p className="truncate text-sm font-semibold">
                         {user.name ?? "Account"}
                       </p>
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="text-muted-foreground truncate text-xs">
                         {user.email}
                       </p>
                     </div>
@@ -341,7 +334,7 @@ export const AppSidebar = ({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/account" className="cursor-pointer">
-                    <User className="h-4 w-4 mr-2" />
+                    <User className="mr-2 h-4 w-4" />
                     Profile
                   </Link>
                 </DropdownMenuItem>
@@ -350,7 +343,7 @@ export const AppSidebar = ({
                     href="/dashboard/account/billing"
                     className="cursor-pointer"
                   >
-                    <CreditCard className="h-4 w-4 mr-2" />
+                    <CreditCard className="mr-2 h-4 w-4" />
                     Billing
                   </Link>
                 </DropdownMenuItem>
@@ -359,7 +352,7 @@ export const AppSidebar = ({
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href="/admin" className="cursor-pointer">
-                        <Shield className="h-4 w-4 mr-2" />
+                        <Shield className="mr-2 h-4 w-4" />
                         Admin Panel
                       </Link>
                     </DropdownMenuItem>
@@ -372,9 +365,9 @@ export const AppSidebar = ({
                     router.push("/");
                     router.refresh();
                   }}
-                  className="cursor-pointer text-destructive focus:text-destructive"
+                  className="text-destructive focus:text-destructive cursor-pointer"
                 >
-                  <LogOut className="h-4 w-4 mr-2" />
+                  <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>

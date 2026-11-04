@@ -10,11 +10,7 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "./db";
 import type { ServerRole } from "./server-roles";
-import {
-  meetsMinServerRole,
-  SERVER_ROLE_DESCRIPTIONS,
-  SERVER_ROLE_LABELS,
-} from "./server-roles";
+import { meetsMinServerRole } from "./server-roles";
 
 // ─── Server-level roles ────────────────────────────────────────────────────────
 
@@ -35,11 +31,6 @@ export const getServerRole = async (
   userSystemRole: string,
   userSuperAdmin: boolean
 ): Promise<ServerRole | null> => {
-  // System admins can read/manage every server
-  if (userSuperAdmin || userSystemRole === "admin") {
-    return "admin";
-  }
-
   const server = await prisma.server.findFirst({
     select: { userId: true },
     where: { deletedAt: null, id: serverId },
@@ -48,8 +39,15 @@ export const getServerRole = async (
   if (!server) {
     return null;
   }
+
+  // Ownership always wins — even for system admins who own the server
   if (server.userId === userId) {
     return "owner";
+  }
+
+  // System admins get "admin" on every server they don't own
+  if (userSuperAdmin || userSystemRole === "admin") {
+    return "admin";
   }
 
   const membership = await prisma.serverMember.findUnique({
@@ -92,4 +90,8 @@ export const isAdmin = (role: string, superAdmin: boolean) =>
 
 export const isSuperAdmin = (superAdmin: boolean) => superAdmin;
 
-export { meetsMinServerRole, SERVER_ROLE_DESCRIPTIONS, SERVER_ROLE_LABELS };
+export {
+  meetsMinServerRole,
+  SERVER_ROLE_DESCRIPTIONS,
+  SERVER_ROLE_LABELS,
+} from "./server-roles";

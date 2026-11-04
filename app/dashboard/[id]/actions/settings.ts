@@ -1,88 +1,132 @@
 "use server";
 
-import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 
-import { getGame, resolveSettings, validateSettings } from "@/games";
-import { enqueueCommand } from "@/lib/agent/commands";
+import { DaemonError } from "@/lib/daemon/client";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { debugErrorMessage } from "@/lib/debug";
+import { emitActivity } from "@/lib/events/emit";
+import { getServerAccess, requestIp } from "@/lib/servers/access";
+import {
+  reinstallServer as reinstall,
+  ServiceError,
+  trySyncServer,
+  updateStartup,
+} from "@/lib/servers/service";
 
-const inputSchema = z.object({
+type Result = { ok: true } | { error: string; ok: false };
+
+const failure = (error: unknown): Result => {
+  if (error instanceof ServiceError || error instanceof DaemonError) {
+    return { error: error.message, ok: false };
+  }
+  const debug = debugErrorMessage(error);
+  if (debug) {
+    return { error: debug, ok: false };
+  }
+  throw error;
+};
+
+const startupSchema = z.object({
+  environment: z.record(z.string(), z.string()),
+  image: z.string().min(1).optional(),
   serverId: z.string().min(1),
-  values: z.record(z.string(), z.unknown()),
 });
 
-export type UpdateServerSettingsInput = z.infer<typeof inputSchema>;
-
-export type UpdateServerSettingsResult =
-  | { ok: true; settings: Record<string, unknown> }
-  | { error: string; ok: false };
-
-export const updateServerSettings = async (
-  input: UpdateServerSettingsInput
-): Promise<UpdateServerSettingsResult> => {
-  const user = await requireUser();
-
-  const parsed = inputSchema.safeParse(input);
+// Startup variables / docker image (Pterodactyl's "Startup" tab). Applied the
+// next time the server starts.
+export const updateServerStartup = async (
+  input: z.infer<typeof startupSchema>
+): Promise<Result> => {
+  const parsed = startupSchema.safeParse(input);
   if (!parsed.success) {
     return { error: "Invalid input", ok: false };
   }
-
-  const server = await prisma.server.findFirst({
-    where: { deletedAt: null, id: parsed.data.serverId, userId: user.id },
-  });
-  if (!server) {
+  const access = await getServerAccess(parsed.data.serverId, "admin");
+  if (!access) {
     return { error: "Not found", ok: false };
   }
-
-  const game = getGame(server.game);
-  if (!game) {
-    return { error: "Unknown game", ok: false };
-  }
-
-  const validation = validateSettings(game.settings, parsed.data.values);
-  if (!validation.ok) {
-    return { error: validation.error, ok: false };
-  }
-
-  const merged = {
-    ...(server.settings as Record<string, unknown> | null),
-    ...validation.data,
-  };
-
-  const updated = await prisma.server.update({
-    data: { settings: merged as Prisma.InputJsonValue },
-    where: { id: parsed.data.serverId },
-  });
-
-  const agent = await prisma.agent.findUnique({
-    where: { serverId: parsed.data.serverId },
-  });
-  if (agent && server.observedState === "running") {
-    const compose = game.buildCompose(
-      {
-        joinPassword: server.joinPassword,
-        name: server.name,
-        rconPassword: server.rconPassword,
-      },
-      merged
-    );
-    await enqueueCommand({
-      payload: { compose },
-      serverId: parsed.data.serverId,
-      type: "UPDATE_CONFIG",
+  try {
+    await updateStartup(access.server.id, {
+      asAdmin: access.isSystemAdmin,
+      environment: parsed.data.environment,
+      image: parsed.data.image,
     });
+    await trySyncServer(access.server.id);
+  } catch (error) {
+    return failure(error);
   }
+  await emitActivity({
+    actorId: access.user.id,
+    ip: requestIp(await headers()),
+    message: "Updated startup variables",
+    metadata: { variables: Object.keys(parsed.data.environment) },
+    phase: "server:startup.edit",
+    serverId: access.server.id,
+  });
+  revalidatePath(`/dashboard/${access.server.id}`, "layout");
+  return { ok: true };
+};
 
+const renameSchema = z.object({
+  description: z.string().max(500).nullable(),
+  name: z.string().trim().min(3).max(40),
+  serverId: z.string().min(1),
+});
+
+export const renameServer = async (
+  input: z.infer<typeof renameSchema>
+): Promise<Result> => {
+  const parsed = renameSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "Name must be 3–40 characters", ok: false };
+  }
+  const access = await getServerAccess(parsed.data.serverId, "admin");
+  if (!access) {
+    return { error: "Not found", ok: false };
+  }
+  await prisma.server.update({
+    data: { description: parsed.data.description, name: parsed.data.name },
+    where: { id: access.server.id },
+  });
+  await trySyncServer(access.server.id);
+  await emitActivity({
+    actorId: access.user.id,
+    message: `Renamed server to "${parsed.data.name}"`,
+    phase: "server:settings.rename",
+    serverId: access.server.id,
+  });
   revalidatePath("/dashboard", "layout");
+  return { ok: true };
+};
 
-  return {
-    ok: true,
-    settings: resolveSettings(game.settings, updated.settings) as Record<
-      string,
-      unknown
-    >,
-  };
+const reinstallSchema = z.object({ serverId: z.string().min(1) });
+
+export const reinstallServer = async (
+  input: z.infer<typeof reinstallSchema>
+): Promise<Result> => {
+  const parsed = reinstallSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "Invalid input", ok: false };
+  }
+  const access = await getServerAccess(parsed.data.serverId, "admin");
+  if (!access) {
+    return { error: "Not found", ok: false };
+  }
+  try {
+    await reinstall(access.server.id);
+  } catch (error) {
+    return failure(error);
+  }
+  await emitActivity({
+    actorId: access.user.id,
+    ip: requestIp(await headers()),
+    message: "Reinstalled server",
+    phase: "server:reinstall",
+    serverId: access.server.id,
+  });
+  revalidatePath(`/dashboard/${access.server.id}`, "layout");
+  return { ok: true };
 };

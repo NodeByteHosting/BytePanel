@@ -55,8 +55,16 @@ const baseServerType = (overrides: Record<string, unknown> = {}) => ({
   memory: 4,
   name: "cx22",
   prices: [
-    { location: "fsn1", price_monthly: { gross: "5.00" } },
-    { location: "nbg1", price_monthly: { gross: "6.00" } },
+    {
+      location: "fsn1",
+      price_hourly: { gross: "0.01" },
+      price_monthly: { gross: "5.00" },
+    },
+    {
+      location: "nbg1",
+      price_hourly: { gross: "0.01" },
+      price_monthly: { gross: "6.00" },
+    },
   ],
   ...overrides,
 });
@@ -65,8 +73,8 @@ const fsnDc = {
   location: {
     city: "Falkenstein",
     country: "DE",
-    latitude: 50.476_12,
-    longitude: 12.370_071,
+    latitude: 50.47612,
+    longitude: 12.370071,
     name: "fsn1",
   },
   server_types: { available: [100], supported: [100, 200] },
@@ -76,8 +84,8 @@ const nbgDc = {
   location: {
     city: "Nuremberg",
     country: "DE",
-    latitude: 49.452_102,
-    longitude: 11.076_665,
+    latitude: 49.452102,
+    longitude: 11.076665,
     name: "nbg1",
   },
   server_types: { available: [], supported: [100] },
@@ -102,9 +110,12 @@ describe("getHetznerCatalog", () => {
     expect(type.name).toBe("cx22");
     expect(type.cpuType).toBe("shared");
     expect(type.architecture).toBe("x86");
+    expect(type.pricePerMonth).toBe(6.5);
+    expect(type.hourlyPriceMilliCents).toBe(1204);
     expect(type.locations.map((l) => l.name)).toEqual(["fsn1", "nbg1"]);
     expect(type.locations[0]).toMatchObject({ available: true, name: "fsn1" });
     expect(type.locations[1]).toMatchObject({ available: false, name: "nbg1" });
+    expect(type.locations[0].hourlyPriceMilliCents).toBe(1204);
   });
 
   test("falls back to alphabetical name sort when locations share availability", async () => {

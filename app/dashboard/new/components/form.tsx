@@ -1,139 +1,75 @@
 "use client";
-import type { Marker } from "cobe";
 import { humanId } from "human-id";
 import {
-  CheckCircle2Icon,
+  ArchiveIcon,
   CheckIcon,
   Cpu,
+  GamepadIcon,
   HardDrive,
+  MapPinIcon,
   MemoryStick,
-  Server,
+  NetworkIcon,
 } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  variableErrors,
+  VariableFields,
+} from "@/components/eggs/variable-fields";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { getDefaults, missingRequiredFields } from "@/games";
-import type { SettingsSchema } from "@/games";
-import { ADDON_DEFAULTS } from "@/lib/pricing";
-import type { CatalogServerType } from "@/lib/providers/types";
+import type { EggCatalogEntry } from "@/lib/eggs/catalog";
+import { formatMib } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-import { SettingsFields } from "../../[id]/components/game-settings-form";
-import type {
-  FieldValue,
-  SettingsValuesRecord,
-} from "../../[id]/components/game-settings-form";
 import { PageBody, PageHeader } from "../../components/page-header";
 import { createServer } from "../actions/create-server";
-import { Cobe } from "./cobe";
 
-const formatPrice = (amount: number, currency: string) =>
+export interface PlanOption {
+  id: string;
+  name: string;
+  description: string | null;
+  memory: number;
+  cpu: number;
+  disk: number;
+  backupLimit: number;
+  allocationLimit: number;
+  priceMonthCents: number;
+  currency: string;
+  locationId: string | null;
+}
+
+export interface LocationOption {
+  id: string;
+  short: string;
+  long: string | null;
+}
+
+interface Props {
+  eggs: EggCatalogEntry[];
+  plans: PlanOption[];
+  locations: LocationOption[];
+}
+
+const STEPS = [
+  { id: "game", title: "Game" },
+  { id: "plan", title: "Plan" },
+  { id: "location", title: "Location" },
+  { id: "configure", title: "Configure" },
+  { id: "review", title: "Review" },
+] as const;
+
+const formatPrice = (cents: number, currency: string) =>
   new Intl.NumberFormat(undefined, {
     currency,
     maximumFractionDigits: 2,
     style: "currency",
-  }).format(amount);
+  }).format(cents / 100);
 
-interface SizeCardProps {
-  type: CatalogServerType;
-  selected: boolean;
-  currency: string;
-  recommended?: boolean;
-}
-
-const SizeCard = ({ type, selected, currency, recommended }: SizeCardProps) => (
-  <label
-    className={cn(
-      "flex cursor-pointer flex-col gap-2 rounded-xl border-2 p-3 transition-all duration-200 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
-      selected
-        ? "border-primary bg-primary/5 shadow-sm shadow-primary/10"
-        : "border-border/60 bg-card hover:border-primary/40"
-    )}
-  >
-    <div className="flex items-center gap-3">
-      <RadioGroupItem id={`type-${type.name}`} value={type.name} />
-      <div className="flex flex-col gap-0.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold">{type.name}</span>
-          {recommended && (
-            <Badge className="border border-primary/30 bg-primary/15 text-primary shadow-none">
-              Recommended
-            </Badge>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Cpu className="size-3" />
-            {type.cores} vCPU
-          </span>
-          <span className="flex items-center gap-1">
-            <MemoryStick className="size-3" />
-            {type.memory} GB RAM
-          </span>
-          <span className="flex items-center gap-1">
-            <HardDrive className="size-3" />
-            {type.disk} GB SSD
-          </span>
-          <span className="flex items-center gap-1 capitalize">
-            <Server className="size-3" />
-            {type.architecture}
-          </span>
-        </div>
-      </div>
-    </div>
-    <div className="shrink-0 pl-7 text-sm font-semibold tabular-nums sm:pl-0">
-      {formatPrice(type.pricePerMonth, currency)}
-      <span className="font-normal text-muted-foreground">/mo</span>
-    </div>
-  </label>
-);
-
-export interface GameOption {
-  id: string;
-  name: string;
-  description: string;
-  image: string;
-  dockerImage: string;
-  requirements: { cpu: number; disk: number; memory: number };
-  settings: SettingsSchema;
-}
-
-interface Props {
-  games: GameOption[];
-  serverTypes: CatalogServerType[];
-  currency: string;
-}
-
-const STEPS = [
-  { description: "Choose your game", id: "game", title: "Game" },
-  { description: "Pick server resources", id: "size", title: "Size" },
-  { description: "Choose a region", id: "location", title: "Location" },
-  { description: "Name & settings", id: "configure", title: "Configure" },
-  { description: "Confirm & pay", id: "review", title: "Review" },
-] as const;
-
-// Used only for the "Recommended" badge — NOT for filtering
-const typeIsRecommended = (t: CatalogServerType, g: GameOption) =>
-  t.memory >= g.requirements.memory &&
-  t.memory <= g.requirements.memory * 4 &&
-  t.cores >= g.requirements.cpu &&
-  t.disk >= g.requirements.disk;
-
-const typeIsAvailable = (t: CatalogServerType) =>
-  t.locations.some((l) => l.available);
-
-const firstAvailableLocation = (t: CatalogServerType | undefined) =>
-  t?.locations.find((l) => l.available)?.name ?? "";
-
-// ---------------------------------------------------------------------------
-// Step indicator — horizontal, in PageHeader, all screens
-// ---------------------------------------------------------------------------
+const portsNeeded = (egg: EggCatalogEntry | undefined) => egg?.ports ?? 1;
 
 const StepIndicator = ({ step }: { step: number }) => (
   <ol className="flex items-center">
@@ -141,13 +77,13 @@ const StepIndicator = ({ step }: { step: number }) => (
       const done = i < step;
       const active = i === step;
       return (
-        <li key={s.id} className="flex min-w-0 flex-1 items-center">
+        <li className="flex min-w-0 flex-1 items-center" key={s.id}>
           <div className="flex min-w-0 items-center gap-2">
             <div
               className={cn(
                 "flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
                 active &&
-                  "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/30",
+                  "border-primary bg-primary text-primary-foreground shadow-primary/30 shadow-sm",
                 done && "border-primary/40 bg-primary/10 text-primary",
                 !active && !done && "border-border/60 text-muted-foreground"
               )}
@@ -177,240 +113,85 @@ const StepIndicator = ({ step }: { step: number }) => (
   </ol>
 );
 
-interface SizeStepProps {
-  allTypes: CatalogServerType[];
-  selectedGame: GameOption | undefined;
-  typeName: string;
-  setTypeName: (value: string) => void;
-  currency: string;
-}
+const StepTitle = ({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) => (
+  <div>
+    <h2 className="text-base font-semibold">{title}</h2>
+    <p className="text-muted-foreground mt-0.5 text-sm">{description}</p>
+  </div>
+);
 
-const SizeStep = ({
-  allTypes,
-  selectedGame,
-  typeName,
-  setTypeName,
-  currency,
-}: SizeStepProps) => {
-  const recommendedNames = useMemo(
-    () =>
-      new Set(
-        allTypes
-          .filter((t) => selectedGame && typeIsRecommended(t, selectedGame))
-          .map((t) => t.name)
-      ),
-    [allTypes, selectedGame]
+const optionClass = (selected: boolean, disabled = false) =>
+  cn(
+    "rounded-xl border-2 transition-all duration-200",
+    disabled && "cursor-not-allowed opacity-50",
+    !disabled && "cursor-pointer",
+    selected
+      ? "border-primary bg-primary/5 shadow-primary/10 shadow-sm"
+      : "border-border/60 bg-card hover:border-primary/40"
   );
 
-  if (allTypes.length === 0) {
-    return (
-      <p className="rounded-xl border border-border/60 bg-card p-4 text-sm text-muted-foreground">
-        No server sizes are available right now.
-      </p>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-base font-semibold">Choose a server size</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          {selectedGame
-            ? `Recommended sizes meet ${selectedGame.name}'s suggested requirements. Any size is available.`
-            : "Pick a size for your server."}
-        </p>
-      </div>
-      <RadioGroup
-        className="grid gap-2"
-        onValueChange={setTypeName}
-        value={typeName}
-      >
-        {allTypes.map((type) => (
-          <SizeCard
-            currency={currency}
-            key={type.name}
-            recommended={recommendedNames.has(type.name)}
-            selected={typeName === type.name}
-            type={type}
-          />
-        ))}
-      </RadioGroup>
+const GameArt = ({
+  egg,
+  className,
+}: {
+  egg: EggCatalogEntry;
+  className: string;
+}) =>
+  egg.image ? (
+    <Image
+      alt={egg.name}
+      className={cn("object-cover", className)}
+      height={120}
+      src={egg.image}
+      width={240}
+    />
+  ) : (
+    <div className={cn("bg-muted flex items-center justify-center", className)}>
+      <GamepadIcon className="text-muted-foreground size-6" />
     </div>
   );
-};
 
-const getLocationClass = (isAvailable: boolean, isSelected: boolean) => {
-  if (isAvailable && isSelected) {
-    return "cursor-pointer border-primary bg-primary/5 shadow-sm shadow-primary/10";
-  }
-  if (isAvailable) {
-    return "cursor-pointer border-border/60 bg-card hover:border-primary/40 hover:bg-muted/20";
-  }
-  return "border-border/30 bg-card";
-};
-
-const getSubmitLabel = (isLast: boolean, pending: boolean) => {
-  if (!isLast) {
-    return "Continue";
-  }
-  if (pending) {
-    return "Processing\u2026";
-  }
-  return "Proceed to payment \u2192";
-};
-
-const getLocationBadge = (isAvailable: boolean, isSelected: boolean) => {
-  if (!isAvailable) {
-    return (
-      <span className="shrink-0 rounded-md border border-border/50 bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-        Unavailable
-      </span>
-    );
-  }
-  if (isSelected) {
-    return (
-      <span className="shrink-0 rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-        Selected
-      </span>
-    );
-  }
-  return null;
-};
-
-interface LocationStepProps {
-  selectedType: CatalogServerType | undefined;
-  locationName: string;
-  setLocationName: (value: string) => void;
-}
-
-const LocationStep = ({
-  selectedType,
-  locationName,
-  setLocationName,
-}: LocationStepProps) => {
-  if (!selectedType) {
-    return (
-      <p className="rounded-xl border border-border/60 bg-card p-4 text-sm text-muted-foreground">
-        Pick a server size first.
-      </p>
-    );
-  }
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-base font-semibold">Choose a location</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Pick the region closest to you and your players for the best
-          performance.
-        </p>
-      </div>
-      <div className="grid gap-4 lg:grid-cols-[1fr_220px] lg:items-start">
-        <RadioGroup
-          className="grid gap-2"
-          onValueChange={setLocationName}
-          value={locationName}
-        >
-          {selectedType.locations.map((loc) => {
-            const isSelected = locationName === loc.name;
-            return (
-              <label
-                key={loc.name}
-                htmlFor={`loc-${loc.name}`}
-                className={cn(
-                  "group flex items-center gap-4 rounded-xl border-2 px-4 py-3.5 transition-all duration-200",
-                  !loc.available && "cursor-not-allowed opacity-40",
-                  getLocationClass(loc.available, isSelected)
-                )}
-              >
-                <RadioGroupItem
-                  disabled={!loc.available}
-                  id={`loc-${loc.name}`}
-                  value={loc.name}
-                />
-                <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                  <div className="flex min-w-0 flex-col gap-0.5">
-                    <span className="text-sm font-semibold leading-tight">
-                      {loc.city}, {loc.country}
-                    </span>
-                    <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
-                      {loc.name}
-                    </span>
-                  </div>
-                  {getLocationBadge(loc.available, isSelected)}
-                </div>
-              </label>
-            );
-          })}
-        </RadioGroup>
-        <div className="hidden overflow-hidden rounded-xl border border-border/60 bg-card p-3 lg:block">
-          <Cobe
-            className="mx-auto"
-            focus={
-              selectedType.locations.find((l) => l.name === locationName) ??
-              null
-            }
-            markers={selectedType.locations
-              .filter((loc) => loc.available)
-              .map<Marker>((loc) => ({
-                location: [loc.latitude, loc.longitude],
-                size: locationName === loc.name ? 0.1 : 0.05,
-              }))}
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Step: Game
-// ---------------------------------------------------------------------------
-
-interface GameStepProps {
-  games: GameOption[];
-  gameId: string;
-  setGameId: (value: string) => void;
-}
-
-const GameStep = ({ games, gameId, setGameId }: GameStepProps) => (
+const GameStep = ({
+  eggs,
+  eggId,
+  onSelect,
+}: {
+  eggs: EggCatalogEntry[];
+  eggId: string;
+  onSelect: (id: string) => void;
+}) => (
   <div className="space-y-4">
-    <div>
-      <h2 className="text-base font-semibold">Choose a game</h2>
-      <p className="mt-0.5 text-sm text-muted-foreground">
-        Select the game you want to run on your server.
-      </p>
-    </div>
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {games.map((game) => (
+    <StepTitle
+      description="Select the game you want to run."
+      title="Choose a game"
+    />
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {eggs.map((e) => (
         <label
-          key={game.id}
-          className={cn(
-            "relative cursor-pointer overflow-hidden rounded-xl border-2 transition-all duration-200",
-            gameId === game.id
-              ? "border-primary shadow-sm shadow-primary/10"
-              : "border-border/60 bg-card hover:border-primary/40"
-          )}
+          className={cn(optionClass(eggId === e.id), "overflow-hidden")}
+          key={e.id}
         >
           <input
-            checked={gameId === game.id}
+            checked={eggId === e.id}
             className="sr-only"
-            name="game"
-            onChange={(e) => setGameId(e.target.value)}
+            name="egg"
             type="radio"
-            value={game.id}
+            value={e.id}
+            onChange={() => onSelect(e.id)}
           />
-          <Image
-            alt={game.name}
-            className="aspect-video w-full object-cover"
-            height={120}
-            src={game.image}
-            width={240}
-          />
+          <GameArt className="aspect-video w-full" egg={e} />
           <div className="p-2.5">
-            <div className="text-sm font-semibold">{game.name}</div>
-            <div className="mt-0.5 text-xs text-muted-foreground">
-              {game.requirements.memory} GB · {game.requirements.cpu} vCPU ·{" "}
-              {game.requirements.disk} GB disk
+            <div className="text-sm font-semibold">{e.name}</div>
+            <div className="text-muted-foreground mt-0.5 text-xs">
+              {e.minMemory > 0
+                ? `${formatMib(e.minMemory)}+ recommended`
+                : e.nest}
             </div>
           </div>
         </label>
@@ -419,352 +200,409 @@ const GameStep = ({ games, gameId, setGameId }: GameStepProps) => (
   </div>
 );
 
-// ---------------------------------------------------------------------------
-// Step: Configure
-// ---------------------------------------------------------------------------
+const PlanSpecs = ({ plan }: { plan: PlanOption }) => (
+  <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+    <span className="flex items-center gap-1">
+      <MemoryStick className="size-3" />
+      {formatMib(plan.memory)} RAM
+    </span>
+    <span className="flex items-center gap-1">
+      <Cpu className="size-3" />
+      {plan.cpu > 0 ? `${(plan.cpu / 100).toFixed(1)} vCPU` : "Unmetered CPU"}
+    </span>
+    <span className="flex items-center gap-1">
+      <HardDrive className="size-3" />
+      {formatMib(plan.disk)} SSD
+    </span>
+    <span className="flex items-center gap-1">
+      <ArchiveIcon className="size-3" />
+      {plan.backupLimit} backups
+    </span>
+    <span className="flex items-center gap-1">
+      <NetworkIcon className="size-3" />
+      {plan.allocationLimit} ports
+    </span>
+  </div>
+);
 
-interface ConfigureStepProps {
-  name: string;
-  setName: (value: string) => void;
-  selectedGame: GameOption | undefined;
-  settings: SettingsValuesRecord;
-  setSettingField: (key: string, value: FieldValue) => void;
-}
+const PlanStep = ({
+  plans,
+  planId,
+  egg,
+  onSelect,
+}: {
+  plans: PlanOption[];
+  planId: string;
+  egg: EggCatalogEntry | undefined;
+  onSelect: (plan: PlanOption) => void;
+}) => (
+  <div className="space-y-4">
+    <StepTitle
+      description="Resources are reserved for your server on a shared node."
+      title="Choose a plan"
+    />
+    <div className="flex flex-col gap-2">
+      {plans.map((p) => {
+        const fits = p.allocationLimit >= portsNeeded(egg);
+        const recommended =
+          fits &&
+          p.memory >= (egg?.minMemory ?? 0) &&
+          p.disk >= (egg?.minDisk ?? 0);
+        return (
+          <label
+            className={cn(
+              optionClass(planId === p.id, !fits),
+              "flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between"
+            )}
+            key={p.id}
+          >
+            <input
+              checked={planId === p.id}
+              className="sr-only"
+              disabled={!fits}
+              name="plan"
+              type="radio"
+              value={p.id}
+              onChange={() => onSelect(p)}
+            />
+            <div className="flex flex-col gap-0.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold">{p.name}</span>
+                {recommended && (
+                  <Badge className="border-primary/30 bg-primary/15 text-primary border shadow-none">
+                    Recommended
+                  </Badge>
+                )}
+                {!fits && (
+                  <Badge variant="outline">
+                    Needs {portsNeeded(egg)} ports
+                  </Badge>
+                )}
+              </div>
+              <PlanSpecs plan={p} />
+              {p.description && (
+                <span className="text-muted-foreground text-xs">
+                  {p.description}
+                </span>
+              )}
+            </div>
+            <div className="shrink-0 text-sm font-semibold tabular-nums">
+              {formatPrice(p.priceMonthCents, p.currency)}
+              <span className="text-muted-foreground font-normal">/mo</span>
+            </div>
+          </label>
+        );
+      })}
+    </div>
+  </div>
+);
+
+const LocationStep = ({
+  locations,
+  locationId,
+  onSelect,
+}: {
+  locations: LocationOption[];
+  locationId: string;
+  onSelect: (id: string) => void;
+}) => (
+  <div className="space-y-4">
+    <StepTitle
+      description="Pick the location closest to your players."
+      title="Choose a location"
+    />
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      {locations.map((l) => (
+        <label
+          className={cn(
+            optionClass(locationId === l.id),
+            "flex items-center gap-3 p-3"
+          )}
+          key={l.id}
+        >
+          <input
+            checked={locationId === l.id}
+            className="sr-only"
+            name="location"
+            type="radio"
+            value={l.id}
+            onChange={() => onSelect(l.id)}
+          />
+          <MapPinIcon className="text-muted-foreground size-4" />
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold">{l.long ?? l.short}</span>
+            <code className="text-muted-foreground text-xs">{l.short}</code>
+          </div>
+        </label>
+      ))}
+    </div>
+  </div>
+);
 
 const ConfigureStep = ({
+  egg,
   name,
   setName,
-  selectedGame,
-  settings,
-  setSettingField,
-}: ConfigureStepProps) => {
-  const hasSettings =
-    selectedGame && Object.keys(selectedGame.settings).length > 0;
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-base font-semibold">Configure your server</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Give your server a name
-          {hasSettings ? " and customize game settings" : ""}.
-        </p>
+  values,
+  errors,
+  onVariable,
+}: {
+  egg: EggCatalogEntry;
+  name: string;
+  setName: (name: string) => void;
+  values: Record<string, string>;
+  errors: Record<string, string>;
+  onVariable: (env: string, value: string) => void;
+}) => (
+  <div className="space-y-4">
+    <StepTitle
+      description="Name your server and adjust its startup settings."
+      title="Configure your server"
+    />
+    <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
+      <div className="border-border/50 border-b px-4 py-3">
+        <p className="text-sm font-semibold">Server name</p>
       </div>
-      <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
-        <div className="border-b border-border/50 px-4 py-3">
-          <p className="text-sm font-semibold">Server name</p>
+      <div className="px-4 py-4">
+        <Input
+          autoFocus
+          maxLength={40}
+          minLength={3}
+          placeholder="my-game-server"
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <p className="text-muted-foreground mt-1.5 text-xs">3–40 characters.</p>
+      </div>
+    </div>
+    {egg.variables.length > 0 && (
+      <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
+        <div className="border-border/50 border-b px-4 py-3">
+          <p className="text-sm font-semibold">{egg.name} settings</p>
+          <p className="text-muted-foreground mt-0.5 text-xs">
+            You can change these later from the Startup tab.
+          </p>
         </div>
-        <div className="px-4 py-4">
-          <Input
-            autoFocus
-            id="server-name"
-            maxLength={40}
-            minLength={3}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="my-game-server"
-            required
-            value={name}
+        <div className="divide-border/50 flex flex-col divide-y">
+          <VariableFields
+            errors={errors}
+            values={values}
+            variables={egg.variables}
+            onChange={onVariable}
           />
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            3–40 characters.
+        </div>
+      </div>
+    )}
+  </div>
+);
+
+const ReviewRow = ({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) => (
+  <div className="flex items-center justify-between gap-4 px-4 py-3">
+    <span className="text-muted-foreground text-sm">{label}</span>
+    {children}
+  </div>
+);
+
+const ReviewStep = ({
+  egg,
+  plan,
+  location,
+  name,
+}: {
+  egg: EggCatalogEntry;
+  plan: PlanOption;
+  location: LocationOption;
+  name: string;
+}) => (
+  <div className="space-y-4">
+    <StepTitle
+      description="Confirm your configuration and continue to payment."
+      title="Review your order"
+    />
+    <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
+      <div className="divide-border/50 divide-y">
+        <ReviewRow label="Game">
+          <span className="flex items-center gap-2 text-sm font-medium">
+            <GameArt className="size-5 rounded" egg={egg} />
+            {egg.name}
+          </span>
+        </ReviewRow>
+        <ReviewRow label="Plan">
+          <span className="text-right text-sm font-medium">
+            {plan.name}
+            <span className="text-muted-foreground block text-xs font-normal">
+              {formatMib(plan.memory)} RAM · {formatMib(plan.disk)} SSD ·{" "}
+              {plan.backupLimit} backups
+            </span>
+          </span>
+        </ReviewRow>
+        <ReviewRow label="Location">
+          <span className="text-sm font-medium">
+            {location.long ?? location.short}
+          </span>
+        </ReviewRow>
+        <ReviewRow label="Server name">
+          <span className="max-w-48 truncate font-mono text-sm font-medium">
+            {name}
+          </span>
+        </ReviewRow>
+        <div className="bg-muted/30 flex items-center justify-between gap-4 px-4 py-4">
+          <div className="flex flex-col gap-0.5">
+            <p className="text-sm font-semibold">Monthly total</p>
+            <p className="text-muted-foreground text-xs">
+              Billed monthly · cancel anytime
+            </p>
+          </div>
+          <p className="text-2xl leading-none font-bold tabular-nums">
+            {formatPrice(plan.priceMonthCents, plan.currency)}
           </p>
         </div>
       </div>
-
-      {hasSettings && (
-        <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
-          <div className="border-b border-border/50 px-4 py-3">
-            <p className="text-sm font-semibold">
-              {selectedGame.name} settings
-            </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Customize game-specific options.
-            </p>
-          </div>
-          <div className="flex flex-col divide-y divide-border/50">
-            <SettingsFields
-              onChange={setSettingField}
-              schema={selectedGame.settings}
-              values={settings}
-            />
-          </div>
-        </div>
-      )}
     </div>
+    <p className="text-muted-foreground rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs leading-relaxed">
+      Payment is taken first. Your server is then placed on a node and installed
+      automatically, usually within a minute or two.
+    </p>
+  </div>
+);
+
+const locationsForPlan = (
+  locations: LocationOption[],
+  plan: PlanOption | undefined
+) =>
+  plan?.locationId
+    ? locations.filter((l) => l.id === plan.locationId)
+    : locations;
+
+// Variable values with egg defaults filled in.
+const effectiveValues = (
+  egg: EggCatalogEntry | undefined,
+  values: Record<string, string>
+): Record<string, string> =>
+  Object.fromEntries(
+    (egg?.variables ?? []).map((v) => [
+      v.envVariable,
+      values[v.envVariable] ?? v.defaultValue,
+    ])
   );
+
+const canOrder = (eggs: unknown[], plans: unknown[], locations: unknown[]) =>
+  eggs.length > 0 && plans.length > 0 && locations.length > 0;
+
+const nameValid = (name: string) => name.length >= 3 && name.length <= 40;
+
+// Only send variables the customer actually changed from the egg default.
+const changedValues = (
+  egg: EggCatalogEntry,
+  values: Record<string, string>
+): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(values).filter(
+      ([env, value]) =>
+        egg.variables.find((v) => v.envVariable === env)?.defaultValue !== value
+    )
+  );
+
+const submitLabel = (isLast: boolean, pending: boolean) => {
+  if (!isLast) {
+    return "Continue";
+  }
+  return pending ? "Processing…" : "Proceed to payment →";
 };
 
-// ---------------------------------------------------------------------------
-// Step: Review
-// ---------------------------------------------------------------------------
-
-const ADDONS_INCLUDED = [
-  {
-    description: "Daily automated backup, retained 7 days",
-    label: `${ADDON_DEFAULTS.backup.freeAllowance} automated backup`,
-  },
-  {
-    description: "Manual point-in-time snapshots",
-    label: `${ADDON_DEFAULTS.snapshot.freeAllowance} server snapshots`,
-  },
-  {
-    description: "Dedicated managed database instance",
-    label: `${ADDON_DEFAULTS.database.freeAllowance} managed database`,
-  },
-] as const;
-
-interface ReviewStepProps {
-  selectedGame: GameOption;
-  selectedType: CatalogServerType;
-  locationName: string;
-  name: string;
-  currency: string;
-}
-
-const ReviewStep = ({
-  selectedGame,
-  selectedType,
-  locationName,
-  name,
-  currency,
-}: ReviewStepProps) => {
-  const location = selectedType.locations.find((l) => l.name === locationName);
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-base font-semibold">Review your order</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Confirm your configuration and proceed to payment.
+const Unavailable = () => (
+  <>
+    <PageHeader title="New server" />
+    <PageBody>
+      <div className="border-border/60 bg-card rounded-xl border border-dashed p-8 text-center">
+        <p className="text-lg font-semibold">
+          We&apos;re not taking orders right now
+        </p>
+        <p className="text-muted-foreground mt-2 text-sm">
+          No games, plans or locations are available yet. Please check back
+          soon.
         </p>
       </div>
+    </PageBody>
+  </>
+);
 
-      {/* Configuration summary */}
-      <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
-        <div className="border-b border-border/50 px-4 py-3">
-          <p className="text-sm font-semibold">Configuration</p>
-        </div>
-        <div className="divide-y divide-border/50">
-          <div className="flex items-center justify-between gap-4 px-4 py-3">
-            <span className="shrink-0 text-sm text-muted-foreground">Game</span>
-            <div className="flex items-center gap-2">
-              <Image
-                alt={selectedGame.name}
-                className="size-5 rounded object-cover"
-                height={20}
-                src={selectedGame.image}
-                width={20}
-              />
-              <span className="text-sm font-medium">{selectedGame.name}</span>
-            </div>
-          </div>
-          <div className="flex flex-col gap-0.5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <span className="text-sm text-muted-foreground">Server size</span>
-            <div className="flex flex-col text-sm font-medium sm:text-right">
-              <span>{selectedType.name}</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                {selectedType.cores} vCPU · {selectedType.memory} GB RAM ·{" "}
-                {selectedType.disk} GB SSD
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between gap-4 px-4 py-3">
-            <span className="shrink-0 text-sm text-muted-foreground">
-              Location
-            </span>
-            <span className="text-sm font-medium">
-              {location?.city
-                ? `${location.city}, ${location.country}`
-                : locationName}
-            </span>
-          </div>
-          <div className="flex items-center justify-between gap-4 px-4 py-3">
-            <span className="shrink-0 text-sm text-muted-foreground">
-              Server name
-            </span>
-            <span className="max-w-48 truncate font-mono text-sm font-medium">
-              {name}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Pricing */}
-      <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
-        <div className="border-b border-border/50 px-4 py-3">
-          <p className="text-sm font-semibold">Pricing</p>
-        </div>
-        <div className="divide-y divide-border/50">
-          <div className="flex items-center justify-between gap-4 px-4 py-3.5">
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-sm font-medium">
-                {selectedType.name} game server
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {selectedType.cores} vCPU · {selectedType.memory} GB RAM ·{" "}
-                {selectedType.disk} GB SSD
-              </span>
-            </div>
-            <span className="shrink-0 text-sm font-semibold tabular-nums">
-              {formatPrice(selectedType.pricePerMonth, currency)}
-              <span className="font-normal text-muted-foreground">/mo</span>
-            </span>
-          </div>
-
-          <div className="px-4 py-3.5">
-            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Included at no extra cost
-            </p>
-            <div className="space-y-2">
-              {ADDONS_INCLUDED.map((addon) => (
-                <div
-                  key={addon.label}
-                  className="flex items-start gap-2.5 text-sm"
-                >
-                  <CheckCircle2Icon className="mt-0.5 size-4 shrink-0 text-emerald-500" />
-                  <span>
-                    <span className="font-medium">{addon.label}</span>
-                    <span className="text-muted-foreground">
-                      {" "}
-                      — {addon.description}
-                    </span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-4 bg-muted/30 px-4 py-4">
-            <div className="flex flex-col gap-0.5">
-              <p className="text-sm font-semibold">Monthly total</p>
-              <p className="text-xs text-muted-foreground">
-                Billed monthly · cancel anytime
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold tabular-nums leading-none">
-                {formatPrice(selectedType.pricePerMonth, currency)}
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">/month</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <p className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
-        Payment is processed before your server is created. Your server will
-        begin provisioning immediately after successful payment.
-      </p>
-    </div>
-  );
-};
-
-export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
-  const router = useRouter();
+export const NewServerForm = ({ eggs, plans, locations }: Props) => {
   const [pending, setPending] = useState(false);
   const [step, setStep] = useState(0);
   const [name, setName] = useState(() =>
     humanId({ capitalize: false, separator: "-" })
   );
-  const [gameId, setGameId] = useState(games[0]?.id ?? "");
+  const [eggId, setEggId] = useState(eggs[0]?.id ?? "");
+  const [planId, setPlanId] = useState("");
+  const [locationId, setLocationId] = useState("");
+  const [values, setValues] = useState<Record<string, string>>({});
 
-  const selectedGame = games.find((g) => g.id === gameId);
+  const egg = eggs.find((e) => e.id === eggId);
+  const plan = plans.find((p) => p.id === planId);
+  const availableLocations = locationsForPlan(locations, plan);
+  const location = availableLocations.find((l) => l.id === locationId);
 
-  const allTypes = useMemo(
-    () => serverTypes.filter((t) => typeIsAvailable(t)),
-    [serverTypes]
-  );
-
-  const [typeName, setTypeName] = useState(() => allTypes[0]?.name ?? "");
-  const [locationName, setLocationName] = useState(() =>
-    firstAvailableLocation(allTypes[0])
-  );
-  const [settings, setSettings] = useState<SettingsValuesRecord>(() =>
-    selectedGame
-      ? (getDefaults(selectedGame.settings) as SettingsValuesRecord)
-      : {}
-  );
-
-  // Reset settings when game changes
-  useEffect(() => {
-    if (selectedGame) {
-      setSettings(getDefaults(selectedGame.settings) as SettingsValuesRecord);
-    }
-  }, [selectedGame]);
-
-  const selectedType = allTypes.find((t) => t.name === typeName);
-
-  // Keep location valid when type changes
-  useEffect(() => {
-    if (!selectedType) {
-      return;
-    }
-    const current = selectedType.locations.find(
-      (l) => l.name === locationName && l.available
-    );
-    if (!current) {
-      setLocationName(firstAvailableLocation(selectedType));
-    }
-  }, [selectedType, locationName]);
-
-  const setSettingField = (key: string, value: FieldValue) =>
-    setSettings((prev) => ({ ...prev, [key]: value }));
-
+  const effective = useMemo(() => effectiveValues(egg, values), [egg, values]);
+  const errors = variableErrors(egg?.variables ?? [], effective);
   const trimmedName = name.trim();
-  const nameValid = trimmedName.length >= 3 && trimmedName.length <= 40;
-  const settingsValid = selectedGame
-    ? missingRequiredFields(selectedGame.settings, settings).length === 0
-    : true;
 
   const stepValid = [
-    Boolean(gameId),
-    Boolean(typeName) && allTypes.length > 0,
-    Boolean(locationName),
-    nameValid && settingsValid,
+    Boolean(egg),
+    Boolean(plan && plan.allocationLimit >= portsNeeded(egg)),
+    Boolean(location),
+    nameValid(trimmedName) && Object.keys(errors).length === 0,
     true,
   ];
-
   const isLast = step === STEPS.length - 1;
 
   const submit = async () => {
+    if (!egg || !plan || !location) {
+      return;
+    }
     setPending(true);
     try {
       const result = await createServer({
-        game: gameId,
-        location: locationName,
+        eggId: egg.id,
+        environment: changedValues(egg, values),
+        locationId: location.id,
         name: trimmedName,
-        serverType: typeName,
-        settings,
+        planId: plan.id,
       });
-      if (!result.ok) {
-        if ("paymentRequired" in result && result.paymentRequired) {
-          // Redirect to Stripe Checkout — don't reset pending (navigating away)
-          window.location.href = result.checkoutUrl;
-          return;
-        }
-        toast.error(result.error);
+      if ("paymentRequired" in result) {
+        // Navigating to Stripe Checkout — keep the button disabled.
+        window.location.href = result.checkoutUrl;
         return;
       }
-      router.push(`/dashboard/${result.id}`);
+      toast.error(result.error);
+      setPending(false);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Could not create server"
       );
-    } finally {
       setPending(false);
     }
   };
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (step < STEPS.length - 1) {
-      if (stepValid[step]) {
-        setStep(step + 1);
-      }
-    } else {
+    if (isLast) {
       submit();
+    } else if (stepValid[step]) {
+      setStep(step + 1);
     }
   };
+
+  if (!canOrder(eggs, plans, locations)) {
+    return <Unavailable />;
+  }
 
   return (
     <>
@@ -774,58 +612,67 @@ export const NewServerForm = ({ games, serverTypes, currency }: Props) => {
       <PageBody>
         <form className="space-y-6" onSubmit={handleSubmit}>
           {step === 0 && (
-            <GameStep gameId={gameId} games={games} setGameId={setGameId} />
-          )}
-
-          {step === 1 && (
-            <SizeStep
-              allTypes={allTypes}
-              currency={currency}
-              selectedGame={selectedGame}
-              setTypeName={setTypeName}
-              typeName={typeName}
+            <GameStep
+              eggId={eggId}
+              eggs={eggs}
+              onSelect={(id) => {
+                setEggId(id);
+                setValues({});
+              }}
             />
           )}
-
+          {step === 1 && (
+            <PlanStep
+              egg={egg}
+              planId={planId}
+              plans={plans}
+              onSelect={(p) => {
+                setPlanId(p.id);
+                if (p.locationId) {
+                  setLocationId(p.locationId);
+                }
+              }}
+            />
+          )}
           {step === 2 && (
             <LocationStep
-              locationName={locationName}
-              selectedType={selectedType}
-              setLocationName={setLocationName}
+              locationId={locationId}
+              locations={availableLocations}
+              onSelect={setLocationId}
             />
           )}
-
-          {step === 3 && (
+          {step === 3 && egg && (
             <ConfigureStep
+              egg={egg}
+              errors={errors}
               name={name}
-              selectedGame={selectedGame}
               setName={setName}
-              setSettingField={setSettingField}
-              settings={settings}
+              values={effective}
+              onVariable={(env, value) =>
+                setValues((prev) => ({ ...prev, [env]: value }))
+              }
             />
           )}
-
-          {step === 4 && selectedGame && selectedType && (
+          {step === 4 && egg && plan && location && (
             <ReviewStep
-              currency={currency}
-              locationName={locationName}
+              egg={egg}
+              location={location}
               name={trimmedName}
-              selectedGame={selectedGame}
-              selectedType={selectedType}
+              plan={plan}
             />
           )}
 
-          <div className="flex items-center justify-between gap-2 border-t border-border/50 pt-4">
+          <div className="border-border/50 flex items-center justify-between gap-2 border-t pt-4">
             <Button
               disabled={step === 0 || pending}
-              onClick={() => setStep((s) => Math.max(0, s - 1))}
               type="button"
               variant="ghost"
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
             >
               Back
             </Button>
             <Button disabled={!stepValid[step] || pending} type="submit">
-              {getSubmitLabel(isLast, pending)}
+              {submitLabel(isLast, pending)}
             </Button>
           </div>
         </form>

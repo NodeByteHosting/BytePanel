@@ -109,15 +109,15 @@ export const AdminSidebar = ({ user }: { user: AdminSidebarUser }) => {
     <Sidebar collapsible="offcanvas" className="border-none">
       <SidebarHeader className="px-4 py-3">
         <Link
-          href="/admin"
+          href="/"
           className="flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80"
         >
-          <Logo className="h-5 w-auto text-sidebar-foreground" />
+          <Logo className="text-sidebar-foreground h-5 w-auto" />
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-semibold tracking-tight text-sidebar-foreground">
+            <span className="text-sidebar-foreground text-sm font-semibold tracking-tight">
               NodeByte
             </span>
-            <span className="text-xs leading-none text-muted-foreground">
+            <span className="text-muted-foreground text-xs leading-none">
               Admin Panel
             </span>
           </div>
@@ -179,8 +179,8 @@ export const AdminSidebar = ({ user }: { user: AdminSidebarUser }) => {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex items-center justify-between rounded-lg border border-border/50 bg-card/30 px-2.5 py-2 backdrop-blur-sm group-data-[collapsible=icon]:justify-center">
-              <span className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+            <div className="border-border/50 bg-card/30 flex items-center justify-between rounded-lg border px-2.5 py-2 backdrop-blur-sm group-data-[collapsible=icon]:justify-center">
+              <span className="text-muted-foreground text-xs group-data-[collapsible=icon]:hidden">
                 Theme
               </span>
               <ModeToggle />
@@ -198,7 +198,7 @@ export const AdminSidebar = ({ user }: { user: AdminSidebarUser }) => {
                         className="rounded-lg"
                       />
                     ) : null}
-                    <AvatarFallback className="rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
+                    <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground rounded-lg">
                       {initial}
                     </AvatarFallback>
                   </Avatar>
@@ -207,7 +207,7 @@ export const AdminSidebar = ({ user }: { user: AdminSidebarUser }) => {
                       {user.name ?? user.email}
                     </span>
                     {user.name ? (
-                      <span className="truncate text-xs text-muted-foreground">
+                      <span className="text-muted-foreground truncate text-xs">
                         {user.email}
                       </span>
                     ) : null}
@@ -241,7 +241,7 @@ export const AdminSidebar = ({ user }: { user: AdminSidebarUser }) => {
                         </Badge>
                       )}
                     </span>
-                    <span className="truncate text-xs text-muted-foreground">
+                    <span className="text-muted-foreground truncate text-xs">
                       {user.email}
                     </span>
                   </div>

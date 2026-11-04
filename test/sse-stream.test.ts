@@ -19,6 +19,7 @@ const readChunks = async (
   const deadline = Date.now() + timeoutMs;
   let buffer = "";
   while (Date.now() < deadline) {
+    // oxlint-disable-next-line no-await-in-loop -- stream reads are inherently sequential
     const { done, value } = await reader.read();
     if (done) {
       return buffer;

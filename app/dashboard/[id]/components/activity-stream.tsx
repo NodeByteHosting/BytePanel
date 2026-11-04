@@ -64,7 +64,7 @@ export const ActivityStream = ({ serverId }: { serverId: string }) => {
               key={event.seq}
               className="flex flex-row items-center gap-4 rounded-lg px-3 py-2 text-sm"
             >
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="text-muted-foreground font-mono text-xs">
                 {new Date(event.occurredAt).toLocaleTimeString()}
               </span>
               <span className="font-medium">{event.phase}</span>
@@ -72,7 +72,7 @@ export const ActivityStream = ({ serverId }: { serverId: string }) => {
             </li>
           ))}
           {events.length === 0 && (
-            <li className="rounded-lg px-3 py-2 text-sm text-muted-foreground">
+            <li className="text-muted-foreground rounded-lg px-3 py-2 text-sm">
               Waiting for events…
             </li>
           )}

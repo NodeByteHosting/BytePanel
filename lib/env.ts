@@ -24,13 +24,11 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
-    BOOTSTRAP_JWT_SECRET: process.env.BOOTSTRAP_JWT_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
     DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_UNPOOLED,
+    GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     HETZNER_API_TOKEN: process.env.HETZNER_API_TOKEN,
     HETZNER_SNAPSHOT_IMAGE_ID: process.env.HETZNER_SNAPSHOT_IMAGE_ID,
-    KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN,
-    KV_REST_API_URL: process.env.KV_REST_API_URL,
     NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
@@ -38,7 +36,9 @@ export const env = createEnv({
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     NEXT_RUNTIME: process.env.NEXT_RUNTIME,
+    NODEBYTE_DEBUG: process.env.NODEBYTE_DEBUG,
     NODEBYTE_PUBLIC_URL: process.env.NODEBYTE_PUBLIC_URL,
+    REDIS_URL: process.env.REDIS_URL,
     SENTRY_ORG: process.env.SENTRY_ORG,
     SENTRY_PROJECT: process.env.SENTRY_PROJECT,
     SMTP_FROM: process.env.SMTP_FROM,
@@ -48,6 +48,8 @@ export const env = createEnv({
     SMTP_USER: process.env.SMTP_USER,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    UPDATE_CHECK_AGENT_REPO: process.env.UPDATE_CHECK_AGENT_REPO,
+    UPDATE_CHECK_PANEL_REPO: process.env.UPDATE_CHECK_PANEL_REPO,
     VERCEL_AUTOMATION_BYPASS_SECRET:
       process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
   },
@@ -56,26 +58,37 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: z.string().min(32),
 
     BETTER_AUTH_URL: z.string().min(1).url(),
-    BLOB_READ_WRITE_TOKEN: z.string().min(1).startsWith("vercel_blob_rw_"),
-    BOOTSTRAP_JWT_SECRET: z.string().min(32),
+    BLOB_READ_WRITE_TOKEN: z
+      .string()
+      .min(1)
+      .startsWith("vercel_blob_rw_")
+      .optional(),
 
-    DATABASE_URL: z.string().min(1).url(),
+    DATABASE_URL: z.string().min(1).url().optional(),
     DATABASE_URL_UNPOOLED: z.string().min(1).url().optional(),
 
-    // NodeByte's system-level Hetzner credentials (not per-user)
-    HETZNER_API_TOKEN: z.string().min(1),
-    // Pre-built golden image ID; if unset the platform auto-manages a snapshot
+    // Optional read-only token (contents: read) for the admin update check.
+    // Only needed for private repos or to lift GitHub's anonymous rate limit.
+    GITHUB_TOKEN: z.string().min(1).optional(),
+
+    // Hetzner credentials for lib/providers (future node provisioning). Not
+    // used by the node model, so both may be left unset.
+    HETZNER_API_TOKEN: z.string().default(""),
     HETZNER_SNAPSHOT_IMAGE_ID: z.string().min(1).optional(),
 
-    KV_REST_API_TOKEN: z.string().min(1),
-
-    KV_REST_API_URL: z.string().min(1).url(),
-
     NEXT_RUNTIME: z.enum(["nodejs", "edge"]).optional(),
-    // Overrides the computed API_URL for local dev bakes — set this to a
-    // publicly reachable URL (e.g. ngrok/Cloudflare Tunnel) so the builder VM
-    // on Hetzner can download the agent binary. Not needed on Vercel.
+    // Returns unexpected server-action errors to the UI instead of letting
+    // Next.js redact them. Exposes internals — test environments only.
+    NODEBYTE_DEBUG: z
+      .enum(["true", "false", "1", "0"])
+      .optional()
+      .transform((v) => v === "true" || v === "1"),
+    // Overrides the computed API_URL — the URL nodes use to reach the panel.
+    // Set this to a publicly reachable URL (e.g. ngrok/Cloudflare Tunnel) in
+    // local dev so daemons can call /api/remote/*. Not needed on Vercel.
     NODEBYTE_PUBLIC_URL: z.string().min(1).url().optional(),
+    // redis:// or rediss:// (TLS), e.g. redis://:password@host:6379/0
+    REDIS_URL: z.string().min(1).url().default("redis://localhost:6379"),
     SENTRY_ORG: z.string().min(1).optional(),
 
     SENTRY_PROJECT: z.string().min(1).optional(),
@@ -88,6 +101,15 @@ export const env = createEnv({
 
     STRIPE_SECRET_KEY: z.string().min(1).startsWith("sk_").optional(),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).startsWith("whsec_").optional(),
+    // owner/name of the GitHub repos the admin update check reads from.
+    UPDATE_CHECK_AGENT_REPO: z
+      .string()
+      .regex(/^[\w.-]+\/[\w.-]+$/u)
+      .default("NodeByteHosting/GSA"),
+    UPDATE_CHECK_PANEL_REPO: z
+      .string()
+      .regex(/^[\w.-]+\/[\w.-]+$/u)
+      .default("NodeByteHosting/GSM"),
     VERCEL_AUTOMATION_BYPASS_SECRET: z.string().min(1).optional(),
   },
 });
@@ -106,28 +128,15 @@ const branchUrl = env.VERCEL_BRANCH_URL
 // .vercel.app hostname into search indexes.
 export const SEO_URL = productionUrl ?? LOCAL_URL;
 
-// Points at the current deployment so Hetzner agents call back to whichever
-// deployment provisioned them. Production deployments use the project's prod
+// Points at the current deployment; node daemons call back to this URL
+// (/api/remote/*) and it is written into each node's daemon.json. Production deployments use the project's prod
 // URL; previews use the branch-stable URL (so callbacks survive redeploys of
 // the same branch); dev falls back to localhost.
 //
-// NODEBYTE_PUBLIC_URL overrides everything — required when baking from local
-// dev since the builder VM on Hetzner cannot reach localhost:3000.
+// NODEBYTE_PUBLIC_URL overrides everything — required in local dev when the
+// nodes cannot reach localhost:3000 (use a tunnel URL).
 export const API_URL =
   env.NODEBYTE_PUBLIC_URL ??
   (env.VERCEL_ENV === "production"
     ? (productionUrl ?? LOCAL_URL)
     : (branchUrl ?? LOCAL_URL));
-
-// Identity used to scope per-user snapshot images so a build on one deployment
-// can't clobber another deployment's golden image. Production shares one
-// snapshot; preview branches each get their own; local dev is its own bucket.
-export const SNAPSHOT_ENVIRONMENT: string = (() => {
-  if (env.VERCEL_ENV === "production") {
-    return "production";
-  }
-  if (env.VERCEL_ENV === "preview") {
-    return `preview:${env.VERCEL_GIT_COMMIT_REF ?? "unknown"}`;
-  }
-  return "development";
-})();

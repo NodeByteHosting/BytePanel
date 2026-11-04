@@ -62,6 +62,7 @@ export const PasskeysPanel = () => {
   }, []);
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
     load();
   }, [load]);
 
@@ -116,16 +117,16 @@ export const PasskeysPanel = () => {
       );
     }
     return (
-      <div className="flex flex-col divide-y divide-border/50">
+      <div className="divide-border/50 flex flex-col divide-y">
         {passkeys.map((passkey) => (
           <div
             className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0"
             key={passkey.id}
           >
             <div className="flex min-w-0 items-center gap-3">
-              <FingerprintIcon className="size-4 shrink-0 text-muted-foreground" />
+              <FingerprintIcon className="text-muted-foreground size-4 shrink-0" />
               <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="truncate font-medium text-sm">
+                <span className="truncate text-sm font-medium">
                   {passkey.name || "Passkey"}
                 </span>
                 <span className="text-muted-foreground text-xs">
@@ -149,7 +150,7 @@ export const PasskeysPanel = () => {
 
   return (
     <>
-      <div className="max-w-xl space-y-4 rounded-xl border border-border/60 bg-card p-5">
+      <div className="border-border/60 bg-card max-w-xl space-y-4 rounded-xl border p-5">
         <h2 className="text-sm font-semibold">Passkeys</h2>
         {renderList()}
         <Button

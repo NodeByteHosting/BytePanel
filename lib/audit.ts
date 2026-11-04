@@ -26,8 +26,6 @@ export type AuditAction =
   | "server.member_invited"
   | "server.member_removed"
   | "server.member_role_changed"
-  | "server.snapshot_created"
-  | "server.snapshot_restored"
   // ── Billing ─────────────────────────────────────────────────────────────
   | "billing.subscription_created"
   | "billing.subscription_canceled"
@@ -49,14 +47,44 @@ export type AuditAction =
   | "admin.server.delete"
   | "admin.server.suspend"
   | "admin.server.unsuspend"
+  | "admin.server.reinstall"
+  | "admin.server.build_changed"
+  // ── Admin: infrastructure ────────────────────────────────────────────────
+  | "admin.location.create"
+  | "admin.location.delete"
+  | "admin.node.create"
+  | "admin.node.update"
+  | "admin.node.reset_token"
+  | "admin.node.delete"
+  | "admin.allocation.create"
+  | "admin.allocation.delete"
+  // ── Admin: nests / eggs / plans ──────────────────────────────────────────
+  | "admin.nest.create"
+  | "admin.nest.delete"
+  | "admin.egg.sync"
+  | "admin.egg.import"
+  | "admin.egg.update"
+  | "admin.egg.delete"
+  | "admin.plan.create"
+  | "admin.plan.update"
+  | "admin.plan.delete"
   // ── Admin: email ─────────────────────────────────────────────────────────
   | "admin.email.test_sent"
   | "admin.email.broadcast_sent"
   // ── Admin: sessions ──────────────────────────────────────────────────────
   | "admin.session.revoked"
-  // ── Admin: snapshot ──────────────────────────────────────────────────────
-  | "admin.snapshot.bake_started"
-  | "admin.snapshot.bake_completed";
+  // ── Admin: panel settings ────────────────────────────────────────────────
+  | "admin.settings.branding_changed"
+  | "admin.settings.billing_changed"
+  | "admin.settings.api_key_generated"
+  | "admin.settings.api_key_revoked"
+  // ── Application API (external billing) ───────────────────────────────────
+  | "application.user.create"
+  | "application.server.create"
+  | "application.server.suspend"
+  | "application.server.unsuspend"
+  | "application.server.change_plan"
+  | "application.server.terminate";
 
 export interface LogEventOptions {
   actorId?: string | null;

@@ -33,21 +33,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { games } from "@/games";
 import { cn } from "@/lib/utils";
 
-import { adminDeleteServer } from "./actions/delete";
+import { adminDeleteServer } from "../actions/servers";
 
 interface AdminServer {
   id: string;
   name: string;
-  game: string;
-  location: string;
-  serverType: string;
-  observedState: string;
-  desiredState: string;
-  ipv4: string | null;
+  status: string | null;
+  nodeId: string | null;
   createdAt: string;
+  egg: { name: string; image: string | null } | null;
+  node: { name: string } | null;
+  allocation: { ip: string; ipAlias: string | null; port: number } | null;
   user: { id: string; email: string; name: string | null };
 }
 
@@ -59,42 +57,49 @@ interface PagedResponse {
   totalPages: number;
 }
 
-const stateBadgeClass = (state: string, desiredState: string): string => {
-  if (desiredState === "deleted") {
-    return "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400";
+const statusOf = (
+  server: AdminServer
+): { label: string; dot: string; text: string } => {
+  if (!server.nodeId) {
+    return {
+      dot: "bg-amber-500",
+      label: "not deployed",
+      text: "text-amber-600 dark:text-amber-400",
+    };
   }
-  if (state === "running") {
-    return "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
+  switch (server.status) {
+    case null: {
+      return {
+        dot: "bg-emerald-500",
+        label: "installed",
+        text: "text-emerald-600 dark:text-emerald-400",
+      };
+    }
+    case "installing":
+    case "restoring_backup": {
+      return {
+        dot: "bg-amber-500",
+        label: server.status.replace("_", " "),
+        text: "text-amber-600 dark:text-amber-400",
+      };
+    }
+    default: {
+      return {
+        dot: "bg-red-500",
+        label: server.status.replace("_", " "),
+        text: "text-red-600 dark:text-red-400",
+      };
+    }
   }
-  if (state === "failed" || state === "lost") {
-    return "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400";
-  }
-  if (state === "unhealthy") {
-    return "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400";
-  }
-  return "border-zinc-500/40 bg-zinc-500/10 text-zinc-500 dark:text-zinc-400";
-};
-
-const getServerStateColor = (state: string) => {
-  if (state === "running") {
-    return "bg-emerald-500";
-  }
-  if (state === "unhealthy") {
-    return "bg-amber-500";
-  }
-  if (["failed", "lost", "deleting"].includes(state)) {
-    return "bg-red-500";
-  }
-  return "bg-zinc-400";
 };
 
 const STATES = [
-  { label: "All states", value: "all" },
-  { label: "Running", value: "running" },
-  { label: "Stopped", value: "stopped" },
-  { label: "Provisioning", value: "provisioning" },
-  { label: "Failed", value: "failed" },
-  { label: "Unhealthy", value: "unhealthy" },
+  { label: "All", value: "all" },
+  { label: "Installed", value: "installed" },
+  { label: "Installing", value: "installing" },
+  { label: "Install failed", value: "install_failed" },
+  { label: "Suspended", value: "suspended" },
+  { label: "Not deployed", value: "undeployed" },
 ];
 
 export const ServersTable = () => {
@@ -155,6 +160,7 @@ export const ServersTable = () => {
   );
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
     void fetchServers();
   }, [fetchServers]);
 
@@ -163,7 +169,7 @@ export const ServersTable = () => {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-0 flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <Input
             className="pl-9"
             placeholder="Search by name, owner email…"
@@ -208,9 +214,9 @@ export const ServersTable = () => {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
+      <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
         {(loading || !data) && (
-          <div className="divide-y divide-border/50">
+          <div className="divide-border/50 divide-y">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-3">
                 <Skeleton className="size-8 shrink-0 rounded-lg" />
@@ -225,76 +231,67 @@ export const ServersTable = () => {
           </div>
         )}
         {!loading && data?.servers.length === 0 && (
-          <div className="py-16 text-center text-sm text-muted-foreground">
+          <div className="text-muted-foreground py-16 text-center text-sm">
             No servers found.
           </div>
         )}
         {!loading && data && data.servers.length > 0 && (
-          <div className="divide-y divide-border/50">
+          <div className="divide-border/50 divide-y">
             {data.servers.map((server) => {
-              const game = games.find((g) => g.id === server.game);
-              const deleting = server.desiredState === "deleted";
-              const stateKey = deleting ? "deleting" : server.observedState;
+              const state = statusOf(server);
               return (
                 <div
                   key={server.id}
-                  className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30"
+                  className="group hover:bg-muted/30 flex items-center gap-3 px-4 py-3 transition-colors"
                 >
                   {/* Game image */}
-                  {game ? (
+                  {server.egg?.image ? (
                     <Image
-                      src={game.image}
-                      alt={game.name}
+                      src={server.egg.image}
+                      alt={server.egg.name}
                       width={32}
                       height={32}
                       className="size-8 shrink-0 rounded-lg object-cover"
                     />
                   ) : (
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-muted">
-                      <Server className="size-4 text-muted-foreground" />
+                    <div className="border-border/50 bg-muted flex size-8 shrink-0 items-center justify-center rounded-lg border">
+                      <Server className="text-muted-foreground size-4" />
                     </div>
                   )}
 
                   {/* Name + owner */}
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                      <p className="truncate text-sm font-medium">
+                      <Link
+                        className="truncate text-sm font-medium hover:underline"
+                        href={`/admin/servers/${server.id}`}
+                      >
                         {server.name}
-                      </p>
+                      </Link>
                       <div className="flex shrink-0 items-center gap-1">
                         <div
-                          className={cn(
-                            "size-1.5 rounded-full",
-                            getServerStateColor(stateKey)
-                          )}
+                          className={cn("size-1.5 rounded-full", state.dot)}
                         />
-                        <span
-                          className={cn(
-                            "text-xs capitalize",
-                            stateBadgeClass(
-                              server.observedState,
-                              server.desiredState
-                            )
-                              .split(" ")
-                              .filter((c) => c.startsWith("text-"))
-                              .join(" ") || "text-muted-foreground"
-                          )}
-                        >
-                          {stateKey}
+                        <span className={cn("text-xs capitalize", state.text)}>
+                          {state.label}
                         </span>
                       </div>
                     </div>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="text-muted-foreground truncate text-xs">
                       {server.user.name ?? server.user.email}
-                      {server.ipv4 && (
-                        <span className="ml-2 font-mono">{server.ipv4}</span>
+                      {server.allocation && (
+                        <span className="ml-2 font-mono">
+                          {server.allocation.ipAlias ?? server.allocation.ip}:
+                          {server.allocation.port}
+                        </span>
                       )}
                     </p>
                   </div>
 
                   {/* Meta — hidden on mobile */}
-                  <div className="hidden shrink-0 items-center gap-4 text-xs text-muted-foreground sm:flex">
-                    <span>{server.location}</span>
+                  <div className="text-muted-foreground hidden shrink-0 items-center gap-4 text-xs sm:flex">
+                    <span>{server.egg?.name ?? "—"}</span>
+                    <span>{server.node?.name ?? "—"}</span>
                     <span>
                       {new Date(server.createdAt).toLocaleDateString()}
                     </span>
@@ -319,7 +316,7 @@ export const ServersTable = () => {
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="size-8 shrink-0 opacity-60 transition-opacity hover:text-destructive hover:opacity-100"
+                    className="hover:text-destructive size-8 shrink-0 opacity-60 transition-opacity hover:opacity-100"
                     disabled={deletingIds.has(server.id)}
                     onClick={() => setDeleteTarget(server.id)}
                   >
@@ -334,7 +331,7 @@ export const ServersTable = () => {
 
       {/* Pagination */}
       {data && data.totalPages > 1 && (
-        <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-muted-foreground flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
           <span>
             {(data.page - 1) * data.pageSize + 1}–
             {Math.min(data.page * data.pageSize, data.total)} of {data.total}
@@ -375,8 +372,8 @@ export const ServersTable = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this server?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove the server from the provider immediately. This
-              action cannot be undone.
+              The server and its files are removed from its node immediately.
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

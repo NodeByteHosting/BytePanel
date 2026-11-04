@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
-import { sendServerInviteEmail } from "@/lib/mail";
+import { sendServerInviteEmail, sendServerMemberAddedEmail } from "@/lib/mail";
 import { requireServerRole } from "@/lib/rbac";
 import { requireUser } from "@/lib/session";
 
@@ -123,6 +123,27 @@ export const POST = async (
         user: { select: { email: true, id: true, image: true, name: true } },
       },
     });
+
+    // Notify the added user by email (fire-and-forget)
+    const [serverInfo, inviter] = await Promise.all([
+      prisma.server.findUnique({
+        select: { name: true },
+        where: { id: serverId },
+      }),
+      prisma.user.findUnique({
+        select: { email: true, name: true },
+        where: { id: user.id },
+      }),
+    ]);
+    const baseUrl = env.BETTER_AUTH_URL.replace(/\/$/u, "");
+    void sendServerMemberAddedEmail({
+      addedByName: inviter?.name ?? inviter?.email ?? "Someone",
+      role,
+      serverName: serverInfo?.name ?? "a server",
+      serverUrl: `${baseUrl}/dashboard/${serverId}`,
+      toEmail: member.user.email,
+    });
+
     return NextResponse.json({ member, type: "added" }, { status: 201 });
   }
 
@@ -164,7 +185,7 @@ export const POST = async (
   void sendServerInviteEmail({
     acceptUrl,
     expiresAt: invite.expiresAt.toISOString(),
-    invitedByName: inviter?.name ?? inviter?.email ?? "A NodeByte user",
+    invitedByName: inviter?.name ?? inviter?.email ?? "Someone",
     role,
     serverName: server?.name ?? "a server",
     toEmail: email,

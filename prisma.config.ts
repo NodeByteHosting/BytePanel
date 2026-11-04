@@ -1,5 +1,8 @@
-import "dotenv/config";
+import { config } from "dotenv";
 import { defineConfig } from "prisma/config";
+
+// Match Next.js precedence: .env.local wins over .env (dotenv won't override).
+config({ path: [".env.local", ".env"], quiet: true });
 
 // Migrate / introspection commands need a direct (non-pooled) connection. The
 // runtime PrismaClient in lib/db.ts uses @prisma/adapter-pg with the pooled

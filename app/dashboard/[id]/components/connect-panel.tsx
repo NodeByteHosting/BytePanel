@@ -7,21 +7,14 @@ import { Panel, PanelCard } from "@/components/panel";
 import { Button } from "@/components/ui/button";
 import { games } from "@/games";
 
+import type { AllocationView } from "./server-context";
+
 interface Props {
-  game: string;
-  ipv4: string | null;
+  gameSlug: string | null;
+  gameName: string;
+  allocations: AllocationView[];
   joinPassword: string | null;
 }
-
-const formatPort = (port: { from: number; to: number; protocol: string }) => {
-  const range =
-    port.from === port.to ? `${port.from}` : `${port.from}–${port.to}`;
-  return `${range}/${port.protocol.toUpperCase()}`;
-};
-
-const primaryPort = (
-  ports: readonly { from: number; to: number; protocol: string }[]
-) => ports[0];
 
 const renderStep = (
   step: string,
@@ -31,13 +24,13 @@ const renderStep = (
     .replaceAll("{address-host}", vars.host)
     .replaceAll("{address-port}", vars.port)
     .replaceAll("{address}", vars.address);
-  return substituted.split(/`([^`]+)`/gu).map((part, i) =>
+  return substituted.split(/`(?<code>[^`]+)`/gu).map((part, i) =>
     i % 2 === 0 ? (
       <Fragment key={i}>{part}</Fragment>
     ) : (
       <code
         key={i}
-        className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs"
+        className="bg-muted rounded-md px-1.5 py-0.5 font-mono text-xs"
       >
         {part}
       </code>
@@ -51,7 +44,7 @@ interface CopyableProps {
   reveal?: boolean;
 }
 
-const Copyable = ({ label, value, reveal }: CopyableProps) => {
+export const Copyable = ({ label, value, reveal }: CopyableProps) => {
   const [copied, setCopied] = useState(false);
   const [shown, setShown] = useState(!reveal);
 
@@ -63,9 +56,9 @@ const Copyable = ({ label, value, reveal }: CopyableProps) => {
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="text-muted-foreground text-xs font-medium">{label}</span>
       <div className="flex items-center gap-2">
-        <code className="rounded-md bg-muted px-2 py-1 font-mono text-sm">
+        <code className="bg-muted rounded-md px-2 py-1 font-mono text-sm">
           {shown ? value : "•".repeat(value.length)}
         </code>
         {reveal && (
@@ -75,7 +68,7 @@ const Copyable = ({ label, value, reveal }: CopyableProps) => {
             size="icon"
             aria-label={shown ? "Hide" : "Show"}
             onClick={() => setShown((v) => !v)}
-            className="size-7 text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground size-7"
           >
             {shown ? (
               <EyeOffIcon className="size-3.5" />
@@ -90,7 +83,7 @@ const Copyable = ({ label, value, reveal }: CopyableProps) => {
           size="icon"
           aria-label={`Copy ${label.toLowerCase()}`}
           onClick={copy}
-          className="size-7 text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground size-7"
         >
           {copied ? (
             <CheckIcon className="size-3.5" />
@@ -103,26 +96,31 @@ const Copyable = ({ label, value, reveal }: CopyableProps) => {
   );
 };
 
-export const ConnectPanel = ({ game: gameId, ipv4, joinPassword }: Props) => {
-  const game = games.find((g) => g.id === gameId);
-
-  const primary = game ? primaryPort(game.ports) : null;
-  const address = ipv4 && primary ? `${ipv4}:${primary.from}` : ipv4;
+export const ConnectPanel = ({
+  gameSlug,
+  gameName,
+  allocations,
+  joinPassword,
+}: Props) => {
+  const game = games.find((g) => g.id === gameSlug);
+  const primary = allocations.find((a) => a.primary) ?? allocations[0];
+  const host = primary ? (primary.alias ?? primary.ip) : null;
+  const address = primary && host ? `${host}:${primary.port}` : null;
   const stepVars = {
     address: address ?? "",
-    host: ipv4 ?? "",
-    port: primary ? String(primary.from) : "",
+    host: host ?? "",
+    port: primary ? String(primary.port) : "",
   };
   const howToConnect =
     game && "howToConnect" in game
       ? (game.howToConnect as readonly string[])
       : null;
 
-  if (!ipv4) {
+  if (!address) {
     return (
       <Panel>
-        <PanelCard className="text-sm text-muted-foreground">
-          No IP address assigned yet.
+        <PanelCard className="text-muted-foreground text-sm">
+          No address assigned yet.
         </PanelCard>
       </Panel>
     );
@@ -131,49 +129,47 @@ export const ConnectPanel = ({ game: gameId, ipv4, joinPassword }: Props) => {
   return (
     <Panel>
       <PanelCard className="flex flex-col gap-4">
-        {address && <Copyable label="Server address" value={address} />}
-        {game?.usesJoinPassword && joinPassword && (
-          <Copyable label="Server password" value={joinPassword} reveal />
+        <Copyable label="Server address" value={address} />
+        {joinPassword && (
+          <Copyable label="Server password" reveal value={joinPassword} />
         )}
-        {game && (
-          <>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted-foreground">
-                Ports
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {game.ports.map((port) => (
-                  <code
-                    key={`${port.protocol}-${port.from}`}
-                    className="rounded-md bg-muted px-2 py-1 font-mono text-xs"
-                  >
-                    {formatPort(port)}
-                  </code>
-                ))}
-              </div>
+        {allocations.length > 1 && (
+          <div className="flex flex-col gap-1">
+            <span className="text-muted-foreground text-xs font-medium">
+              Ports
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {allocations.map((allocation) => (
+                <code
+                  className="bg-muted rounded-md px-2 py-1 font-mono text-xs"
+                  key={allocation.id}
+                >
+                  {allocation.port}
+                  {allocation.primary ? " (game)" : ""}
+                </code>
+              ))}
             </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted-foreground">
-                How to connect
-              </span>
-              {howToConnect ? (
-                <ol className="ml-4 list-decimal space-y-1.5 text-sm">
-                  {howToConnect.map((step, i) => (
-                    <li key={i}>{renderStep(step, stepVars)}</li>
-                  ))}
-                </ol>
-              ) : (
-                <p className="text-sm">
-                  Open {game.name}, go to the multiplayer menu, and connect to
-                  the address above.
-                  {game.usesJoinPassword &&
-                    joinPassword &&
-                    " Share the password above with anyone you want to let in."}
-                </p>
-              )}
-            </div>
-          </>
+          </div>
         )}
+        <div className="flex flex-col gap-1">
+          <span className="text-muted-foreground text-xs font-medium">
+            How to connect
+          </span>
+          {howToConnect ? (
+            <ol className="ml-4 list-decimal space-y-1.5 text-sm">
+              {howToConnect.map((step, i) => (
+                <li key={i}>{renderStep(step, stepVars)}</li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-sm">
+              Open {gameName}, go to the multiplayer menu, and connect to the
+              address above.
+              {joinPassword &&
+                " Share the password above with anyone you want to let in."}
+            </p>
+          )}
+        </div>
       </PanelCard>
     </Panel>
   );

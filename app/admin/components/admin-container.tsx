@@ -11,8 +11,8 @@ export const AdminContainer = ({ children }: { children: ReactNode }) => {
   return (
     <SidebarInset
       className={cn(
-        "flex flex-col h-svh overflow-hidden bg-background transition-all",
-        sidebar.open && "border-l border-border/50"
+        "bg-background flex h-svh flex-col overflow-hidden transition-all",
+        sidebar.open && "border-border/50 border-l"
       )}
     >
       {children}

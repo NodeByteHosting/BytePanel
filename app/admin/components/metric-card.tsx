@@ -66,9 +66,9 @@ export const MetricCard = ({
   const content = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
+        <p className="text-muted-foreground text-sm font-medium">{title}</p>
         {icon && (
-          <div className={cn("rounded-lg p-2 shrink-0", style.icon)}>
+          <div className={cn("shrink-0 rounded-lg p-2", style.icon)}>
             {icon}
           </div>
         )}
@@ -79,7 +79,7 @@ export const MetricCard = ({
           {value}
         </p>
         {description && (
-          <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+          <p className="text-muted-foreground mt-1 text-xs">{description}</p>
         )}
       </div>
 
@@ -102,7 +102,7 @@ export const MetricCard = ({
             {change.value}%
           </span>
           {change.period && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {change.period}
             </span>
           )}
@@ -112,9 +112,9 @@ export const MetricCard = ({
   );
 
   const baseClassName = cn(
-    "group flex flex-col gap-4 rounded-xl border border-border/60 bg-card p-5 transition-all duration-200",
+    "group border-border/60 bg-card flex flex-col gap-4 rounded-xl border p-5 transition-all duration-200",
     (href || onClick) &&
-      "cursor-pointer hover:shadow-md hover:shadow-primary/5",
+      "hover:shadow-primary/5 cursor-pointer hover:shadow-md",
     style.ring
   );
 

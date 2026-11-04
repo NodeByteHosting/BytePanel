@@ -66,10 +66,10 @@ const TestEmailTab = () => {
   };
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/20 backdrop-blur-sm">
-      <div className="border-b border-border/50 px-5 py-4">
-        <h3 className="font-semibold text-sm">Send test email</h3>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+    <div className="border-border/50 bg-card/20 rounded-2xl border backdrop-blur-sm">
+      <div className="border-border/50 border-b px-5 py-4">
+        <h3 className="text-sm font-semibold">Send test email</h3>
+        <p className="text-muted-foreground mt-0.5 text-xs">
           Send a one-off email to verify your SMTP configuration is working.
         </p>
       </div>
@@ -89,7 +89,7 @@ const TestEmailTab = () => {
             <Label htmlFor="test-subject">Subject</Label>
             <Input
               id="test-subject"
-              placeholder="Test email from NodeByte Panel"
+              placeholder="Test email from the panel"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             />
@@ -155,10 +155,10 @@ const BroadcastTab = () => {
   };
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/20 backdrop-blur-sm">
-      <div className="border-b border-border/50 px-5 py-4">
-        <h3 className="font-semibold text-sm">Broadcast email</h3>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+    <div className="border-border/50 bg-card/20 rounded-2xl border backdrop-blur-sm">
+      <div className="border-border/50 border-b px-5 py-4">
+        <h3 className="text-sm font-semibold">Broadcast email</h3>
+        <p className="text-muted-foreground mt-0.5 text-xs">
           Send a message to all users or just admins. Requires super-admin
           access.
         </p>
@@ -187,7 +187,7 @@ const BroadcastTab = () => {
             <Label htmlFor="bc-subject">Subject</Label>
             <Input
               id="bc-subject"
-              placeholder="Important notice from NodeByte"
+              placeholder="Important notice"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             />
@@ -204,9 +204,9 @@ const BroadcastTab = () => {
           />
         </div>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             This will send an email to{" "}
-            <span className="font-medium text-foreground">
+            <span className="text-foreground font-medium">
               {audience === "admins" ? "all admins" : "all users"}
             </span>
             .
@@ -267,29 +267,30 @@ const EmailLogsTab = () => {
   }, [page]);
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
     void fetchLogs();
   }, [fetchLogs]);
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/20 backdrop-blur-sm">
-      <div className="border-b border-border/50 px-5 py-4">
-        <h3 className="font-semibold text-sm">Email send history</h3>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+    <div className="border-border/50 bg-card/20 rounded-2xl border backdrop-blur-sm">
+      <div className="border-border/50 border-b px-5 py-4">
+        <h3 className="text-sm font-semibold">Email send history</h3>
+        <p className="text-muted-foreground mt-0.5 text-xs">
           Audit trail of test emails and broadcasts sent from the admin panel.
         </p>
       </div>
       {(loading || !data) && (
-        <div className="px-6 py-10 text-center text-sm text-muted-foreground">
+        <div className="text-muted-foreground px-6 py-10 text-center text-sm">
           Loading…
         </div>
       )}
       {!loading && data && data.logs.length === 0 && (
-        <div className="px-6 py-10 text-center text-sm text-muted-foreground">
+        <div className="text-muted-foreground px-6 py-10 text-center text-sm">
           No email activity yet.
         </div>
       )}
       {!loading && data && data.logs.length > 0 && (
-        <div className="divide-y divide-border/50">
+        <div className="divide-border/50 divide-y">
           {data.logs.map((log) => {
             const meta = log.metadata ?? {};
             const isBroadcast = log.action === "admin.email.broadcast_sent";
@@ -330,7 +331,7 @@ const EmailLogsTab = () => {
                         {String(meta.subject ?? "—")}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="text-muted-foreground mt-1 text-xs">
                       by {log.actorEmail ?? "unknown"}
                       {isBroadcast && meta.sent !== undefined && (
                         <span className="ml-2">
@@ -345,7 +346,7 @@ const EmailLogsTab = () => {
                     </p>
                   </div>
                 </div>
-                <time className="shrink-0 text-xs text-muted-foreground/70">
+                <time className="text-muted-foreground/70 shrink-0 text-xs">
                   {new Date(log.createdAt).toLocaleString()}
                 </time>
               </div>
@@ -354,7 +355,7 @@ const EmailLogsTab = () => {
         </div>
       )}
       {data && data.totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-border/50 px-5 py-3 text-sm text-muted-foreground">
+        <div className="border-border/50 text-muted-foreground flex items-center justify-between border-t px-5 py-3 text-sm">
           <span>
             {(data.page - 1) * data.pageSize + 1}–
             {Math.min(data.page * data.pageSize, data.total)} of {data.total}

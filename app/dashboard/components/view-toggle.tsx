@@ -22,7 +22,7 @@ export const ViewToggle = ({
   };
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-1">
+    <div className="border-border bg-muted/30 flex items-center gap-2 rounded-lg border p-1">
       <Button
         variant={view === "grid" ? "default" : "ghost"}
         size="sm"

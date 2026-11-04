@@ -3,7 +3,6 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import type { Stripe } from "stripe";
-import { start } from "workflow/api";
 
 import { logEvent } from "@/lib/audit";
 import { prisma } from "@/lib/db";
@@ -13,10 +12,11 @@ import {
   sendInvoiceFailedEmail,
   sendSuspensionWarningEmail,
   sendServerCreatedEmail,
+  sendServerProvisionFailedEmail,
 } from "@/lib/mail";
 import { ADDON_DEFAULTS, SUSPENSION_GRACE_DAYS } from "@/lib/pricing";
+import { deployServer, setSuspended } from "@/lib/servers/service";
 import { stripe } from "@/lib/stripe";
-import { provisionServer } from "@/lib/workflows/provision-server";
 
 /**
  * Map a Stripe subscription status to our internal SubscriptionStatus enum.
@@ -35,7 +35,8 @@ const toSubscriptionStatus = (
     case "incomplete":
     case "incomplete_expired":
     case "paused": {
-      return status;
+      // Stripe's status union includes OtherString, so the case doesn't narrow.
+      return status as SubscriptionStatus;
     }
     default: {
       return "incomplete";
@@ -52,7 +53,7 @@ const toInvoiceStatus = (
     case "paid":
     case "uncollectible":
     case "void": {
-      return status;
+      return status as InvoiceStatus;
     }
     default: {
       return "open";
@@ -204,6 +205,7 @@ const buildSubscriptionUpsertData = (
   subscription: Stripe.Subscription,
   firstItem: Stripe.SubscriptionItem | undefined,
   serverId: string,
+  internalBillingCustomerId: string,
   promoCode: string | null,
   couponAmountOff: number | null,
   periodStart: Date | null,
@@ -220,7 +222,7 @@ const buildSubscriptionUpsertData = (
   const status = toSubscriptionStatus(subscription.status);
   return {
     create: {
-      billingCustomerId: subscription.customer as string,
+      billingCustomerId: internalBillingCustomerId,
       canceledAt,
       currency: subscription.currency.toUpperCase(),
       currentPeriodEnd: periodEnd,
@@ -260,6 +262,16 @@ const handleSubscriptionChanged = async (
     return;
   }
 
+  // Resolve internal BillingCustomer.id from the Stripe customer ID
+  const stripeCustomerId = subscription.customer as string;
+  const billingCustomer = await prisma.billingCustomer.findUnique({
+    select: { id: true },
+    where: { stripeCustomerId },
+  });
+  if (!billingCustomer) {
+    return;
+  }
+
   const { promoCode, couponAmountOff, couponPercentOff } =
     resolveSubscriptionDiscount(subscription);
   const { periodStart, periodEnd } = resolveSubscriptionPeriod(subscription);
@@ -275,6 +287,7 @@ const handleSubscriptionChanged = async (
       subscription,
       firstItem,
       serverId,
+      billingCustomer.id,
       promoCode,
       couponAmountOff,
       periodStart,
@@ -331,10 +344,15 @@ const handleInvoicePaymentSucceeded = async (invoice: Stripe.Invoice) => {
       where: { stripeSubscriptionId: subId },
     });
     if (sub?.serverId) {
-      await prisma.server.updateMany({
-        data: { desiredState: "running" },
-        where: { desiredState: "stopped", id: sub.serverId },
+      const server = await prisma.server.findUnique({
+        select: { status: true },
+        where: { id: sub.serverId },
       });
+      if (server?.status === "suspended") {
+        await setSuspended(sub.serverId, false).catch((error) =>
+          console.error("[stripe] unsuspend sync failed", error)
+        );
+      }
     }
   }
 
@@ -369,9 +387,9 @@ const handleInvoicePaymentSucceeded = async (invoice: Stripe.Invoice) => {
 const sendCheckoutWelcomeEmail = async (serverId: string) => {
   const server = await prisma.server.findUnique({
     select: {
-      game: true,
-      location: true,
+      egg: { select: { name: true } },
       name: true,
+      node: { select: { location: { select: { long: true, short: true } } } },
       user: { select: { email: true, name: true } },
     },
     where: { id: serverId },
@@ -382,8 +400,8 @@ const sendCheckoutWelcomeEmail = async (serverId: string) => {
   const appUrl = process.env.BETTER_AUTH_URL ?? "https://panel.nodebyte.host";
   try {
     await sendServerCreatedEmail({
-      game: server.game,
-      region: server.location,
+      game: server.egg?.name ?? "game",
+      region: server.node?.location.long ?? server.node?.location.short ?? "",
       serverName: server.name,
       serverUrl: `${appUrl}/dashboard/${serverId}`,
       toEmail: server.user.email,
@@ -409,9 +427,21 @@ const upsertCheckoutSubscriptionAndAddons = async (
       ? firstItem.price.product
       : ((firstItem?.price.product as Stripe.Product)?.id ?? "");
 
+  // Resolve the internal BillingCustomer.id from the Stripe customer ID —
+  // billingCustomerId is a FK to BillingCustomer.id (not stripeCustomerId)
+  const billingCustomer = await prisma.billingCustomer.findUnique({
+    select: { id: true },
+    where: { stripeCustomerId: customerId },
+  });
+  if (!billingCustomer) {
+    throw new Error(
+      `BillingCustomer not found for Stripe customer ${customerId}`
+    );
+  }
+
   await prisma.subscription.upsert({
     create: {
-      billingCustomerId: customerId,
+      billingCustomerId: billingCustomer.id,
       currency: (subscription.currency ?? "gbp").toUpperCase(),
       id: subscriptionId,
       planName: subscription.metadata?.serverType ?? "unknown",
@@ -489,9 +519,32 @@ const handleCheckoutSessionCompleted = async (
     subscriptionId,
     customerId
   );
-  await start(provisionServer, [{ serverId }]);
+  try {
+    await deployServer(serverId, {
+      locationId: session.metadata?.nodebyteLocationId ?? null,
+      startOnCompletion: true,
+    });
+    await sendCheckoutWelcomeEmail(serverId);
+  } catch (error) {
+    // deployServer records the reason on the server; admins can redeploy it.
+    console.error(`[stripe] deployment of ${serverId} failed`, error);
+    const server = await prisma.server.findUnique({
+      select: { name: true, user: { select: { email: true, name: true } } },
+      where: { id: serverId },
+    });
+    if (server?.user) {
+      void sendServerProvisionFailedEmail({
+        reason:
+          "No node had capacity for your server. Our team has been notified and will place it shortly.",
+        serverName: server.name,
+        // Filled in from /admin/settings by sendMail.
+        supportUrl: "{{supportUrl}}",
+        toEmail: server.user.email,
+        userName: server.user.name,
+      });
+    }
+  }
   revalidatePath("/dashboard", "layout");
-  await sendCheckoutWelcomeEmail(serverId);
 };
 
 /** Handle invoice.payment_failed */
@@ -536,16 +589,13 @@ const handleInvoicePaymentFailed = async (invoice: Stripe.Invoice) => {
   );
 
   if (new Date() >= gracePeriodEnd) {
-    await Promise.all([
-      prisma.server.updateMany({
-        data: { desiredState: "stopped", lastSuspendedAt: new Date() },
-        where: { id: sub.serverId },
-      }),
-      prisma.subscription.update({
-        data: { suspendedAt: new Date() },
-        where: { id: sub.id },
-      }),
-    ]);
+    await setSuspended(sub.serverId, true).catch((error) =>
+      console.error("[stripe] suspend sync failed", error)
+    );
+    await prisma.subscription.update({
+      data: { suspendedAt: new Date() },
+      where: { id: sub.id },
+    });
     await logEvent({
       action: "billing.subscription_suspended",
       metadata: { invoiceId: invoice.id, reason: "grace_period_exceeded" },

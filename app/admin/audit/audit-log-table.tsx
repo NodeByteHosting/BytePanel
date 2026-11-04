@@ -111,6 +111,7 @@ export const AuditLogTable = () => {
   }, [page, search]);
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
     void fetchLogs();
   }, [fetchLogs]);
 
@@ -119,7 +120,7 @@ export const AuditLogTable = () => {
       {/* Search */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <Input
             className="pl-9"
             placeholder="Search by email, action, or target ID…"
@@ -145,9 +146,9 @@ export const AuditLogTable = () => {
       </div>
 
       {/* Timeline */}
-      <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
+      <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
         {(loading || !data) && (
-          <div className="divide-y divide-border/50">
+          <div className="divide-border/50 divide-y">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="flex gap-4 px-5 py-4">
                 <div className="flex shrink-0 flex-col items-center gap-1 pt-1.5">
@@ -163,25 +164,25 @@ export const AuditLogTable = () => {
           </div>
         )}
         {!loading && data && data.logs.length === 0 && (
-          <div className="py-12 text-center text-sm text-muted-foreground">
+          <div className="text-muted-foreground py-12 text-center text-sm">
             No audit events found.
           </div>
         )}
         {!loading && data && data.logs.length > 0 && (
-          <div className="divide-y divide-border/50">
+          <div className="divide-border/50 divide-y">
             {data.logs.map((log) => {
               const style = categoryStyle(log.action);
               return (
                 <div
                   key={log.id}
-                  className="flex gap-4 px-5 py-4 transition-colors hover:bg-muted/30"
+                  className="hover:bg-muted/30 flex gap-4 px-5 py-4 transition-colors"
                 >
                   {/* Left: coloured timeline dot + line */}
                   <div className="flex flex-col items-center gap-1 pt-1">
                     <div
                       className={cn("size-2 shrink-0 rounded-full", style.dot)}
                     />
-                    <div className="w-px flex-1 bg-border/40" />
+                    <div className="bg-border/40 w-px flex-1" />
                   </div>
 
                   {/* Content */}
@@ -200,10 +201,10 @@ export const AuditLogTable = () => {
                         </span>
 
                         {/* Actor + target */}
-                        <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                        <p className="text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5 text-xs">
                           <span>
                             by{" "}
-                            <span className="font-medium text-foreground/80">
+                            <span className="text-foreground/80 font-medium">
                               {log.actorEmail ?? "system"}
                             </span>
                           </span>
@@ -214,7 +215,7 @@ export const AuditLogTable = () => {
                                 {log.targetType}
                               </span>
                               {log.targetId && (
-                                <span className="ml-1 font-mono text-muted-foreground/60">
+                                <span className="text-muted-foreground/60 ml-1 font-mono">
                                   {log.targetId.slice(0, 8)}…
                                 </span>
                               )}
@@ -228,7 +229,7 @@ export const AuditLogTable = () => {
                         {/* Metadata */}
                         {log.metadata &&
                           Object.keys(log.metadata).length > 0 && (
-                            <p className="mt-1 break-all font-mono text-[11px] text-muted-foreground/60">
+                            <p className="text-muted-foreground/60 mt-1 font-mono text-[11px] break-all">
                               {JSON.stringify(log.metadata)}
                             </p>
                           )}
@@ -236,7 +237,7 @@ export const AuditLogTable = () => {
 
                       {/* Timestamp */}
                       <time
-                        className="shrink-0 text-xs text-muted-foreground/70"
+                        className="text-muted-foreground/70 shrink-0 text-xs"
                         dateTime={log.createdAt}
                       >
                         {new Date(log.createdAt).toLocaleString()}
@@ -252,7 +253,7 @@ export const AuditLogTable = () => {
 
       {/* Pagination */}
       {data && data.totalPages > 1 && (
-        <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-muted-foreground flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
           <span>
             {(data.page - 1) * data.pageSize + 1}–
             {Math.min(data.page * data.pageSize, data.total)} of {data.total}

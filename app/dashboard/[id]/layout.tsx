@@ -1,13 +1,12 @@
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { games } from "@/games";
 import { prisma } from "@/lib/db";
-import { SNAPSHOT_ENVIRONMENT } from "@/lib/env";
-import { getProviderForUserWithImage } from "@/lib/providers";
 import { requireServerRole } from "@/lib/rbac";
+import { meetsMinServerRole } from "@/lib/server-roles";
 import type { ServerRole } from "@/lib/server-roles";
 import { requireUser } from "@/lib/session";
+import { sftpUsername } from "@/lib/sftp";
 
 import { ServerShell } from "./components/shell";
 
@@ -23,6 +22,7 @@ const ServerLayout = async ({
 
   const userRole = (user as { role?: string }).role ?? "user";
   const userSuperAdmin = (user as { superAdmin?: boolean }).superAdmin ?? false;
+  const isSystemAdmin = userSuperAdmin || userRole === "admin";
 
   // Enforce at least viewer-level access (admins get implicit access)
   const serverRole: ServerRole = await requireServerRole(
@@ -33,87 +33,87 @@ const ServerLayout = async ({
     "viewer"
   );
 
-  // Fetch the server — allow access if user is owner or admin
-  const isSystemAdmin = userSuperAdmin || userRole === "admin";
   const server = await prisma.server.findFirst({
-    include: { agent: { select: { lastHeartbeatAt: true } } },
-    where: {
-      deletedAt: null,
-      id,
-      ...(isSystemAdmin
-        ? {}
-        : {
-            OR: [
-              { userId: user.id },
-              { members: { some: { userId: user.id } } },
-            ],
-          }),
+    include: {
+      allocations: { orderBy: { port: "asc" } },
+      egg: { include: { variables: { orderBy: { sort: "asc" } } } },
+      node: { include: { location: true } },
+      plan: { select: { name: true } },
+      variables: true,
     },
+    where: { deletedAt: null, id },
   });
 
   if (!server) {
     notFound();
   }
 
-  const { provider, imageId } = await getProviderForUserWithImage(
-    user.id,
-    SNAPSHOT_ENVIRONMENT
-  );
-  const catalog = await provider.getCatalog(imageId);
-  const serverType = catalog.serverTypes.find(
-    (t) => t.name === server.serverType
-  );
-  const location = serverType?.locations.find(
-    (l) => l.name === server.location
-  );
-
-  const specs = serverType
-    ? {
-        architecture: serverType.architecture,
-        cores: serverType.cores,
-        cpuType: serverType.cpuType,
-        disk: serverType.disk,
-        memory: serverType.memory,
-        typeName: serverType.name,
-      }
-    : null;
-
-  const locationInfo = location
-    ? { city: location.city, country: location.country, name: location.name }
-    : { city: null, country: null, name: server.location };
-
-  const game = games.find((g) => g.id === server.game);
-  const eligibleTypes = game
-    ? catalog.serverTypes.filter(
-        (t) =>
-          t.memory >= game.requirements.memory &&
-          t.cores >= game.requirements.cpu &&
-          t.locations.some((l) => l.name === server.location && l.available)
-      )
-    : [];
+  const variables = (server.egg?.variables ?? [])
+    .filter((v) => v.userViewable || isSystemAdmin)
+    .map((v) => ({
+      defaultValue: v.defaultValue,
+      description: v.description,
+      editable: isSystemAdmin || v.userEditable,
+      envVariable: v.envVariable,
+      name: v.name,
+      rules: v.rules,
+      value:
+        server.variables.find((sv) => sv.variableId === v.id)?.value ??
+        v.defaultValue,
+    }));
 
   return (
     <ServerShell
-      currency={catalog.currency}
-      eligibleTypes={eligibleTypes}
       serverRole={serverRole}
       server={{
-        backupsEnabled: server.backupsEnabled,
-        desiredState: server.desiredState,
-        dockerImage: game?.dockerImage ?? null,
+        allocations: server.allocations.map((a) => ({
+          alias: a.ipAlias,
+          id: a.id,
+          ip: a.ip,
+          port: a.port,
+          primary: a.id === server.allocationId,
+        })),
+        deployed: server.nodeId !== null,
+        description: server.description,
         errorReason: server.errorReason,
-        game: server.game,
+        game: server.egg
+          ? {
+              dockerImages: server.egg.dockerImages as Record<string, string>,
+              image: server.egg.image,
+              name: server.egg.name,
+              slug: server.egg.slug,
+            }
+          : null,
         id: server.id,
-        ipv4: server.ipv4,
-        joinPassword: server.joinPassword,
-        lastHeartbeatAt: server.agent?.lastHeartbeatAt?.toISOString() ?? null,
-        location: locationInfo,
+        image: server.image,
+        limits: {
+          allocationLimit: server.allocationLimit,
+          backupLimit: server.backupLimit,
+          cpu: server.cpu,
+          disk: server.disk,
+          memory: server.memory,
+          swap: server.swap,
+        },
         name: server.name,
-        observedState: server.observedState,
-        phase: server.phase,
-        serverType: server.serverType,
-        settings: (server.settings ?? {}) as Record<string, unknown>,
-        specs,
+        node: server.node
+          ? {
+              location: server.node.location.long ?? server.node.location.short,
+              name: server.node.name,
+            }
+          : null,
+        planName: server.plan?.name ?? null,
+        sftp:
+          server.node && meetsMinServerRole(serverRole, "admin")
+            ? {
+                host: server.node.fqdn,
+                port: server.node.daemonSftp,
+                username: sftpUsername(user.email, server.uuid),
+              }
+            : null,
+        startup: server.startup,
+        status: server.status,
+        uuid: server.uuid,
+        variables,
       }}
     >
       {children}

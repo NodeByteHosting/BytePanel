@@ -22,10 +22,11 @@ const PUBLIC_PATHS = [
   "/robots.txt",
   "/sitemap.xml",
   "/api/auth",
-  "/api/agent",
-  "/api/snapshot",
+  "/api/remote",
+  // Authenticated with the billing API key, not a session
+  "/api/application",
+  "/api/branding",
   "/monitoring",
-  "/.well-known/workflow",
 ];
 
 const isPublic = (pathname: string) =>

@@ -1,13 +1,20 @@
 "use client";
-import { upload } from "@vercel/blob/client";
 import {
+  ArchiveIcon,
+  DownloadIcon,
   FileIcon,
+  FilePlusIcon,
   FolderIcon,
+  FolderPlusIcon,
   LinkIcon,
+  Loader2Icon,
   MoreHorizontalIcon,
+  PackageOpenIcon,
+  PencilIcon,
   Trash2Icon,
   UploadIcon,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -31,6 +38,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -43,113 +51,186 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatBytes } from "@/lib/format";
+import type { FileEntry } from "@/protocol";
 
-interface FileEntry {
-  name: string;
-  type: "file" | "dir";
-  size: number;
-  mtime: string;
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
+  ssr: false,
+});
+
+const ARCHIVE = /\.(?:zip|tar|tar\.gz|tgz|tar\.xz|txz|tar\.bz2)$/iu;
+
+const joinPath = (dir: string, name: string) =>
+  `${dir.replace(/\/+$/u, "")}/${name}`.replace(/^\/*/u, "/");
+
+const LANGUAGES: Record<string, string> = {
+  cfg: "ini",
+  conf: "ini",
+  css: "css",
+  html: "html",
+  ini: "ini",
+  js: "javascript",
+  json: "json",
+  lua: "lua",
+  md: "markdown",
+  properties: "ini",
+  sh: "shell",
+  toml: "ini",
+  ts: "typescript",
+  xml: "xml",
+  yaml: "yaml",
+  yml: "yaml",
+};
+
+const languageFor = (file: string) =>
+  LANGUAGES[file.split(".").pop()?.toLowerCase() ?? ""] ?? "plaintext";
+
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+
+const api = async <T,>(input: string, init?: RequestInit): Promise<T> => {
+  const res = await fetch(input, {
+    ...init,
+    headers: init?.body ? { "content-type": "application/json" } : undefined,
+  });
+  const body = (await res.json().catch(() => ({}))) as T & { error?: string };
+  if (!res.ok) {
+    throw new Error(body.error ?? `Request failed (${res.status})`);
+  }
+  return body;
+};
+
+const PathBreadcrumb = ({
+  path,
+  onNavigate,
+}: {
+  path: string;
+  onNavigate: (path: string) => void;
+}) => {
+  const crumbs = path.split("/").filter(Boolean);
+  return (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          {crumbs.length === 0 ? (
+            <BreadcrumbPage>container</BreadcrumbPage>
+          ) : (
+            <BreadcrumbLink asChild>
+              <button type="button" onClick={() => onNavigate("/")}>
+                container
+              </button>
+            </BreadcrumbLink>
+          )}
+        </BreadcrumbItem>
+        {crumbs.map((segment, index) => {
+          const target = `/${crumbs.slice(0, index + 1).join("/")}`;
+          return (
+            <span className="flex items-center gap-1.5" key={target}>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                {index === crumbs.length - 1 ? (
+                  <BreadcrumbPage>{segment}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <button type="button" onClick={() => onNavigate(target)}>
+                      {segment}
+                    </button>
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </span>
+          );
+        })}
+      </BreadcrumbList>
+    </Breadcrumb>
+  );
+};
+
+type Prompt =
+  | { kind: "rename"; entry: FileEntry }
+  | { kind: "mkdir" }
+  | { kind: "newfile" }
+  | { kind: "pull" };
+
+const PROMPT_COPY: Record<
+  Prompt["kind"],
+  { title: string; label: string; description: (path: string) => string }
+> = {
+  mkdir: {
+    description: (path) => `Created in ${path}.`,
+    label: "Name",
+    title: "New folder",
+  },
+  newfile: {
+    description: (path) => `Created in ${path}.`,
+    label: "Name",
+    title: "New file",
+  },
+  pull: {
+    description: (path) => `The node downloads the file directly into ${path}.`,
+    label: "URL",
+    title: "Download from URL",
+  },
+  rename: {
+    description: () =>
+      "Use a relative path (e.g. ../plugins/name.jar) to move the item.",
+    label: "Name",
+    title: "Rename or move",
+  },
+};
+
+interface EditorState {
+  file: string;
+  original: string;
+  content: string;
 }
 
-interface Props {
-  serverId: string;
-}
-
-const DEFAULT_PATH = "";
-
-const formatSize = (bytes: number): string => {
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  }
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
-  }
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-};
-
-const formatDate = (iso: string): string =>
-  new Date(iso).toLocaleString([], {
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "short",
-  });
-
-const joinPath = (base: string, name: string): string =>
-  base ? `${base}/${name}` : name;
-
-const filenameFromUrl = (url: string): string => {
-  try {
-    const segments = new URL(url).pathname.split("/");
-    const last = segments.findLast((s) => s.length > 0);
-    return last ?? "download";
-  } catch {
-    return "download";
-  }
-};
-
-const sleep = (ms: number): Promise<void> =>
-  // eslint-disable-next-line promise/avoid-new -- polling requires a timed delay
-  new Promise((_resolve) => {
-    setTimeout(_resolve, ms);
-  });
-
-const waitForCommand = async (
-  serverId: string,
-  commandId: string,
-  timeoutMs = 60_000
-): Promise<{ status: string; error: string | null; result: unknown }> => {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const res = await fetch(`/api/servers/${serverId}/commands/${commandId}`);
-    if (res.ok) {
-      const body = (await res.json()) as {
-        status: string;
-        error: string | null;
-        result: unknown;
-      };
-      if (body.status === "succeeded" || body.status === "failed") {
-        return body;
-      }
-    }
-    await sleep(1000);
-  }
-  throw new Error("Install timed out");
-};
-
-interface EntryRowProps {
+const FileRow = ({
+  entry,
+  selected,
+  onToggle,
+  onOpen,
+  onRename,
+  onDownload,
+  onExtract,
+  onDelete,
+}: {
   entry: FileEntry;
-  onOpenDir: (name: string) => void;
-  onDelete: (entry: FileEntry) => void;
-}
-
-const EntryRow = ({ entry, onOpenDir, onDelete }: EntryRowProps) => {
+  selected: boolean;
+  onToggle: () => void;
+  onOpen: () => void;
+  onRename: () => void;
+  onDownload: () => void;
+  onExtract: () => void;
+  onDelete: () => void;
+}) => {
   const isDir = entry.type === "dir";
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg px-3 py-2">
+    <div className="hover:bg-muted/40 flex items-center justify-between gap-3 rounded-lg px-3 py-2">
+      <Checkbox
+        aria-label={`Select ${entry.name}`}
+        checked={selected}
+        onCheckedChange={onToggle}
+      />
       <button
         className="flex min-w-0 flex-1 items-center gap-3 text-left"
-        disabled={!isDir}
-        onClick={() => {
-          if (isDir) {
-            onOpenDir(entry.name);
-          }
-        }}
         type="button"
+        onClick={onOpen}
       >
         {isDir ? (
-          <FolderIcon className="size-4 shrink-0 text-muted-foreground" />
+          <FolderIcon className="text-muted-foreground size-4 shrink-0" />
         ) : (
-          <FileIcon className="size-4 shrink-0 text-muted-foreground" />
+          <FileIcon className="text-muted-foreground size-4 shrink-0" />
         )}
         <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="truncate font-medium text-sm">{entry.name}</span>
+          <span className="truncate text-sm font-medium">{entry.name}</span>
           <span className="text-muted-foreground text-xs">
-            {isDir ? "Folder" : formatSize(entry.size)} ·{" "}
+            {isDir ? "Folder" : formatBytes(entry.size)} ·{" "}
             {formatDate(entry.mtime)}
           </span>
         </div>
@@ -161,10 +242,24 @@ const EntryRow = ({ entry, onOpenDir, onDelete }: EntryRowProps) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onSelect={() => onDelete(entry)}
-            variant="destructive"
-          >
+          <DropdownMenuItem onSelect={onRename}>
+            <PencilIcon />
+            Rename / move
+          </DropdownMenuItem>
+          {!isDir && (
+            <DropdownMenuItem onSelect={onDownload}>
+              <DownloadIcon />
+              Download
+            </DropdownMenuItem>
+          )}
+          {!isDir && ARCHIVE.test(entry.name) && (
+            <DropdownMenuItem onSelect={onExtract}>
+              <PackageOpenIcon />
+              Extract
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" onSelect={onDelete}>
             <Trash2Icon />
             Delete
           </DropdownMenuItem>
@@ -174,306 +269,519 @@ const EntryRow = ({ entry, onOpenDir, onDelete }: EntryRowProps) => {
   );
 };
 
-interface EntryListProps {
-  entries: FileEntry[] | null;
-  loadError: string | null;
-  onOpenDir: (name: string) => void;
-  onDelete: (entry: FileEntry) => void;
-}
-
-const renderEntryList = ({
-  entries,
-  loadError,
-  onOpenDir,
-  onDelete,
-}: EntryListProps) => {
-  if (loadError) {
-    return (
-      <div className="px-3 py-4 text-destructive text-sm">{loadError}</div>
-    );
-  }
-  if (entries === null) {
-    return (
-      <div className="px-3 py-4 text-muted-foreground text-sm">Loading…</div>
-    );
-  }
-  if (entries.length === 0) {
-    return (
-      <div className="px-3 py-4 text-muted-foreground text-sm">
-        Empty. Upload a file or install a mod from a URL.
-      </div>
-    );
-  }
-  return entries.map((entry) => (
-    <EntryRow
-      entry={entry}
-      key={entry.name}
-      onDelete={onDelete}
-      onOpenDir={onOpenDir}
-    />
-  ));
+const PromptDialog = ({
+  prompt,
+  path,
+  value,
+  busy,
+  onChange,
+  onSubmit,
+  onClose,
+}: {
+  prompt: Prompt | null;
+  path: string;
+  value: string;
+  busy: boolean;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+  onClose: () => void;
+}) => {
+  const copy = prompt ? PROMPT_COPY[prompt.kind] : null;
+  return (
+    <Dialog
+      open={prompt !== null}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+    >
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{copy?.title}</DialogTitle>
+          <DialogDescription>{copy?.description(path)}</DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="file-prompt">{copy?.label}</Label>
+          <Input
+            autoFocus
+            id="file-prompt"
+            placeholder={prompt?.kind === "pull" ? "https://…" : ""}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                onSubmit();
+              }
+            }}
+          />
+        </div>
+        <DialogFooter>
+          <Button disabled={busy} variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button disabled={busy || !value.trim()} onClick={onSubmit}>
+            {busy ? "Working…" : "Confirm"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 };
 
-export const FilesPanel = ({ serverId }: Props) => {
-  const [path, setPath] = useState(DEFAULT_PATH);
+const EditorDialog = ({
+  editor,
+  loading,
+  busy,
+  onChange,
+  onSave,
+  onClose,
+}: {
+  editor: EditorState | null;
+  loading: boolean;
+  busy: boolean;
+  onChange: (content: string) => void;
+  onSave: () => void;
+  onClose: () => void;
+}) => (
+  <Dialog
+    open={editor !== null}
+    onOpenChange={(open) => {
+      if (!open) {
+        onClose();
+      }
+    }}
+  >
+    <DialogContent className="z-50! flex h-[85vh]! w-[95vw]! max-w-6xl! flex-col overflow-hidden rounded-lg p-4 sm:p-6">
+      <DialogHeader className="shrink-0">
+        <DialogTitle className="truncate font-mono text-sm">
+          {editor?.file ?? "Editor"}
+        </DialogTitle>
+        <DialogDescription>
+          Changes are written to the server immediately when you save.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="min-h-0 flex-1 overflow-hidden rounded-md border">
+        {loading ? (
+          <div className="text-muted-foreground px-3 py-4 text-sm">
+            Loading…
+          </div>
+        ) : (
+          <MonacoEditor
+            height="100%"
+            language={languageFor(editor?.file ?? "")}
+            options={{
+              automaticLayout: true,
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+            }}
+            theme="vs-dark"
+            value={editor?.content ?? ""}
+            onChange={(value) => onChange(value ?? "")}
+          />
+        )}
+      </div>
+      <DialogFooter className="shrink-0">
+        <Button variant="ghost" onClick={onClose}>
+          Close
+        </Button>
+        <Button
+          disabled={
+            !editor || loading || busy || editor.content === editor.original
+          }
+          onClick={onSave}
+        >
+          {busy ? "Saving…" : "Save"}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+);
+
+export const FilesPanel = ({ serverId }: { serverId: string }) => {
+  const base = `/api/servers/${serverId}/files`;
+  const [path, setPath] = useState("/");
   const [entries, setEntries] = useState<FileEntry[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<FileEntry | null>(null);
-  const [deletePending, setDeletePending] = useState(false);
-  const [urlDialogOpen, setUrlDialogOpen] = useState(false);
-  const [urlInput, setUrlInput] = useState("");
-  const [installing, setInstalling] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const [deleteTargets, setDeleteTargets] = useState<string[] | null>(null);
+  const [prompt, setPrompt] = useState<Prompt | null>(null);
+  const [promptValue, setPromptValue] = useState("");
+  const [editor, setEditor] = useState<EditorState | null>(null);
+  const [editorLoading, setEditorLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const load = useCallback(
-    async (target: string) => {
-      setLoadError(null);
-      const res = await fetch(
-        `/api/servers/${serverId}/files?path=${encodeURIComponent(target)}`
+  const [shownPath, setShownPath] = useState(path);
+  // Navigating to another directory: clear the old listing while it loads.
+  if (path !== shownPath) {
+    setShownPath(path);
+    setEntries(null);
+    setSelected(new Set());
+    setLoadError(null);
+  }
+
+  const load = useCallback(async () => {
+    try {
+      const result = await api<{ entries: FileEntry[] }>(
+        `${base}?directory=${encodeURIComponent(path)}`
       );
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setEntries(null);
-        setLoadError(body.error ?? "Could not load files");
-        return;
-      }
-      const body = (await res.json()) as { path: string; entries: FileEntry[] };
-      setEntries(body.entries);
-    },
-    [serverId]
-  );
+      setEntries(result.entries);
+      setLoadError(null);
+    } catch (error) {
+      setEntries([]);
+      setLoadError(
+        error instanceof Error ? error.message : "Could not load files"
+      );
+    }
+  }, [base, path]);
 
   useEffect(() => {
-    load(path);
-  }, [load, path]);
+    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
+    load();
+  }, [load]);
 
-  const runDelete = async () => {
-    if (!deleteTarget) {
-      return;
-    }
-    setDeletePending(true);
+  const action = async (body: Record<string, unknown>, success: string) => {
+    setBusy(true);
     try {
-      const full = joinPath(path, deleteTarget.name);
-      const res = await fetch(
-        `/api/servers/${serverId}/files?path=${encodeURIComponent(full)}`,
-        {
-          method: "DELETE",
-        }
-      );
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(err.error ?? "Delete failed");
-      }
-      toast.success(`Deleted ${deleteTarget.name}`);
-      setDeleteTarget(null);
-      setEntries(
-        (prev) => prev?.filter((e) => e.name !== deleteTarget.name) ?? null
-      );
+      await api(base, { body: JSON.stringify(body), method: "POST" });
+      toast.success(success);
+      setSelected(new Set());
+      await load();
+      return true;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Delete failed");
+      toast.error(error instanceof Error ? error.message : "Action failed");
+      return false;
     } finally {
-      setDeletePending(false);
+      setBusy(false);
     }
   };
 
-  const installFromUrl = async (sourceUrl: string, filename: string) => {
-    const destPath = joinPath(path, filename);
-    const res = await fetch(`/api/servers/${serverId}/files/install`, {
-      body: JSON.stringify({ destPath, url: sourceUrl }),
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-    });
-    if (!res.ok) {
-      const err = (await res.json().catch(() => ({}))) as { error?: string };
-      throw new Error(err.error ?? "Install failed");
-    }
-    const { commandId } = (await res.json()) as { commandId: string };
-    const outcome = await waitForCommand(serverId, commandId);
-    if (outcome.status === "failed") {
-      throw new Error(outcome.error ?? "Install failed");
-    }
-  };
-
-  const submitUrlInstall = async () => {
-    const trimmed = urlInput.trim();
-    if (!trimmed) {
-      return;
-    }
-    setInstalling(true);
+  const openFile = async (name: string) => {
+    const file = joinPath(path, name);
+    setEditorLoading(true);
+    setEditor({ content: "", file, original: "" });
     try {
-      await installFromUrl(trimmed, filenameFromUrl(trimmed));
-      toast.success("Installed");
-      setUrlDialogOpen(false);
-      setUrlInput("");
-      load(path);
+      const { content } = await api<{ content: string }>(
+        `${base}/content?file=${encodeURIComponent(file)}`
+      );
+      setEditor({ content, file, original: content });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Install failed");
+      toast.error(
+        error instanceof Error ? error.message : "Could not open file"
+      );
+      setEditor(null);
     } finally {
-      setInstalling(false);
+      setEditorLoading(false);
     }
   };
 
-  const onFilePicked = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) {
+  const saveFile = async () => {
+    if (!editor) {
       return;
     }
-    setUploading(true);
+    setBusy(true);
     try {
-      const blob = await upload(file.name, file, {
-        access: "public",
-        handleUploadUrl: `/api/servers/${serverId}/files/upload-url`,
+      await api(`${base}/content`, {
+        body: JSON.stringify({ content: editor.content, file: editor.file }),
+        method: "PUT",
       });
-      await installFromUrl(blob.url, file.name);
-      toast.success(`Uploaded ${file.name}`);
-      load(path);
+      setEditor({ ...editor, original: editor.content });
+      toast.success(`Saved ${editor.file.split("/").pop()}`);
+      await load();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not save file"
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const download = async (name: string) => {
+    try {
+      const { url } = await api<{ url: string }>(
+        `${base}/download?file=${encodeURIComponent(joinPath(path, name))}`
+      );
+      window.location.assign(url);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Download failed");
+    }
+  };
+
+  // Uploads go straight to the node with a signed URL.
+  const upload = async (files: FileList) => {
+    setBusy(true);
+    try {
+      const { url, maxBytes } = await api<{ url: string; maxBytes: number }>(
+        `${base}/upload?directory=${encodeURIComponent(path)}`
+      );
+      const form = new FormData();
+      for (const file of files) {
+        if (file.size > maxBytes) {
+          throw new Error(
+            `${file.name} is larger than the ${formatBytes(maxBytes)} upload limit`
+          );
+        }
+        form.append("files", file, file.name);
+      }
+      const res = await fetch(url, { body: form, method: "POST" });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `Upload failed (${res.status})`);
+      }
+      toast.success(`Uploaded ${files.length} file(s)`);
+      await load();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Upload failed");
     } finally {
-      setUploading(false);
+      setBusy(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
-  const crumbs = path ? path.split("/").filter(Boolean) : [];
+  const submitPrompt = async () => {
+    const value = promptValue.trim();
+    if (!prompt || !value) {
+      return;
+    }
+    if (prompt.kind === "newfile") {
+      setPrompt(null);
+      setEditor({
+        content: "",
+        file: joinPath(path, value),
+        original: "\u0000",
+      });
+      return;
+    }
+    const requests: Record<
+      Exclude<Prompt["kind"], "newfile">,
+      [Record<string, unknown>, string]
+    > = {
+      mkdir: [
+        { action: "create-directory", name: value, path },
+        "Folder created",
+      ],
+      pull: [
+        { action: "pull", directory: path, url: value },
+        "Download finished",
+      ],
+      rename: [
+        {
+          action: "rename",
+          files: [
+            {
+              from: prompt.kind === "rename" ? prompt.entry.name : "",
+              to: value,
+            },
+          ],
+          root: path,
+        },
+        "Renamed",
+      ],
+    };
+    const [body, success] = requests[prompt.kind];
+    if (await action(body, success)) {
+      setPrompt(null);
+    }
+  };
+
+  const toggle = (name: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      return next;
+    });
+
+  const openPrompt = (next: Prompt) => {
+    setPromptValue(next.kind === "rename" ? next.entry.name : "");
+    setPrompt(next);
+  };
 
   return (
     <Panel>
-      <PanelCard className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 px-3 py-1">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                {path === "" ? (
-                  <BreadcrumbPage>data</BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink asChild>
-                    <button type="button" onClick={() => setPath("")}>
-                      data
-                    </button>
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
-              {crumbs.map((segment, index) => {
-                const isLast = index === crumbs.length - 1;
-                const target = crumbs.slice(0, index + 1).join("/");
-                return (
-                  <span key={target} className="flex items-center gap-1.5">
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      {isLast ? (
-                        <BreadcrumbPage>{segment}</BreadcrumbPage>
-                      ) : (
-                        <BreadcrumbLink asChild>
-                          <button type="button" onClick={() => setPath(target)}>
-                            {segment}
-                          </button>
-                        </BreadcrumbLink>
-                      )}
-                    </BreadcrumbItem>
-                  </span>
-                );
-              })}
-            </BreadcrumbList>
-          </Breadcrumb>
+      <PanelCard className="flex flex-wrap items-center justify-between gap-2">
+        <div className="px-3 py-1">
+          <PathBreadcrumb onNavigate={setPath} path={path} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {busy && (
+            <Loader2Icon className="text-muted-foreground size-4 animate-spin" />
+          )}
+          {selected.size > 0 && (
+            <>
+              <Button
+                disabled={busy}
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  action(
+                    { action: "compress", files: [...selected], root: path },
+                    "Archive created"
+                  )
+                }
+              >
+                <ArchiveIcon />
+                Archive ({selected.size})
+              </Button>
+              <Button
+                disabled={busy}
+                size="sm"
+                variant="destructive"
+                onClick={() => setDeleteTargets([...selected])}
+              >
+                <Trash2Icon />
+                Delete ({selected.size})
+              </Button>
+            </>
+          )}
           <input
+            className="hidden"
+            multiple
             ref={fileInputRef}
             type="file"
-            className="hidden"
-            onChange={onFilePicked}
+            onChange={(e) => {
+              if (e.target.files?.length) {
+                upload(e.target.files);
+              }
+            }}
           />
           <Button
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
+            disabled={busy}
             size="sm"
-            type="button"
             variant="outline"
+            onClick={() => fileInputRef.current?.click()}
           >
             <UploadIcon />
-            {uploading ? "Uploading…" : "Upload"}
+            Upload
           </Button>
-          <Button
-            onClick={() => setUrlDialogOpen(true)}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <LinkIcon />
-            Install from URL
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button disabled={busy} size="sm" variant="outline">
+                New…
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onSelect={() => openPrompt({ kind: "newfile" })}
+              >
+                <FilePlusIcon />
+                File
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => openPrompt({ kind: "mkdir" })}>
+                <FolderPlusIcon />
+                Folder
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => openPrompt({ kind: "pull" })}>
+                <LinkIcon />
+                Download from URL
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </PanelCard>
 
       <PanelCard className="flex flex-col gap-1">
-        {renderEntryList({
-          entries,
-          loadError,
-          onDelete: setDeleteTarget,
-          onOpenDir: (name) => setPath(joinPath(path, name)),
-        })}
+        {loadError && (
+          <div className="text-destructive px-3 py-4 text-sm">{loadError}</div>
+        )}
+        {entries === null && (
+          <div className="text-muted-foreground px-3 py-4 text-sm">
+            Loading…
+          </div>
+        )}
+        {entries?.length === 0 && !loadError && (
+          <div className="text-muted-foreground px-3 py-4 text-sm">
+            This folder is empty.
+          </div>
+        )}
+        {entries?.map((entry) => (
+          <FileRow
+            entry={entry}
+            key={entry.name}
+            selected={selected.has(entry.name)}
+            onDelete={() => setDeleteTargets([entry.name])}
+            onDownload={() => download(entry.name)}
+            onExtract={() =>
+              action(
+                { action: "decompress", file: entry.name, root: path },
+                "Archive extracted"
+              )
+            }
+            onOpen={() => {
+              if (entry.type === "dir") {
+                setPath(joinPath(path, entry.name));
+              } else {
+                openFile(entry.name);
+              }
+            }}
+            onRename={() => openPrompt({ entry, kind: "rename" })}
+            onToggle={() => toggle(entry.name)}
+          />
+        ))}
       </PanelCard>
 
-      <Dialog onOpenChange={setUrlDialogOpen} open={urlDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Install from URL</DialogTitle>
-            <DialogDescription>
-              Paste a direct download URL (e.g. a Modrinth file link). The
-              server will fetch it into {path || "data"}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="install-url">URL</Label>
-            <Input
-              disabled={installing}
-              id="install-url"
-              onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="https://..."
-              value={urlInput}
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              disabled={installing}
-              onClick={() => setUrlDialogOpen(false)}
-              type="button"
-              variant="ghost"
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={installing || !urlInput.trim()}
-              onClick={submitUrlInstall}
-              type="button"
-            >
-              {installing ? "Installing…" : "Install"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PromptDialog
+        busy={busy}
+        path={path}
+        prompt={prompt}
+        value={promptValue}
+        onChange={setPromptValue}
+        onClose={() => setPrompt(null)}
+        onSubmit={submitPrompt}
+      />
+
+      <EditorDialog
+        busy={busy}
+        editor={editor}
+        loading={editorLoading}
+        onChange={(content) => editor && setEditor({ ...editor, content })}
+        onClose={() => setEditor(null)}
+        onSave={saveFile}
+      />
 
       <AlertDialog
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-        open={deleteTarget !== null}
+        open={deleteTargets !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTargets(null);
+          }
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {deleteTarget?.name}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Delete{" "}
+              {deleteTargets?.length === 1
+                ? deleteTargets[0]
+                : `${deleteTargets?.length} items`}
+              ?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteTarget?.type === "dir"
-                ? "This folder and everything inside it will be permanently removed."
-                : "This file will be permanently removed."}
+              Deleted files and folders cannot be recovered.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deletePending}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction disabled={deletePending} onClick={runDelete}>
-              {deletePending ? "Deleting…" : "Delete"}
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={busy}
+              onClick={async () => {
+                if (deleteTargets) {
+                  await action(
+                    { action: "delete", files: deleteTargets, root: path },
+                    "Deleted"
+                  );
+                }
+                setDeleteTargets(null);
+              }}
+            >
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -28,6 +28,7 @@ const TeamTab = async ({ params }: { params: Promise<{ id: string }> }) => {
           role: true,
           token: true,
         },
+        // oxlint-disable-next-line react/purity -- server component, renders once per request
         where: { acceptedAt: null, expiresAt: { gt: new Date() } },
       },
       members: {

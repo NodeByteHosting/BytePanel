@@ -12,8 +12,9 @@ const MarketingLayout = async ({ children }: { children: ReactNode }) => {
     <div className="flex min-h-dvh flex-col pb-32">
       <main className="flex-1">{children}</main>
 
-      <footer className="border-t border-border/50">
-        <p className="mx-auto w-full max-w-6xl px-6 py-10 text-center text-muted-foreground text-sm">
+      <footer className="border-border/50 border-t">
+        <p className="text-muted-foreground mx-auto w-full max-w-6xl px-6 py-10 text-center text-sm">
+          {/* oxlint-disable-next-line react/purity -- server component, renders once per request */}
           &copy; {new Date().getFullYear()}{" "}
           <Link
             href="https://nodebyte.co.uk"
