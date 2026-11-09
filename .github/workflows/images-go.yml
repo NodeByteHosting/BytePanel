@@ -1,4 +1,4 @@
-name: Build Python
+name: Build Go
 
 on:
   workflow_dispatch:
@@ -11,8 +11,8 @@ on:
       - main
       - develop
     paths:
-      - 'python/**'
-      - '.github/workflows/python.yml'
+      - 'images/golang/**'
+      - '.github/workflows/images-go.yml'
   
   release:
     types: [published]
@@ -26,7 +26,7 @@ env:
 
 jobs:
   build:
-    name: "python:${{ matrix.version }}"
+    name: "go:${{ matrix.version }}"
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,9 +36,16 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - "3.7"
-          - "3.8"
-          - "3.9"
+          - "1.14"
+          - "1.15"
+          - "1.16"
+          - "1.17"
+          - "1.18"
+          - "1.19"
+          - "1.20"
+          - "1.21"
+          - "1.22"
+          - "1.23"
     
     steps:
       - name: Checkout code
@@ -52,7 +59,7 @@ jobs:
       - name: Check if Dockerfile exists
         id: check
         run: |
-          if [ -f "./python/${{ matrix.version }}/Dockerfile" ]; then
+          if [ -f "./images/golang/${{ matrix.version }}/Dockerfile" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -80,15 +87,15 @@ jobs:
         run: |
           OWNER="${{ steps.owner.outputs.value }}"
           VERSION="${{ matrix.version }}"
-          TAGS="${{ env.REGISTRY }}/$OWNER/python:python_$VERSION"
+          TAGS="${{ env.REGISTRY }}/$OWNER/go:go_$VERSION"
           
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            TAGS="$TAGS,${{ env.REGISTRY }}/$OWNER/python:latest"
+            TAGS="$TAGS,${{ env.REGISTRY }}/$OWNER/go:latest"
           elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            TAGS="$TAGS,${{ env.REGISTRY }}/$OWNER/python:python_$VERSION-dev"
+            TAGS="$TAGS,${{ env.REGISTRY }}/$OWNER/go:go_$VERSION-dev"
           elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
             REL_TAG="${{ github.ref_name }}"
-            TAGS="$TAGS,${{ env.REGISTRY }}/$OWNER/python:python_$VERSION-$REL_TAG"
+            TAGS="$TAGS,${{ env.REGISTRY }}/$OWNER/go:go_$VERSION-$REL_TAG"
           fi
           
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
@@ -97,8 +104,8 @@ jobs:
         if: steps.check.outputs.exists == 'true'
         uses: docker/build-push-action@v6
         with:
-          context: ./python
-          file: ./python/${{ matrix.version }}/Dockerfile
+          context: ./images/golang
+          file: ./images/golang/${{ matrix.version }}/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.tags.outputs.tags }}

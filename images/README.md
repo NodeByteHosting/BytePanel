@@ -14,7 +14,7 @@ All images are automatically built and published to [GitHub Container Registry](
 ## Structure
 
 ```
-game-recipes/
+images/
   games/          - Game server recipes
   oses/           - OS base images (Alpine, Debian, Ubuntu)
   installers/     - Temporary installer images
@@ -71,7 +71,7 @@ game-recipes/
 1. Go to Admin > Nests in your panel
 2. Import the recipe JSON:
    ```
-   https://raw.githubusercontent.com/NodeByteHosting/game-recipes/main/games/rockstar/fivem/recipe.json
+   https://raw.githubusercontent.com/NodeByteHosting/GSM/main/images/games/rockstar/fivem/recipe.json
    ```
 3. Create a server using the new egg
 4. Set environment variables and start

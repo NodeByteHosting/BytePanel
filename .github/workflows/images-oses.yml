@@ -8,8 +8,8 @@ on:
     branches:
       - develop
     paths:
-      - oses/**
-      - .github/workflows/oses.yml
+      - images/oses/**
+      - .github/workflows/images-oses.yml
 
 permissions:
   contents: read
@@ -43,8 +43,8 @@ jobs:
 
       - uses: docker/build-push-action@v6
         with:
-          context: ./oses/${{ matrix.oses }}
-          file: ./oses/${{ matrix.oses }}/Dockerfile
+          context: ./images/oses/${{ matrix.oses }}
+          file: ./images/oses/${{ matrix.oses }}/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           cache-from: type=gha
@@ -82,8 +82,8 @@ jobs:
 
       - uses: docker/build-push-action@v6
         with:
-          context: ./oses/ubuntu/${{ matrix.version }}
-          file: ./oses/ubuntu/${{ matrix.version }}/Dockerfile
+          context: ./images/oses/ubuntu/${{ matrix.version }}
+          file: ./images/oses/ubuntu/${{ matrix.version }}/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           cache-from: type=gha

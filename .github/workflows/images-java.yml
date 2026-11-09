@@ -8,8 +8,8 @@ on:
     branches:
       - develop
     paths:
-      - java/**
-      - .github/workflows/java.yml
+      - images/java/**
+      - .github/workflows/images-java.yml
 
 permissions:
   contents: read
@@ -48,8 +48,8 @@ jobs:
 
       - uses: docker/build-push-action@v6
         with:
-          context: ./java
-          file: ./java/${{ matrix.tag }}/Dockerfile
+          context: ./images/java
+          file: ./images/java/${{ matrix.tag }}/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           cache-from: type=gha

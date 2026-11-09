@@ -1,4 +1,4 @@
-name: Build Games
+name: Build Node.js
 
 on:
   workflow_dispatch:
@@ -11,8 +11,8 @@ on:
       - main
       - develop
     paths:
-      - 'games/**'
-      - '.github/workflows/games.yml'
+      - 'images/nodejs/**'
+      - '.github/workflows/images-nodejs.yml'
   
   release:
     types: [published]
@@ -26,7 +26,7 @@ env:
 
 jobs:
   build:
-    name: "games:${{ matrix.game }}"
+    name: "nodejs:${{ matrix.version }}"
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -35,12 +35,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        game:
-          - minecraft
-          - rockstar/fivem
-          - rockstar/redm
-          - rust
-          - hytale
+        version:
+          - "20"
+          - "22"
     
     steps:
       - name: Checkout code
@@ -54,11 +51,15 @@ jobs:
       - name: Check if Dockerfile exists
         id: check
         run: |
-          if [ -f "./games/${{ matrix.game }}/Dockerfile" ]; then
+          if [ -f "./images/nodejs/${{ matrix.version }}/Dockerfile" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: Set up QEMU
+        if: steps.check.outputs.exists == 'true'
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         if: steps.check.outputs.exists == 'true'
@@ -72,28 +73,21 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate image name
-        id: image
-        run: |
-          GAME="${{ matrix.game }}"
-          IMAGE_NAME="${GAME##*/}"
-          echo "name=$IMAGE_NAME" >> $GITHUB_OUTPUT
-
       - name: Generate tags
         if: steps.check.outputs.exists == 'true'
         id: tags
         run: |
           OWNER="${{ steps.owner.outputs.value }}"
-          IMAGE="${{ steps.image.outputs.name }}"
-          TAGS="${{ env.REGISTRY }}/$OWNER/games:$IMAGE"
+          VERSION="${{ matrix.version }}"
+          TAGS="${{ env.REGISTRY }}/$OWNER/nodejs:nodejs_$VERSION"
           
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            TAGS="$TAGS,${{ env.REGISTRY }}/$OWNER/games:latest"
+            TAGS="$TAGS,${{ env.REGISTRY }}/$OWNER/nodejs:latest"
           elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            TAGS="$TAGS,${{ env.REGISTRY }}/$OWNER/games:$IMAGE-dev"
+            TAGS="$TAGS,${{ env.REGISTRY }}/$OWNER/nodejs:nodejs_$VERSION-dev"
           elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            VERSION="${{ github.ref_name }}"
-            TAGS="$TAGS,${{ env.REGISTRY }}/$OWNER/games:$VERSION"
+            REL_TAG="${{ github.ref_name }}"
+            TAGS="$TAGS,${{ env.REGISTRY }}/$OWNER/nodejs:nodejs_$VERSION-$REL_TAG"
           fi
           
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
@@ -102,10 +96,10 @@ jobs:
         if: steps.check.outputs.exists == 'true'
         uses: docker/build-push-action@v6
         with:
-          context: ./games/${{ matrix.game }}
-          file: ./games/${{ matrix.game }}/Dockerfile
+          context: ./images/nodejs
+          file: ./images/nodejs/${{ matrix.version }}/Dockerfile
           push: true
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.tags.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

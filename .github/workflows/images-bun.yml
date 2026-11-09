@@ -8,8 +8,8 @@ on:
     branches:
       - develop
     paths:
-      - "bun/**"
-      - ".github/workflows/bun.yml"
+      - "images/bun/**"
+      - ".github/workflows/images-bun.yml"
 
 permissions:
   contents: read
@@ -52,8 +52,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ./bun
-          file: ./bun/${{ matrix.tag }}/Dockerfile
+          context: ./images/bun
+          file: ./images/bun/${{ matrix.tag }}/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |

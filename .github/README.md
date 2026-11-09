@@ -18,6 +18,7 @@ A [Turborepo](https://turbo.build) monorepo using Bun workspaces:
 - `apps/agent`: The NodeByte Game Server Agent (GSA), which runs on server hosts
 - `packages/games`: Game recipes, settings and compose generators
 - `packages/protocol`: Schemas and constants shared by the panel and the agent
+- `images`: Docker images for games, runtimes, operating systems and installers, published to GHCR by the `images-*` workflows
 
 ## Quick Start
 
