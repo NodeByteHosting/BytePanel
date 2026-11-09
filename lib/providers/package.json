@@ -1,0 +1,24 @@
+{
+  "name": "@nodebyte/providers",
+  "version": "0.1.0",
+  "description": "NodeByte GSP is the provider abstraction layer for managing cloud infrastructure across multiple hosting vendors.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "dependencies": {
+    "openapi-fetch": "^0.17.0",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "25.6.1",
+    "typescript": "^6.0.3"
+  },
+  "scripts": {
+    "validate:providers": "node scripts/validate-providers.mjs",
+    "fmt": "deno fmt",
+    "fmt:check": "deno fmt --check",
+    "lint": "deno lint",
+    "typecheck": "node scripts/typecheck.mjs",
+    "types": "npm run typecheck",
+    "ci": "npm run fmt:check && npm run lint && npm run validate:providers && npm run typecheck"
+  }
+}
