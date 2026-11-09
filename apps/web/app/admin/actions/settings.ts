@@ -36,7 +36,6 @@ const audit = (
     targetType: "settings",
   });
 
-// Branding shows on every page (root layout), so refresh everything.
 const refresh = () => revalidatePath("/", "layout");
 
 const upsert = (
@@ -55,11 +54,8 @@ const optionalUrl = z
   .transform((v) => v || null)
   .pipe(z.url({ protocol: /^https?$/u }).nullable());
 
-// ─── Branding ────────────────────────────────────────────────────────────────
-
 const brandingSchema = z.object({
   landingPage: z.boolean(),
-  // An external image URL, or the uploaded logo's route (kept as-is).
   logoUrl: z
     .string()
     .trim()
@@ -89,7 +85,6 @@ export const saveBranding = async (
     return fail(parsed.error.issues[0]?.message ?? "Invalid input");
   }
   const { data } = parsed;
-  // Switching to an external URL drops the stored upload.
   const dropUpload = !data.logoUrl?.startsWith(LOGO_ROUTE);
   await upsert({
     ...data,
@@ -116,7 +111,6 @@ export const uploadLogo = async (form: FormData): Promise<ActionResult> => {
   await upsert({
     logoImage,
     logoMime: file.type,
-    // New query string per upload so browsers and email clients refetch it.
     logoUrl: `${LOGO_ROUTE}?v=${Date.now()}`,
   });
   await audit(user, "admin.settings.branding_changed", {
@@ -136,10 +130,7 @@ export const removeLogo = async (): Promise<ActionResult> => {
   return { ok: true };
 };
 
-// ─── Billing ─────────────────────────────────────────────────────────────────
-
 const billingSchema = z.object({
-  billingMode: z.enum(["panel", "whmcs", "blesta", "paymenter"]),
   storeUrl: optionalUrl,
 });
 
@@ -159,8 +150,6 @@ export const saveBilling = async (
   return { ok: true };
 };
 
-// Returns the plaintext key once; only its hash is stored. Replaces any
-// existing key, so the billing module must be updated with the new one.
 export const generateApiKey = async (): Promise<
   ActionResult<{ key: string }>
 > => {

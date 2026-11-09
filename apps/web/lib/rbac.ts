@@ -1,10 +1,3 @@
-/**
- * RBAC helpers for NodeByte panel.
- *
- * Two layers of access control:
- *  1. System roles  — `role` field on User: "user" | "admin"; plus `superAdmin` boolean.
- *  2. Server roles  — `ServerMember.role`: "viewer" | "member" | "admin"; server owner has implicit "owner".
- */
 import "server-only";
 import { notFound } from "next/navigation";
 
@@ -12,19 +5,8 @@ import { prisma } from "./db";
 import type { ServerRole } from "./server-roles";
 import { meetsMinServerRole } from "./server-roles";
 
-// ─── Server-level roles ────────────────────────────────────────────────────────
-
 export type { ServerRole } from "./server-roles";
 
-/**
- * Determine a user's effective role on a server.
- *
- * Resolution order:
- *  1. System admin / super-admin  → treated as "admin" on every server
- *  2. Server owner (userId === server.userId)  → "owner"
- *  3. Explicit ServerMember row  → that member's role
- *  4. Otherwise  → null (no access)
- */
 export const getServerRole = async (
   userId: string,
   serverId: string,
@@ -40,12 +22,10 @@ export const getServerRole = async (
     return null;
   }
 
-  // Ownership always wins — even for system admins who own the server
   if (server.userId === userId) {
     return "owner";
   }
 
-  // System admins get "admin" on every server they don't own
   if (userSuperAdmin || userSystemRole === "admin") {
     return "admin";
   }
@@ -58,10 +38,6 @@ export const getServerRole = async (
   return (membership?.role as ServerRole | undefined) ?? null;
 };
 
-/**
- * Require that the current user has at least `minRole` on `serverId`.
- * Returns the effective ServerRole on success; calls `notFound()` if not.
- */
 export const requireServerRole = async (
   userId: string,
   serverId: string,
@@ -82,8 +58,6 @@ export const requireServerRole = async (
 
   return role;
 };
-
-// ─── System role helpers ───────────────────────────────────────────────────────
 
 export const isAdmin = (role: string, superAdmin: boolean) =>
   superAdmin || role === "admin";

@@ -18,8 +18,8 @@ import {
   filesPullRequestSchema,
   filesRenameRequestSchema,
   powerRequestSchema,
-} from "@nodebyte/protocol";
-import type { DaemonServerDetails, SystemInfo } from "@nodebyte/protocol";
+} from "@bytepanel/protocol";
+import type { DaemonServerDetails, SystemInfo } from "@bytepanel/protocol";
 import type { Config } from "../config";
 import { COMMIT, VERSION } from "../config";
 import type { Docker } from "../docker";
@@ -34,6 +34,8 @@ import { checkBearer, TokenError, verifyPanelJwt } from "./auth";
 import type { SocketData } from "./websocket";
 
 const log = logger("http");
+
+const LONG_RUNNING = /\/files\/(?:compress|decompress|pull)$|^\/(?:download|upload)\//u;
 
 class HttpError extends Error {
   constructor(
@@ -105,7 +107,6 @@ export const createFetchHandler = (deps: Deps) => {
     return server;
   };
 
-  // Routes reached by the browser with a panel-issued, short-lived JWT.
   const transferRoutes = async (req: Request, url: URL): Promise<Response | null> => {
     const token = url.searchParams.get("token");
     if (!token) {
@@ -182,7 +183,6 @@ export const createFetchHandler = (deps: Deps) => {
       }
       case "POST /power": {
         const { action } = await parseBody(req, powerRequestSchema);
-        // Power actions can take minutes; acknowledge immediately like Wings.
         void server.power(action).catch((error) => log.warn(`power ${action} on ${uuid} failed`, error));
         return noContent();
       }
@@ -282,12 +282,14 @@ export const createFetchHandler = (deps: Deps) => {
 
   return async (req: Request, bun: BunServer<SocketData>): Promise<Response | undefined> => {
     const url = new URL(req.url);
+    if (LONG_RUNNING.test(url.pathname)) {
+      bun.timeout(req, 0);
+    }
     try {
       if (req.method === "OPTIONS") {
         return noContent(cors(req));
       }
 
-      // Browser websocket: auth happens inside the socket via the "auth" event.
       const ws = /^\/api\/servers\/([0-9a-f-]{36})\/ws$/u.exec(url.pathname);
       if (ws && req.method === "GET") {
         const origin = req.headers.get("origin");

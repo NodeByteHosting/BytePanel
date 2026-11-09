@@ -1,6 +1,3 @@
-// Subset of Laravel validation rules used by Pterodactyl egg variables, e.g.
-// "required|string|max:20", "required|in:vanilla,paper", "nullable|integer|between:1,100".
-
 export interface ParsedRules {
   required: boolean;
   nullable: boolean;
@@ -21,8 +18,6 @@ const compile = (source: string, flags: string): RegExp | undefined => {
   }
 };
 
-// Egg regexes are written for PCRE; prefer unicode mode but fall back when
-// the pattern uses escapes that unicode mode rejects.
 const parseRegex = (raw: string): RegExp | undefined => {
   const match = /^\/(?<source>.*)\/(?<flags>[a-z]*)$/su.exec(raw)?.groups;
   const source = match ? (match.source ?? "") : raw;
@@ -95,7 +90,6 @@ export const parseRules = (rules: string): ParsedRules => {
     type: "string",
     url: false,
   };
-  // `regex:` may contain pipes, so split on pipes that start a known rule.
   for (const part of rules.split(/\|(?=[a-z_]+(?::|\||$))/u)) {
     const colon = part.indexOf(":");
     const name = (colon === -1 ? part : part.slice(0, colon)).trim();
@@ -156,7 +150,6 @@ const checkFormat = (
   return null;
 };
 
-// Returns an error message, or null when the value is valid.
 export const validateVariable = (
   value: string,
   rules: string,

@@ -1,5 +1,5 @@
 "use client";
-import type { PowerAction } from "@nodebyte/protocol";
+import type { PowerAction } from "@bytepanel/protocol";
 import {
   ActivityIcon,
   AlertTriangleIcon,
@@ -112,15 +112,11 @@ interface Props {
   children: ReactNode;
 }
 
-// Combines the panel-side status with the daemon's live power state.
 const useStatus = (
   server: ServerView
 ): { label: string; tone: keyof typeof TONE } => {
   const socket = useDaemonSocket();
   if (!server.deployed) {
-    if (server.errorReason?.startsWith("Legacy")) {
-      return { label: "Legacy", tone: "idle" };
-    }
     return server.status === "install_failed"
       ? { label: "Deployment failed", tone: "bad" }
       : { label: "Awaiting deployment", tone: "busy" };
@@ -301,17 +297,14 @@ const StatusBadge = ({ server }: { server: ServerView }) => {
 };
 
 const NotDeployedNotice = ({ server }: { server: ServerView }) => {
-  const legacy = server.errorReason?.startsWith("Legacy");
   let title = "Your server is being deployed.";
-  if (legacy) {
-    title = "This server runs on a dedicated VPS from the previous platform.";
-  } else if (server.status === "install_failed") {
+  if (server.status === "install_failed") {
     title = "We couldn't place this server on a node.";
   }
   return (
     <Panel>
       <PanelCard className="flex items-start gap-3 text-sm">
-        {server.status === "install_failed" || legacy ? (
+        {server.status === "install_failed" ? (
           <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-amber-500" />
         ) : (
           <Loader2Icon className="text-muted-foreground mt-0.5 size-4 shrink-0 animate-spin" />
@@ -319,10 +312,8 @@ const NotDeployedNotice = ({ server }: { server: ServerView }) => {
         <div className="flex flex-col gap-1">
           <p className="font-medium">{title}</p>
           <p className="text-muted-foreground">
-            {legacy
-              ? "Contact support to migrate it onto a node."
-              : (server.errorReason ??
-                "Once payment is confirmed it is placed on a node and installed automatically. This page updates when it's ready.")}
+            {server.errorReason ??
+              "Once payment is confirmed it is placed on a node and installed automatically. This page updates when it's ready."}
           </p>
         </div>
       </PanelCard>
@@ -389,13 +380,11 @@ export const ServerShell = ({
   const updateServer = (patch: Partial<ServerView>) =>
     setServer((prev) => ({ ...prev, ...patch }));
 
-  // Server-rendered props change on router.refresh(); keep local state in step.
   if (initial !== prevInitial) {
     setPrevInitial(initial);
     setServer(initial);
   }
 
-  // While deploying / installing, re-fetch the panel-side status periodically.
   const transitional =
     !server.deployed ||
     server.status === "installing" ||

@@ -3,21 +3,21 @@ import { describe, expect, test } from "bun:test";
 import { createMetadata } from "@/lib/seo/metadata";
 
 describe("createMetadata", () => {
-  test("appends ' | NodeByte Panel' to titles by default", () => {
+  test("appends ' | BytePanel' to titles by default", () => {
     const meta = createMetadata({ description: "d", title: "Page" });
-    expect(meta.title).toBe("Page | NodeByte Panel");
-    expect(meta.openGraph?.title).toBe("Page | NodeByte Panel");
-    expect(meta.appleWebApp).toMatchObject({ title: "Page | NodeByte Panel" });
+    expect(meta.title).toBe("Page | BytePanel");
+    expect(meta.openGraph?.title).toBe("Page | BytePanel");
+    expect(meta.appleWebApp).toMatchObject({ title: "Page | BytePanel" });
   });
 
   test("bareTitle skips the suffix", () => {
     const meta = createMetadata({
       bareTitle: true,
       description: "d",
-      title: "NodeByte",
+      title: "BytePanel",
     });
-    expect(meta.title).toBe("NodeByte");
-    expect(meta.openGraph?.title).toBe("NodeByte");
+    expect(meta.title).toBe("BytePanel");
+    expect(meta.openGraph?.title).toBe("BytePanel");
   });
 
   test("propagates description to og description", () => {
@@ -47,7 +47,7 @@ describe("createMetadata", () => {
     expect(meta.openGraph?.images).toBeUndefined();
   });
 
-  test("metadataBase falls back to localhost outside Vercel", () => {
+  test("metadataBase uses the panel URL", () => {
     const meta = createMetadata({ description: "d", title: "Page" });
     expect(meta.metadataBase).toBeInstanceOf(URL);
     expect((meta.metadataBase as URL).origin).toBe("http://localhost:3000");
@@ -60,7 +60,6 @@ describe("createMetadata", () => {
       title: "Page",
     });
     expect(meta.alternates?.canonical).toBe("/canonical");
-    // Defaults still present.
-    expect(meta.applicationName).toBe("NodeByte Panel");
+    expect(meta.applicationName).toBe("BytePanel");
   });
 });

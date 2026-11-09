@@ -12,7 +12,6 @@ const TeamTab = async ({ params }: { params: Promise<{ id: string }> }) => {
   const userRole = (user as { role?: string }).role ?? "user";
   const userSuperAdmin = (user as { superAdmin?: boolean }).superAdmin ?? false;
 
-  // Only owners can access the team management page
   await requireServerRole(user.id, serverId, userRole, userSuperAdmin, "owner");
 
   const server = await prisma.server.findUnique({
@@ -28,7 +27,7 @@ const TeamTab = async ({ params }: { params: Promise<{ id: string }> }) => {
           role: true,
           token: true,
         },
-        // oxlint-disable-next-line react/purity -- server component, renders once per request
+        // oxlint-disable-next-line react/purity
         where: { acceptedAt: null, expiresAt: { gt: new Date() } },
       },
       members: {

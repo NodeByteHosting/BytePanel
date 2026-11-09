@@ -5,7 +5,6 @@ type NodeAddress = Pick<
   "scheme" | "fqdn" | "daemonListen" | "behindProxy"
 >;
 
-// Behind a reverse proxy the daemon is reached on the proxy's standard port.
 export const daemonBaseUrl = (node: NodeAddress): string => {
   const port = node.behindProxy ? "" : `:${node.daemonListen}`;
   return `${node.scheme}://${node.fqdn}${port}`;

@@ -36,7 +36,6 @@ export const FloatingNav = ({
       >
         <BrandLogo className="text-foreground h-5 w-auto" />
       </Link>
-      {/* Text label on desktop, icon on mobile */}
       {websiteUrl && (
         <>
           <Link

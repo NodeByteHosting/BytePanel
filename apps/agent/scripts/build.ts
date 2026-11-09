@@ -1,5 +1,3 @@
-// Compiles the daemon to a single binary, stamping in the git commit so the
-// panel can tell which build a node runs. Run from the agent directory.
 import { existsSync, mkdirSync } from "node:fs";
 
 const git = Bun.spawnSync(["git", "rev-parse", "HEAD"], { stderr: "ignore" });
@@ -21,7 +19,7 @@ const build = Bun.spawnSync(
     `__AGENT_COMMIT__=${JSON.stringify(commit)}`,
     "./src/index.ts",
     "--outfile",
-    "dist/nodebyte-daemon",
+    "dist/bytepanel-daemon",
   ],
   { stderr: "inherit", stdout: "inherit" }
 );

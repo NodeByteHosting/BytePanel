@@ -40,14 +40,12 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
     (user as { impersonatedBy?: { email?: string; name?: string } | null })
       .impersonatedBy ?? null;
 
-  // Owned servers
   const ownedServers = await prisma.server.findMany({
     orderBy: { createdAt: "desc" },
     select: serverSelect,
     where: { deletedAt: null, userId: user.id },
   });
 
-  // Member servers (where the user has been added as a sub-user)
   const memberships = await prisma.serverMember.findMany({
     include: {
       server: {
@@ -61,7 +59,6 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
     .filter((m) => m.server.deletedAt === null)
     .map((m) => m.server);
 
-  // Deduplicate (edge case: owner somehow also a member)
   const ownedIds = new Set(ownedServers.map((s) => s.id));
   const servers: SidebarServer[] = [
     ...ownedServers,

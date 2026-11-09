@@ -4,10 +4,8 @@ import { gmod } from "./index";
 import { dockerImage } from "./install";
 import { gmodSettings } from "./settings";
 
-// ich777 images start as root and drop to uid 99 / gid 100.
 export const gmodEgg: EggDefinition = {
   containerUser: "image",
-  // game (tcp+udp), client port
   containerPorts: [0, 0],
   description: gmod.description,
   dockerImages: { Default: dockerImage },

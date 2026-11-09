@@ -1,5 +1,5 @@
 "use client";
-import type { FileEntry } from "@nodebyte/protocol";
+import type { FileEntry } from "@bytepanel/protocol";
 import {
   ArchiveIcon,
   DownloadIcon,
@@ -413,7 +413,6 @@ export const FilesPanel = ({ serverId }: { serverId: string }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [shownPath, setShownPath] = useState(path);
-  // Navigating to another directory: clear the old listing while it loads.
   if (path !== shownPath) {
     setShownPath(path);
     setEntries(null);
@@ -437,7 +436,7 @@ export const FilesPanel = ({ serverId }: { serverId: string }) => {
   }, [base, path]);
 
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
+    // oxlint-disable-next-line react/set-state-in-effect
     load();
   }, [load]);
 
@@ -509,7 +508,6 @@ export const FilesPanel = ({ serverId }: { serverId: string }) => {
     }
   };
 
-  // Uploads go straight to the node with a signed URL.
   const upload = async (files: FileList) => {
     setBusy(true);
     try {

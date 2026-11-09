@@ -27,7 +27,6 @@ const AdminSettingsPage = async () => {
             apiBaseUrl={`${API_URL}/api/application`}
             apiKeyHint={settings.billingApiKeyHint}
             initial={{
-              billingMode: settings.billingMode,
               storeUrl: settings.storeUrl ?? "",
             }}
           />

@@ -1,6 +1,6 @@
-# Security Policy for GSA
+# Security Policy for The agent
 
-NodeByte Game Server Agent (GSA) executes privileged operations and should be treated as a security-critical component.
+BytePanel agent executes privileged operations and should be treated as a security-critical component.
 
 ## Report Vulnerabilities
 

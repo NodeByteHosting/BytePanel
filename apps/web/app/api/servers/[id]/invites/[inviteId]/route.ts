@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db";
 import { requireServerRole } from "@/lib/rbac";
 import { requireUser } from "@/lib/session";
 
-// DELETE /api/servers/[id]/invites/[inviteId] — revoke a pending invite
 export const DELETE = async (
   _req: Request,
   { params }: { params: Promise<{ id: string; inviteId: string }> }

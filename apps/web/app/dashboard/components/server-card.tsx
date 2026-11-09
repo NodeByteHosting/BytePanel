@@ -1,6 +1,6 @@
 "use client";
 
-import type { PowerAction, ResourceUsage } from "@nodebyte/protocol";
+import type { PowerAction, ResourceUsage } from "@bytepanel/protocol";
 import {
   PlayIcon,
   RotateCcwIcon,
@@ -104,7 +104,6 @@ const fetchResources = async (
   }
 };
 
-// Panel-side status first; otherwise the daemon's live power state.
 const statusKey = (
   server: ServerCardData,
   state: ResourceUsage["state"] | null
@@ -169,7 +168,6 @@ const statusLabel = (
   return state ?? statusConfig[key].label;
 };
 
-// CPU as a share of the server's limit; memory as a share of the container limit.
 const toMetrics = (usage: ResourceUsage, cpuLimit: number): Metrics => {
   if (usage.state === "offline") {
     return {};
@@ -222,7 +220,6 @@ export const ServerCard = ({ server }: Props) => {
       setMetrics(toMetrics(usage, server.cpu));
     };
     void load();
-    // Poll every 10s, like Pterodactyl's server list.
     const interval = setInterval(() => load(), 10_000);
     return () => {
       cancelled = true;
@@ -268,7 +265,6 @@ export const ServerCard = ({ server }: Props) => {
         status.glow && `hover:shadow-md hover:${status.glow}`
       )}
     >
-      {/* Game image banner */}
       <div className="bg-muted relative h-28 w-full overflow-hidden">
         {game?.image ? (
           <Image
@@ -283,10 +279,8 @@ export const ServerCard = ({ server }: Props) => {
             <ServerIcon className="text-primary/30 h-12 w-12" />
           </div>
         )}
-        {/* Gradient overlay */}
         <div className="from-card/90 via-card/20 absolute inset-0 bg-linear-to-t to-transparent" />
 
-        {/* Status pill — top right */}
         <div className="absolute top-3 right-3">
           <div
             className={cn(
@@ -299,7 +293,6 @@ export const ServerCard = ({ server }: Props) => {
           </div>
         </div>
 
-        {/* Game name — bottom left */}
         {game && (
           <div className="absolute bottom-2 left-3">
             <span className="text-xs font-medium text-white/70">
@@ -309,9 +302,7 @@ export const ServerCard = ({ server }: Props) => {
         )}
       </div>
 
-      {/* Card body */}
       <div className="flex flex-1 flex-col gap-3 p-4">
-        {/* Server name + location */}
         <div>
           <h3 className="text-foreground truncate text-sm font-semibold">
             {server.name}
@@ -323,7 +314,6 @@ export const ServerCard = ({ server }: Props) => {
           </div>
         </div>
 
-        {/* IP address */}
         {server.address ? (
           <button
             type="button"
@@ -349,7 +339,6 @@ export const ServerCard = ({ server }: Props) => {
           </div>
         )}
 
-        {/* Metrics */}
         {isRunning && (
           <div className="space-y-2">
             {metricsLoading ? (
@@ -373,7 +362,6 @@ export const ServerCard = ({ server }: Props) => {
         )}
       </div>
 
-      {/* Footer */}
       <div className="border-border/40 bg-muted/20 flex items-center gap-2 border-t px-4 py-3">
         <Link href={`/dashboard/${server.id}`} className="flex-1">
           <Button variant="secondary" size="sm" className="w-full gap-2">

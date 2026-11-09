@@ -1,13 +1,13 @@
-# NodeByte Game Server Agent (GSA)
+# BytePanel agent
 
-GSA is the lightweight runtime agent used by NodeByte GSM to manage game servers on host machines.
+The agent is the lightweight runtime agent used by BytePanel to manage game servers on host machines.
 
 Core responsibilities:
 
 - Accept signed control-plane commands
 - Execute operational tasks safely
 - Manage server files and process state
-- Emit events/heartbeats back to GSM
+- Report install, backup and activity events back to the panel
 
 ## Requirements
 
@@ -27,22 +27,21 @@ Useful scripts:
 ```bash
 bun run dev
 bun run types
-bun run lint
 ```
 
 ## Build Output
 
 The build script compiles a Linux x64 binary to:
 
-- `dist/nodebyte-daemon`
+- `dist/bytepanel-daemon`
 
 ## Integration
 
-GSA shares protocol contracts with the panel through the `@nodebyte/protocol` workspace package.
+The agent shares protocol contracts with the panel through the `@bytepanel/protocol` workspace package.
 
 ## Security
 
-GSA is security-sensitive. Report vulnerabilities privately:
+The agent is security-sensitive. Report vulnerabilities privately:
 
 - security@nodebyte.co.uk
 

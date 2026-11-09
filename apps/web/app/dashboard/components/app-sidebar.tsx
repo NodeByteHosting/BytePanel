@@ -42,8 +42,6 @@ import { signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { useBranding } from "@/providers/branding";
 
-// Panel-side health only; live power state comes from the node on the
-// server page.
 export type SidebarHealth = "ready" | "pending" | "issue";
 
 export interface SidebarServer {
@@ -117,7 +115,6 @@ export const AppSidebar = ({
 
   return (
     <Sidebar collapsible="offcanvas" className="border-none">
-      {/* Header */}
       <SidebarHeader className="border-sidebar-border border-b px-4 py-3.5">
         <Link
           href="/"
@@ -136,7 +133,6 @@ export const AppSidebar = ({
       </SidebarHeader>
 
       <SidebarContent className="gap-0 px-0">
-        {/* Nav links */}
         <SidebarGroup className="border-sidebar-border border-b px-2 py-2">
           <SidebarGroupContent>
             <SidebarMenu>
@@ -169,7 +165,6 @@ export const AppSidebar = ({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Stats strip */}
         {servers.length > 0 && (
           <div className="border-sidebar-border border-b px-3 py-3">
             <div className="grid grid-cols-3 gap-1.5 text-xs">
@@ -180,7 +175,6 @@ export const AppSidebar = ({
           </div>
         )}
 
-        {/* Servers list */}
         <SidebarGroup className="flex-1 overflow-hidden px-0 py-2">
           <SidebarGroupLabel className="text-muted-foreground/70 flex h-8 items-center px-3 text-[11px] font-semibold tracking-wider uppercase">
             <Server className="mr-1.5 h-3 w-3" />
@@ -237,7 +231,6 @@ export const AppSidebar = ({
                                 <Server className="text-muted-foreground h-3.5 w-3.5" />
                               </div>
                             )}
-                            {/* Status dot overlay */}
                             <span
                               className={cn(
                                 "ring-sidebar absolute right-0.5 bottom-0.5 h-1.5 w-1.5 rounded-full ring-1",
@@ -264,9 +257,7 @@ export const AppSidebar = ({
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer */}
       <SidebarFooter className="border-sidebar-border gap-1 border-t px-2 py-2">
-        {/* Theme + User */}
         <div className="flex items-center justify-between px-2 py-1">
           <span className="text-muted-foreground text-xs group-data-[collapsible=icon]:hidden">
             Theme

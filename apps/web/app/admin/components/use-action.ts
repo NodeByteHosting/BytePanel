@@ -5,7 +5,6 @@ import { toast } from "sonner";
 
 type Result = { ok: true; data?: unknown } | { ok: false; error: string };
 
-// Runs a server action, toasts the outcome and refreshes server components.
 export const useAction = () => {
   const router = useRouter();
   const [pending, setPending] = useState(false);

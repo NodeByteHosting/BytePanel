@@ -117,7 +117,6 @@ export const ProfilePanel = ({ user }: Props) => {
 
   return (
     <div className="max-w-xl space-y-6">
-      {/* Avatar card */}
       <div className="border-border/60 bg-card rounded-xl border p-5">
         <h2 className="mb-4 text-sm font-semibold">Profile photo</h2>
         <div className="flex items-center gap-5">
@@ -173,7 +172,6 @@ export const ProfilePanel = ({ user }: Props) => {
         </div>
       </div>
 
-      {/* Profile details card */}
       <div className="border-border/60 bg-card rounded-xl border p-5">
         <h2 className="mb-4 text-sm font-semibold">Profile details</h2>
         <form className="flex flex-col gap-4" onSubmit={handleProfileSubmit}>

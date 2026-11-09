@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 
-// GET /api/admin/audit?page=1&pageSize=50&action=admin.user.ban&actorId=xxx&targetId=xxx
 export const GET = async (req: Request) => {
   await requireAdmin();
 

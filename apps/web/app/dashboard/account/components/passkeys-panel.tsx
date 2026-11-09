@@ -62,7 +62,7 @@ export const PasskeysPanel = () => {
   }, []);
 
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
+    // oxlint-disable-next-line react/set-state-in-effect
     load();
   }, [load]);
 

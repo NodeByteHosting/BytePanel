@@ -99,7 +99,7 @@ const ConsoleTab = () => {
           value={
             stats && state !== "offline"
               ? `${stats.cpuAbsolute.toFixed(1)}%`
-              : "—"
+              : "-"
           }
         />
         <Stat
@@ -111,7 +111,7 @@ const ConsoleTab = () => {
               : undefined
           }
           value={
-            stats && state !== "offline" ? formatBytes(stats.memoryBytes) : "—"
+            stats && state !== "offline" ? formatBytes(stats.memoryBytes) : "-"
           }
         />
         <Stat
@@ -122,7 +122,7 @@ const ConsoleTab = () => {
               ? formatBytes(server.limits.disk * mib)
               : undefined
           }
-          value={stats ? formatBytes(stats.diskBytes) : "—"}
+          value={stats ? formatBytes(stats.diskBytes) : "-"}
         />
         <Stat
           icon={TimerIcon}

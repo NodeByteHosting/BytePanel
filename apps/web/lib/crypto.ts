@@ -12,7 +12,7 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const KEY_LENGTH = 32;
 const TAG_LENGTH = 16;
-const HKDF_SALT = "nodebyte.user-secrets.v1";
+const HKDF_SALT = "bytepanel.user-secrets.v1";
 
 let cachedKey: Buffer | null = null;
 

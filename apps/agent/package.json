@@ -1,7 +1,7 @@
 {
-  "name": "@nodebyte/agent",
+  "name": "@bytepanel/agent",
   "version": "0.0.1-dev2",
-  "description": "NodeByte daemon: runs on every node and manages the game server containers placed there (power, console, files, backups), like Pterodactyl Wings. Built with Bun and TypeScript.",
+  "description": "BytePanel daemon: runs on every node and manages the game server containers placed there (power, console, files, backups), like Pterodactyl Wings. Built with Bun and TypeScript.",
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
@@ -12,7 +12,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@nodebyte/protocol": "workspace:*",
+    "@bytepanel/protocol": "workspace:*",
     "jose": "6.2.13",
     "ssh2": "1.17.0",
     "zod": "4.6.7"

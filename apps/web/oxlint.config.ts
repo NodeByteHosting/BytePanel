@@ -13,9 +13,7 @@ export default defineConfig({
     "hooks/use-mobile.ts",
   ],
   rules: {
-    // Reports code the React Compiler would skip optimising (try/finally,
-    // throw inside try, etc.). The compiler isn't enabled in next.config.ts,
-    // so these are informational, not bugs.
+    "no-empty": ["error", { allowEmptyCatch: true }],
     "react/todo": "off",
   },
 });

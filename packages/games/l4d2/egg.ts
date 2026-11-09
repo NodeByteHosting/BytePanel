@@ -4,9 +4,6 @@ import { l4d2 } from "./index";
 import { dockerImage } from "./install";
 import { l4d2Settings } from "./settings";
 
-// The image symlinks /cfg into left4dead2/cfg, so the volume holds the server
-// config. Cvars that must survive map changes live in server.cfg (written by
-// the install script, kept in sync by the config-file parser).
 export const l4d2Egg: EggDefinition = {
   configFiles: [
     {
@@ -53,7 +50,6 @@ export const l4d2Egg: EggDefinition = {
       steamToken: "STEAM_TOKEN",
     }),
     hiddenVariable("PORT", "{{SERVER_PORT}}"),
-    // Boot-time cvars (before the Steam connection is established).
     hiddenVariable("EXTRA_ARGS", '+maxplayers {{MAX_PLAYERS}} +sv_setsteamaccount "{{STEAM_TOKEN}}"'),
   ],
 };

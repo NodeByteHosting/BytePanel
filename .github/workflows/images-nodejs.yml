@@ -11,11 +11,9 @@ on:
       - main
       - develop
     paths:
-      - 'images/nodejs/**'
+      - 'recipes/nodejs/**'
       - '.github/workflows/images-nodejs.yml'
   
-  release:
-    types: [published]
 
 permissions:
   contents: read
@@ -51,7 +49,7 @@ jobs:
       - name: Check if Dockerfile exists
         id: check
         run: |
-          if [ -f "./images/nodejs/${{ matrix.version }}/Dockerfile" ]; then
+          if [ -f "./recipes/nodejs/${{ matrix.version }}/Dockerfile" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -96,8 +94,8 @@ jobs:
         if: steps.check.outputs.exists == 'true'
         uses: docker/build-push-action@v6
         with:
-          context: ./images/nodejs
-          file: ./images/nodejs/${{ matrix.version }}/Dockerfile
+          context: ./recipes/nodejs
+          file: ./recipes/nodejs/${{ matrix.version }}/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.tags.outputs.tags }}

@@ -7,16 +7,11 @@ type MetadataGenerator = Omit<Metadata, "description" | "title"> & {
   title: string;
   description: string;
   image?: string;
-  /**
-   * Skip appending " | <siteName>" to the title. Use for the homepage where the
-   * title already leads with the brand context.
-   */
   bareTitle?: boolean;
-  /** The panel name from /admin/settings. */
   siteName?: string;
 };
 
-const DEFAULT_SITE_NAME = "NodeByte Panel";
+const DEFAULT_SITE_NAME = "BytePanel";
 
 export const createMetadata = ({
   title,

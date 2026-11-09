@@ -218,7 +218,7 @@ export const CreateServerForm = ({
         <PanelCard className="grid gap-4 md:grid-cols-4">
           <div className="flex flex-col gap-1.5 md:col-span-4">
             <Label htmlFor="server-plan">
-              Plan (optional — fills the limits below)
+              Plan (optional, fills the limits below)
             </Label>
             <Select value={planId} onValueChange={applyPlan}>
               <SelectTrigger id="server-plan" className="md:w-80">

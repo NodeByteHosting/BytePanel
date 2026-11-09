@@ -4,8 +4,6 @@ import { minecraft } from "./index";
 import { dockerImage } from "./install";
 import { minecraftSettings } from "./settings";
 
-// itzg-based image: the entrypoint reads everything from env and drops to
-// uid 1000. SERVER_PORT is set by the daemon from the primary allocation.
 export const minecraftEgg: EggDefinition = {
   containerUser: "image",
   description: minecraft.description,
@@ -15,7 +13,7 @@ export const minecraftEgg: EggDefinition = {
   invocationMode: "env",
   minDiskMb: minecraft.requirements.disk * GB,
   minMemoryMb: minecraft.requirements.memory * GB,
-  mountPath: "/var/lib/nodebyte/game/data",
+  mountPath: "/var/lib/bytepanel/game/data",
   name: minecraft.name,
   nest: "Minecraft",
   slug: "minecraft",
@@ -24,7 +22,7 @@ export const minecraftEgg: EggDefinition = {
   variables: [
     serverNameVariable("SERVER_NAME"),
     {
-      default: "{{server.name}} - Powered by NodeByte",
+      default: "{{server.name}} - Powered by BytePanel",
       env: "MOTD",
       name: "MOTD",
       rules: "nullable|string|max:150",
@@ -47,7 +45,6 @@ export const minecraftEgg: EggDefinition = {
     hiddenVariable("EULA", "TRUE"),
     hiddenVariable("ENABLE_RCON", "true"),
     hiddenVariable("OVERRIDE_SERVER_PROPERTIES", "true"),
-    // Size the heap from the container limit instead of a fixed value.
     hiddenVariable("MEMORY", ""),
     hiddenVariable("JVM_XX_OPTS", "-XX:MaxRAMPercentage=75"),
     hiddenVariable("UID", "1000"),

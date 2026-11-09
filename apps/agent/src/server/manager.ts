@@ -8,6 +8,7 @@ const log = logger("manager");
 
 export class ServerManager {
   private servers = new Map<string, Server>();
+  private diskTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private readonly node: Config,
@@ -23,9 +24,8 @@ export class ServerManager {
     return [...this.servers.values()];
   }
 
-  // Loads every server assigned to this node from the panel and re-attaches to
-  // containers that survived a daemon restart.
   async boot(): Promise<void> {
+    const restarts: Server[] = [];
     const configs = await this.panel.getServers();
     log.info(`loaded ${configs.length} server(s) from the panel`);
     await Promise.all(
@@ -33,14 +33,41 @@ export class ServerManager {
         const server = new Server(config, this.node, this.docker, this.panel);
         this.servers.set(config.uuid, server);
         try {
-          await server.restore();
+          if (await server.restore()) {
+            restarts.push(server);
+          }
         } catch (error) {
           log.warn(`could not restore ${config.uuid}`, error);
         }
       }),
     );
-    // Any server the panel still thinks is installing was interrupted.
     await this.panel.resetServerStates().catch((error) => log.warn("state reset failed", error));
+    void this.restartServers(restarts);
+    this.scheduleDiskCheck();
+  }
+
+  private async restartServers(servers: Server[]): Promise<void> {
+    for (const server of servers) {
+      log.info(`starting ${server.uuid} after a node restart`);
+      await server
+        .power("start")
+        .catch((error) => log.warn(`could not start ${server.uuid} after a node restart`, error));
+    }
+  }
+
+  private scheduleDiskCheck(): void {
+    this.diskTimer = setTimeout(() => {
+      void this.checkDisks().finally(() => this.scheduleDiskCheck());
+    }, this.node.system.diskCheckIntervalSeconds * 1000);
+    this.diskTimer.unref();
+  }
+
+  private async checkDisks(): Promise<void> {
+    for (const server of this.all()) {
+      await server
+        .enforceDiskLimit()
+        .catch((error) => log.warn(`disk check for ${server.uuid} failed`, error));
+    }
   }
 
   async create(uuid: string, startOnCompletion: boolean): Promise<Server> {

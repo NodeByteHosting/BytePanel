@@ -106,7 +106,6 @@ const getExpiryLabel = (expired: boolean, expiresInDays: number) => {
 
 export const SessionsTable = () => {
   const [data, setData] = useState<PagedResponse | null>(null);
-  // Expiry is measured against fetch time so render stays pure.
   const [fetchedAt, setFetchedAt] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -130,7 +129,7 @@ export const SessionsTable = () => {
   }, [page]);
 
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
+    // oxlint-disable-next-line react/set-state-in-effect
     void fetchSessions();
   }, [fetchSessions]);
 
@@ -218,12 +217,10 @@ export const SessionsTable = () => {
                   className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-start gap-3">
-                    {/* Device icon */}
                     <div className="border-border/50 bg-muted/50 flex size-10 shrink-0 items-center justify-center rounded-xl border">
                       <DeviceIcon className="text-muted-foreground size-4" />
                     </div>
 
-                    {/* Info */}
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                         <span className="text-sm leading-snug font-medium">

@@ -87,7 +87,6 @@ export const AdminSidebarEnhanced = ({
       showAdminLink={false}
       onSignOut={handleSignOut}
     >
-      {/* Admin Navigation */}
       <SidebarGroup className="border-border/40 border-b px-0 py-3">
         <SidebarGroupLabel className="text-muted-foreground flex h-9 items-center px-4 text-xs font-semibold">
           Admin
@@ -127,7 +126,6 @@ export const AdminSidebarEnhanced = ({
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {/* Back to Dashboard */}
       <SidebarGroup className="px-0 py-2">
         <SidebarGroupContent>
           <SidebarMenu>

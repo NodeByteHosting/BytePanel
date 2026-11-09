@@ -3,7 +3,7 @@ import type {
   ConfigFile,
   InstallScript,
   ServerConfiguration,
-} from "@nodebyte/protocol";
+} from "@bytepanel/protocol";
 import type { Prisma } from "@prisma/client";
 
 import { resolvePlaceholders } from "@/lib/eggs/placeholders";
@@ -12,8 +12,6 @@ import { API_URL } from "@/lib/env";
 
 import { nodeToken } from "./tokens";
 
-// Default docker bridge gateway configured by the daemon (config.ts). Used for
-// the {{config.docker.interface}} placeholder.
 const DOCKER_INTERFACE = "172.18.0.1";
 
 export const serverConfigInclude = {
@@ -27,7 +25,6 @@ export type ServerForConfig = Prisma.ServerGetPayload<{
   include: typeof serverConfigInclude;
 }>;
 
-// Effective environment: egg defaults overridden by the server's values.
 export const serverEnvironment = (
   server: ServerForConfig
 ): Record<string, string> => {
@@ -39,7 +36,6 @@ export const serverEnvironment = (
   return env;
 };
 
-// Primary allocation first, then the rest by port.
 const orderedAllocations = (server: ServerForConfig) => [
   ...(server.allocation ? [server.allocation] : []),
   ...server.allocations
@@ -57,8 +53,6 @@ const placeholderContext = (server: ServerForConfig): PlaceholderContext => ({
   ports: orderedAllocations(server).map((a) => a.port),
 });
 
-// Variable values may themselves reference placeholders (e.g. a hidden
-// GAME_PORT variable defaulting to "{{SERVER_PORT}}"), so resolve them once.
 const resolvedEnvironment = (ctx: PlaceholderContext): Record<string, string> =>
   Object.fromEntries(
     Object.entries(ctx.env).map(([key, value]) => [
@@ -185,7 +179,6 @@ export const buildInstallScript = (server: ServerForConfig): InstallScript => {
   };
 };
 
-// The daemon's /etc/nodebyte/daemon.json for a node.
 export const buildNodeDaemonConfig = (node: {
   uuid: string;
   fqdn: string;
@@ -201,8 +194,6 @@ export const buildNodeDaemonConfig = (node: {
   api: {
     host: "0.0.0.0",
     port: node.daemonListen,
-    // Same certificate locations Pterodactyl's generated config assumes
-    // (certbot certonly -d <fqdn>).
     ssl: {
       cert: `/etc/letsencrypt/live/${node.fqdn}/fullchain.pem`,
       enabled: node.scheme === "https" && !node.behindProxy,

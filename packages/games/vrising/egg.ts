@@ -13,7 +13,6 @@ import { vrisingSettings } from "./settings";
 
 export const vrisingEgg: EggDefinition = {
   containerUser: "image",
-  // game, query
   containerPorts: [0, 0],
   description: vrising.description,
   dockerImages: { Default: dockerImage },

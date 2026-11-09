@@ -6,7 +6,6 @@ import { daemonRoute } from "@/lib/servers/route";
 
 export const runtime = "nodejs";
 
-// Signed URL the browser POSTs multipart uploads to (straight to the node).
 export const GET = daemonRoute("admin", async ({ access, request }) => {
   const directory = new URL(request.url).searchParams.get("directory") ?? "/";
   const { server, user } = access;

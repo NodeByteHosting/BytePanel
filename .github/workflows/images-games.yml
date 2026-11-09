@@ -11,11 +11,9 @@ on:
       - main
       - develop
     paths:
-      - 'images/games/**'
+      - 'recipes/games/**'
       - '.github/workflows/images-games.yml'
   
-  release:
-    types: [published]
 
 permissions:
   contents: read
@@ -54,7 +52,7 @@ jobs:
       - name: Check if Dockerfile exists
         id: check
         run: |
-          if [ -f "./images/games/${{ matrix.game }}/Dockerfile" ]; then
+          if [ -f "./recipes/games/${{ matrix.game }}/Dockerfile" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -102,8 +100,8 @@ jobs:
         if: steps.check.outputs.exists == 'true'
         uses: docker/build-push-action@v6
         with:
-          context: ./images/games/${{ matrix.game }}
-          file: ./images/games/${{ matrix.game }}/Dockerfile
+          context: ./recipes/games/${{ matrix.game }}
+          file: ./recipes/games/${{ matrix.game }}/Dockerfile
           push: true
           platforms: linux/amd64
           tags: ${{ steps.tags.outputs.tags }}

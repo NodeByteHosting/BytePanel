@@ -1,23 +1,18 @@
 import "server-only";
 import { env } from "@/lib/env";
 
-// Update checks compare against each repo's latest published GitHub release
-// (drafts and prereleases are ignored). The release tag is the version.
-
 export const UPDATE_CHECK_TAG = "update-check";
 const REVALIDATE_SECONDS = 60 * 60;
 
-// Forks can point the check at their own repos.
 export const REPOS = {
   agent: env.UPDATE_CHECK_AGENT_REPO,
   panel: env.UPDATE_CHECK_PANEL_REPO,
 } as const;
 export type Component = keyof typeof REPOS;
 
-// Inlined at build time by next.config.ts.
 export const PANEL_BUILD = {
-  commit: process.env.NODEBYTE_COMMIT_SHA || null,
-  version: process.env.NODEBYTE_PANEL_VERSION ?? "0.0.0",
+  commit: process.env.BYTEPANEL_COMMIT_SHA || null,
+  version: process.env.BYTEPANEL_PANEL_VERSION ?? "0.0.0",
 };
 
 export interface CommitInfo {
@@ -32,7 +27,6 @@ export interface LatestRelease {
   name: string;
   url: string;
   publishedAt: string | null;
-  // The commit the release tag points at.
   commit: CommitInfo;
 }
 
@@ -56,7 +50,6 @@ const github = async (path: string, accept = "application/vnd.github+json") => {
     next: { revalidate: REVALIDATE_SECONDS, tags: [UPDATE_CHECK_TAG] },
   });
   if (!res.ok) {
-    // 404 means no published release yet — or a private repo without a token.
     if (res.status === 404) {
       throw new Error(
         env.GITHUB_TOKEN
@@ -97,7 +90,6 @@ export const getLatestRelease = async (
       data: {
         commit: {
           date: commit.commit.committer?.date ?? null,
-          // First line only — the subject.
           message: commit.commit.message.split("\n")[0] ?? "",
           sha: commit.sha,
           url: commit.html_url,
@@ -114,8 +106,6 @@ export const getLatestRelease = async (
   }
 };
 
-// ─── Semver ──────────────────────────────────────────────────────────────────
-
 const parse = (v: string) => {
   const [core = "", pre] = v.trim().replace(/^v/u, "").split("-", 2);
   const nums = core.split(".").map((n) => Math.trunc(Number(n)) || 0);
@@ -123,7 +113,6 @@ const parse = (v: string) => {
 };
 
 const comparePre = (a: string | undefined, b: string | undefined) => {
-  // A release outranks any prerelease of the same core version.
   if (a === b) {
     return 0;
   }

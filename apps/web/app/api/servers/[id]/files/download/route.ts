@@ -6,7 +6,6 @@ import { daemonRoute } from "@/lib/servers/route";
 
 export const runtime = "nodejs";
 
-// Signed, short-lived URL the browser downloads from the node directly.
 export const GET = daemonRoute("admin", async ({ access, request }) => {
   const file = new URL(request.url).searchParams.get("file");
   if (!file) {

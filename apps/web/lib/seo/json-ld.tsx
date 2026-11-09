@@ -7,7 +7,7 @@ interface JsonLdProps {
 export const JsonLd = ({ code }: JsonLdProps) => (
   <script
     type="application/ld+json"
-    // oxlint-disable-next-line react/no-danger -- JSON-LD script, not user-generated content.
+    // oxlint-disable-next-line react/no-danger
     dangerouslySetInnerHTML={{ __html: JSON.stringify(code) }}
   />
 );

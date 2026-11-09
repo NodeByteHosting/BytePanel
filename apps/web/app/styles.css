@@ -5,7 +5,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ─── Light theme — clean violet/slate ─── */
 :root {
   --background: oklch(0.985 0.005 285);
   --foreground: oklch(0.11 0.02 285);
@@ -42,7 +41,6 @@
   --sidebar-ring: oklch(0.52 0.22 290);
 }
 
-/* ─── Dark theme — deep violet-dark, NodeByte brand ─── */
 .dark {
   --background: oklch(0.135 0.025 285);
   --foreground: oklch(0.97 0.01 285);
@@ -78,7 +76,6 @@
   --sidebar-ring: oklch(0.65 0.22 290);
 }
 
-/* ─── Midnight: deep blue-black ─── */
 .midnight {
   --background: oklch(0.08 0.02 250);
   --foreground: oklch(0.98 0.02 240);
@@ -114,7 +111,6 @@
   --sidebar-ring: oklch(0.38 0.02 250);
 }
 
-/* ─── Rose: warm pink ─── */
 .rose {
   --background: oklch(0.12 0.03 30);
   --foreground: oklch(0.98 0.02 30);
@@ -150,7 +146,6 @@
   --sidebar-ring: oklch(0.44 0.02 30);
 }
 
-/* ─── Forest: deep green ─── */
 .forest {
   --background: oklch(0.1 0.03 140);
   --foreground: oklch(0.98 0.02 140);
@@ -186,7 +181,6 @@
   --sidebar-ring: oklch(0.36 0.02 140);
 }
 
-/* ─── Desert: warm sandy (light) ─── */
 .desert {
   --background: oklch(0.96 0.03 86);
   --foreground: oklch(0.1 0.02 32);
@@ -222,7 +216,6 @@
   --sidebar-ring: oklch(0.44 0.02 60);
 }
 
-/* ─── Ocean: teal/blue ─── */
 .ocean {
   --background: oklch(0.09 0.03 200);
   --foreground: oklch(0.98 0.02 200);
@@ -258,7 +251,6 @@
   --sidebar-ring: oklch(0.34 0.02 200);
 }
 
-/* ─── Slate: cool gray-blue ─── */
 .slate {
   --background: oklch(0.14 0.02 240);
   --foreground: oklch(0.98 0.01 240);
@@ -294,7 +286,6 @@
   --sidebar-ring: oklch(0.4 0.02 240);
 }
 
-/* ─── Crimson: deep red ─── */
 .crimson {
   --background: oklch(0.11 0.03 20);
   --foreground: oklch(0.98 0.01 20);
@@ -330,7 +321,6 @@
   --sidebar-ring: oklch(0.42 0.02 20);
 }
 
-/* ─── Emerald: bright green ─── */
 .emerald {
   --background: oklch(0.11 0.03 160);
   --foreground: oklch(0.98 0.01 160);
@@ -366,7 +356,6 @@
   --sidebar-ring: oklch(0.42 0.02 160);
 }
 
-/* ─── Amber: warm golden ─── */
 .amber {
   --background: oklch(0.13 0.03 60);
   --foreground: oklch(0.98 0.01 60);
@@ -402,7 +391,6 @@
   --sidebar-ring: oklch(0.46 0.02 60);
 }
 
-/* ─── Teal: cyan-green ─── */
 .teal {
   --background: oklch(0.11 0.03 180);
   --foreground: oklch(0.98 0.01 180);
@@ -438,7 +426,6 @@
   --sidebar-ring: oklch(0.44 0.02 180);
 }
 
-/* ─── Lavender: purple ─── */
 .lavender {
   --background: oklch(0.12 0.03 290);
   --foreground: oklch(0.98 0.01 290);
@@ -474,7 +461,6 @@
   --sidebar-ring: oklch(0.44 0.02 290);
 }
 
-/* ─── Violet: deep purple ─── */
 .violet {
   --background: oklch(0.13 0.03 280);
   --foreground: oklch(0.98 0.01 280);
@@ -510,7 +496,6 @@
   --sidebar-ring: oklch(0.46 0.02 280);
 }
 
-/* ─── Catppuccin Mocha ─── */
 .catppuccin-mocha {
   --background: #1e1e2e;
   --foreground: #cdd6f4;
@@ -547,7 +532,6 @@
   --sidebar-ring: #89b4fa;
 }
 
-/* ─── Catppuccin Macchiato ─── */
 .catppuccin-macchiato {
   --background: #24273a;
   --foreground: #cad3f5;
@@ -584,7 +568,6 @@
   --sidebar-ring: #8aadf4;
 }
 
-/* ─── Catppuccin Frappe ─── */
 .catppuccin-frappe {
   --background: #303446;
   --foreground: #c6d0f5;
@@ -621,7 +604,6 @@
   --sidebar-ring: #8caaee;
 }
 
-/* ─── Catppuccin Latte (Light) ─── */
 .catppuccin-latte {
   --background: #eff1f5;
   --foreground: #4c4f69;
@@ -658,7 +640,6 @@
   --sidebar-ring: #1e66f5;
 }
 
-/* ─── Dracula ─── */
 .dracula {
   --background: #282a36;
   --foreground: #f8f8f2;
@@ -695,7 +676,6 @@
   --sidebar-ring: #bd93f9;
 }
 
-/* ─── Nord ─── */
 .nord {
   --background: #2e3440;
   --foreground: #eceff4;
@@ -732,7 +712,6 @@
   --sidebar-ring: #88c0d0;
 }
 
-/* ─── Gruvbox Dark ─── */
 .gruvbox {
   --background: #282828;
   --foreground: #ebdbb2;
@@ -769,7 +748,6 @@
   --sidebar-ring: #fabd2f;
 }
 
-/* ─── Solarized Dark ─── */
 .solarized {
   --background: #002b36;
   --foreground: #839496;
@@ -806,7 +784,6 @@
   --sidebar-ring: #268bd2;
 }
 
-/* ─── Tokyo Night ─── */
 .tokyo-night {
   --background: #1a1b26;
   --foreground: #c0caf5;
@@ -843,7 +820,6 @@
   --sidebar-ring: #7aa2f7;
 }
 
-/* ─── One Dark ─── */
 .one-dark {
   --background: #282c34;
   --foreground: #abb2bf;
@@ -880,7 +856,6 @@
   --sidebar-ring: #61afef;
 }
 
-/* ─── Rosé Pine ─── */
 .rose-pine {
   --background: #191724;
   --foreground: #e0def4;
@@ -917,7 +892,6 @@
   --sidebar-ring: #c4a7e7;
 }
 
-/* ─── Stranger Things ─── */
 .stranger {
   --background: #0b0303;
   --foreground: #ffd6e7;
@@ -954,7 +928,6 @@
   --sidebar-ring: rgba(255, 45, 85, 0.12);
 }
 
-/* ─── Christmas ─── */
 .christmas {
   --background: #07221a;
   --foreground: #fffbf0;
@@ -1021,7 +994,6 @@
   }
 }
 
-/* ─── New Year ─── */
 .newyear {
   --background: #08142a;
   --foreground: #fefefe;
@@ -1102,7 +1074,6 @@
   --animate-speedometer: speedometer 4s ease-in-out infinite alternate;
 }
 
-/* This layer is added by shadcn/ui */
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -1115,7 +1086,6 @@
   }
 }
 
-/* This layer is by next-forge */
 @layer base {
   ::after,
   ::before,

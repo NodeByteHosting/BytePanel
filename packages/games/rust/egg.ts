@@ -4,11 +4,8 @@ import { rust } from "./index";
 import { dockerImage } from "./install";
 import { rustSettings } from "./settings";
 
-// The image's entrypoint is RustDedicated itself, so the startup line is
-// passed as its arguments.
 export const rustEgg: EggDefinition = {
   containerUser: "image",
-  // game (udp), rcon (tcp), query (udp)
   containerPorts: [0, 0, 0],
   description: rust.description,
   dockerImages: { Default: dockerImage },
@@ -17,7 +14,7 @@ export const rustEgg: EggDefinition = {
   invocationMode: "args",
   minDiskMb: rust.requirements.disk * GB,
   minMemoryMb: rust.requirements.memory * GB,
-  mountPath: "/srv/rust/server/nodebyte",
+  mountPath: "/srv/rust/server/bytepanel",
   name: rust.name,
   nest: "Survival",
   slug: "rust",
@@ -34,7 +31,7 @@ export const rustEgg: EggDefinition = {
     "+rcon.port {{SERVER_PORT_1}}",
     '+rcon.password "{{RCON_PASSWORD}}"',
     "+rcon.web {{RCON_WEB}}",
-    "+server.identity nodebyte",
+    "+server.identity bytepanel",
   ].join(" "),
   stop: "^SIGTERM",
   variables: [

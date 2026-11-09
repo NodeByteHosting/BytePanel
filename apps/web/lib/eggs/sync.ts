@@ -1,7 +1,7 @@
 import "server-only";
-import { eggs } from "@nodebyte/games";
-import type { EggDefinition } from "@nodebyte/games";
-import { DEFAULT_INSTALL_CONTAINER } from "@nodebyte/protocol";
+import { eggs } from "@bytepanel/games";
+import type { EggDefinition } from "@bytepanel/games";
+import { DEFAULT_INSTALL_CONTAINER } from "@bytepanel/protocol";
 import type { Prisma } from "@prisma/client";
 import { ulid } from "ulid";
 
@@ -24,7 +24,7 @@ const replaceVariables = async (
     where: { eggId, envVariable: { notIn: keep } },
   });
   for (const v of variables) {
-    // oxlint-disable-next-line no-await-in-loop -- interactive transaction queries must run one at a time
+    // oxlint-disable-next-line no-await-in-loop
     await tx.eggVariable.upsert({
       create: { eggId, id: ulid(), ...v },
       update: v,
@@ -56,10 +56,9 @@ const builtinData = (egg: EggDefinition) => ({
   volumeOwner: egg.volumeOwner ?? null,
 });
 
-// Upserts the GSG built-in eggs (matched by slug). Safe to run repeatedly.
 export const syncBuiltinEggs = async (): Promise<{ synced: number }> => {
   for (const egg of eggs) {
-    // oxlint-disable-next-line no-await-in-loop -- eggs sharing a nest must not race ensureNest
+    // oxlint-disable-next-line no-await-in-loop
     const nest = await ensureNest(egg.nest);
     const data = builtinData(egg);
     const variables: ParsedEgg["variables"] = egg.variables.map((v, index) => ({
@@ -72,7 +71,7 @@ export const syncBuiltinEggs = async (): Promise<{ synced: number }> => {
       userEditable: v.userEditable ?? true,
       userViewable: v.userViewable ?? true,
     }));
-    // oxlint-disable-next-line no-await-in-loop -- eggs sharing a nest must not race ensureNest
+    // oxlint-disable-next-line no-await-in-loop
     await prisma.$transaction(async (tx) => {
       const saved = await tx.egg.upsert({
         create: { id: ulid(), nestId: nest.id, slug: egg.slug, ...data },
@@ -85,7 +84,6 @@ export const syncBuiltinEggs = async (): Promise<{ synced: number }> => {
   return { synced: eggs.length };
 };
 
-// Creates (or updates, when `eggId` is given) an egg from a PTDL import.
 export const saveImportedEgg = (
   parsed: ParsedEgg,
   nestId: string,

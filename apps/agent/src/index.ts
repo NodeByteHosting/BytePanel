@@ -13,8 +13,6 @@ import { loadHostKey, SftpServer } from "./sftp";
 
 const log = logger("daemon");
 
-// `nodebyte-daemon configure --panel https://panel.example --token <id>.<token>`
-// fetches this node's configuration from the panel and writes it to disk.
 const configure = async (args: string[]) => {
   const { values } = parseArgs({
     args,
@@ -25,7 +23,7 @@ const configure = async (args: string[]) => {
     },
   });
   if (!values.panel || !values.token) {
-    console.error("usage: nodebyte-daemon configure --panel <url> --token <tokenId.token>");
+    console.error("usage: bytepanel-daemon configure --panel <url> --token <tokenId.token>");
     process.exit(2);
   }
   const res = await fetch(new URL("/api/remote/configuration", values.panel), {
@@ -42,7 +40,7 @@ const configure = async (args: string[]) => {
 const run = async () => {
   const config = await loadConfig();
   await ensureDirectories(config);
-  log.info(`NodeByte daemon v${VERSION} starting for node ${config.uuid}`);
+  log.info(`BytePanel daemon v${VERSION} starting for node ${config.uuid}`);
 
   const docker = new Docker(config.docker.socket);
   const dockerVersion = await docker.version();
@@ -69,6 +67,7 @@ const run = async () => {
   const server = Bun.serve<SocketData>({
     fetch: createFetchHandler({ backups, config, docker, manager, sftp }),
     hostname: config.api.host,
+    idleTimeout: 120,
     maxRequestBodySize: config.api.uploadLimitMb * 1024 * 1024 + 1024 * 1024,
     port: config.api.port,
     tls: config.api.ssl.enabled

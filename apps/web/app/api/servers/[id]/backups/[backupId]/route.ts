@@ -50,7 +50,6 @@ export const DELETE = daemonRoute<Params>(
 
 const patchSchema = z.object({ isLocked: z.boolean() });
 
-// Lock / unlock (locked backups can't be deleted).
 export const PATCH = daemonRoute<Params>(
   "admin",
   async ({ access, params, request }) => {

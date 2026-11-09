@@ -1,6 +1,6 @@
-# Contributing to NodeByte GSA
+# Contributing to the BytePanel agent
 
-Thanks for contributing to NodeByte Game Server Agent (GSA).
+Thanks for contributing to BytePanel agent.
 
 ## Local Setup
 

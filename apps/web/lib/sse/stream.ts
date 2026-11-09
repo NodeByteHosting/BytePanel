@@ -58,7 +58,7 @@ export const createSseResponse = (opts: SseOpts): Response => {
 
       try {
         while (!abort.signal.aborted && Date.now() < deadline) {
-          // oxlint-disable-next-line no-await-in-loop -- poll loop: each fetch continues from the previous cursor
+          // oxlint-disable-next-line no-await-in-loop
           const items = await opts.fetchSince(cursor);
           for (const item of items) {
             writeEvent(event, item.event);
@@ -75,13 +75,11 @@ export const createSseResponse = (opts: SseOpts): Response => {
           }
 
           try {
-            // oxlint-disable-next-line no-await-in-loop -- poll loop: each tick waits for the previous one
+            // oxlint-disable-next-line no-await-in-loop
             await delay(Math.min(pollMs, remaining), undefined, {
               signal: abort.signal,
             });
-          } catch {
-            // aborted
-          }
+          } catch {}
         }
 
         if (!abort.signal.aborted) {
@@ -95,9 +93,7 @@ export const createSseResponse = (opts: SseOpts): Response => {
         clearInterval(keepalive);
         try {
           controller.close();
-        } catch {
-          // noop
-        }
+        } catch {}
       }
     },
   });

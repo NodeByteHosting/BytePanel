@@ -12,8 +12,6 @@ import { dontStarveTogetherSettings } from "./settings";
 
 export const dontStarveTogetherEgg: EggDefinition = {
   containerUser: "image",
-  // game port follows the allocation; Steam auth / master ports stay at the
-  // image defaults inside the container.
   containerPorts: [0, 27_017, 8767],
   description: dontStarveTogether.description,
   dockerImages: { Default: dockerImage },
@@ -31,7 +29,7 @@ export const dontStarveTogetherEgg: EggDefinition = {
   variables: [
     serverNameVariable("DST_NETWORK_CLUSTER_NAME"),
     {
-      default: "Powered by NodeByte",
+      default: "Powered by BytePanel",
       env: "DST_NETWORK_CLUSTER_DESCRIPTION",
       name: "Description",
       rules: "nullable|string|max:256",

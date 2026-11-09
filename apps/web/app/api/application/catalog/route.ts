@@ -5,12 +5,10 @@ import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
 
-// Everything a billing module needs to configure a product: plans, games
-// (with their customer-editable variables) and locations.
 export const GET = applicationHandler(async () => {
   const [plans, eggs, locations] = await Promise.all([
     prisma.plan.findMany({
-      orderBy: [{ sort: "asc" }, { priceMonthCents: "asc" }],
+      orderBy: [{ sort: "asc" }, { name: "asc" }],
       where: { active: true },
     }),
     prisma.egg.findMany({

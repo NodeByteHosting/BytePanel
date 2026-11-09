@@ -39,7 +39,7 @@ export interface NodeFormValues {
 
 export const EMPTY_NODE: NodeFormValues = {
   behindProxy: false,
-  daemonBase: "/var/lib/nodebyte/volumes",
+  daemonBase: "/var/lib/bytepanel/volumes",
   daemonListen: 8080,
   daemonSftp: 2022,
   description: "",
@@ -134,7 +134,7 @@ export const NodeForm = ({
             {locations.map((l) => (
               <SelectItem key={l.id} value={l.id}>
                 {l.short}
-                {l.long ? ` — ${l.long}` : ""}
+                {l.long ? ` - ${l.long}` : ""}
               </SelectItem>
             ))}
           </SelectContent>

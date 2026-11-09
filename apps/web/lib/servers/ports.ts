@@ -1,7 +1,5 @@
 export const MAX_PORTS_PER_REQUEST = 1000;
 
-// Parses "25565, 27015-27020" into a sorted, de-duplicated port list (same
-// syntax as Pterodactyl's allocation form). Throws on invalid input.
 export const parsePorts = (input: string): number[] => {
   const ports = new Set<number>();
   for (const raw of input.split(/[\s,]+/u)) {
@@ -34,8 +32,6 @@ export const parsePorts = (input: string): number[] => {
   return [...ports].toSorted((a, b) => a - b);
 };
 
-// Prefers a run of consecutive ports on one IP (many Steam games query
-// port+1), falling back to the lowest free ports.
 export const pickAllocations = (
   free: { id: string; ip: string; port: number }[],
   count: number

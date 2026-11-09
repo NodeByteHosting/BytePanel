@@ -27,7 +27,6 @@ export const GET = applicationHandler<{ externalId: string }>(
 
 const changePlanSchema = z.object({ planId: z.string().min(1) });
 
-// Upgrade/downgrade: applies the new plan's limits to the running server.
 export const PATCH = applicationHandler<{ externalId: string }>(
   async ({ params, request }) => {
     const body = await parseJson(request, changePlanSchema);
@@ -71,13 +70,10 @@ export const PATCH = applicationHandler<{ externalId: string }>(
   }
 );
 
-// Terminate: removes the server from its node. Forced, so a node that is
-// offline doesn't block the billing system's termination.
 export const DELETE = applicationHandler<{ externalId: string }>(
   async ({ params }) => {
     const server = await findExternalServer(params.externalId);
     if (!server) {
-      // Already gone — terminations are idempotent.
       return new NextResponse(null, { status: 204 });
     }
     await destroyServer(server.id, { force: true });

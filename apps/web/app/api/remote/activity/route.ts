@@ -1,4 +1,4 @@
-import { daemonActivityBatchSchema } from "@nodebyte/protocol";
+import { daemonActivityBatchSchema } from "@bytepanel/protocol";
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
@@ -35,7 +35,6 @@ const describe = (
   return event;
 };
 
-// User-attributed events captured by the daemon (websocket power / console).
 export const POST = remoteHandler(async ({ node, request }) => {
   const body = await parseJson(request, daemonActivityBatchSchema);
   if ("response" in body) {
@@ -53,7 +52,7 @@ export const POST = remoteHandler(async ({ node, request }) => {
     if (!serverId) {
       continue;
     }
-    // oxlint-disable-next-line no-await-in-loop -- sequential so per-server activity seq numbers follow batch order
+    // oxlint-disable-next-line no-await-in-loop
     await emitActivity({
       actorId: entry.userUuid ?? null,
       ip: entry.ip ?? null,

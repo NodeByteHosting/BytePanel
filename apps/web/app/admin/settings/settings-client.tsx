@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 
 import {
@@ -43,8 +42,6 @@ const Field = ({
   </div>
 );
 
-// ─── Branding ────────────────────────────────────────────────────────────────
-
 type BrandingValues = Required<BrandingInput>;
 
 export const BrandingForm = ({ initial }: { initial: BrandingValues }) => {
@@ -68,7 +65,6 @@ export const BrandingForm = ({ initial }: { initial: BrandingValues }) => {
       fileRef.current.value = "";
     }
     if (result?.ok) {
-      // The server picked the new versioned URL; reload to pick it up.
       window.location.reload();
     }
   };
@@ -79,7 +75,6 @@ export const BrandingForm = ({ initial }: { initial: BrandingValues }) => {
         <div className="flex items-center gap-4">
           <div className="bg-muted flex h-16 w-40 shrink-0 items-center justify-center rounded-lg p-2">
             {v.logoUrl ? (
-              // Admin-supplied URL, previewed as-is.
               // oxlint-disable-next-line nextjs/no-img-element
               <img
                 alt="Logo preview"
@@ -212,40 +207,7 @@ export const BrandingForm = ({ initial }: { initial: BrandingValues }) => {
   );
 };
 
-// ─── Billing ─────────────────────────────────────────────────────────────────
-
 type BillingValues = Required<BillingInput>;
-
-const MODES: {
-  value: BillingValues["billingMode"];
-  label: string;
-  description: string;
-}[] = [
-  {
-    description:
-      "Customers pick a plan and pay with Stripe Checkout inside the panel.",
-    label: "Sell on the panel",
-    value: "panel",
-  },
-  {
-    description:
-      "Orders, invoices and suspensions are handled in WHMCS through a provisioning module.",
-    label: "WHMCS",
-    value: "whmcs",
-  },
-  {
-    description:
-      "Orders, invoices and suspensions are handled in Blesta through a provisioning module.",
-    label: "Blesta",
-    value: "blesta",
-  },
-  {
-    description:
-      "Orders, invoices and suspensions are handled in Paymenter through a server extension.",
-    label: "Paymenter",
-    value: "paymenter",
-  },
-];
 
 export const BillingForm = ({
   apiBaseUrl,
@@ -259,59 +221,24 @@ export const BillingForm = ({
   const { pending, run } = useAction();
   const [v, setV] = useState(initial);
   const [newKey, setNewKey] = useState<string | null>(null);
-  const external = v.billingMode !== "panel";
-  const savedExternal = initial.billingMode !== "panel";
 
   return (
-    <Panel title="Billing">
+    <Panel title="BytePay">
       <PanelCard className="flex flex-col gap-4 p-4">
-        <RadioGroup
-          className="grid gap-2 md:grid-cols-2"
-          value={v.billingMode}
-          onValueChange={(value) =>
-            setV((prev) => ({
-              ...prev,
-              billingMode: value as BillingValues["billingMode"],
-            }))
-          }
+        <Field
+          hint="Customers are sent here from “New server” and “Billing” in the dashboard."
+          id="store-url"
+          label="Store URL"
         >
-          {MODES.map((mode) => (
-            <Label
-              className="border-border/60 has-data-[state=checked]:border-primary flex cursor-pointer items-start gap-3 rounded-lg border p-3 font-normal"
-              htmlFor={`billing-${mode.value}`}
-              key={mode.value}
-            >
-              <RadioGroupItem
-                className="mt-0.5"
-                id={`billing-${mode.value}`}
-                value={mode.value}
-              />
-              <span className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium">{mode.label}</span>
-                <span className="text-muted-foreground text-xs">
-                  {mode.description}
-                </span>
-              </span>
-            </Label>
-          ))}
-        </RadioGroup>
-
-        {external && (
-          <Field
-            hint="Customers are sent here from “New server” and “Billing” in the dashboard."
+          <Input
             id="store-url"
-            label="Store URL"
-          >
-            <Input
-              id="store-url"
-              placeholder="https://billing.example.com/store"
-              value={v.storeUrl}
-              onChange={(e) =>
-                setV((prev) => ({ ...prev, storeUrl: e.target.value }))
-              }
-            />
-          </Field>
-        )}
+            placeholder="https://billing.example.com/store"
+            value={v.storeUrl}
+            onChange={(e) =>
+              setV((prev) => ({ ...prev, storeUrl: e.target.value }))
+            }
+          />
+        </Field>
 
         <div className="flex justify-end">
           <Button
@@ -323,72 +250,70 @@ export const BillingForm = ({
         </div>
       </PanelCard>
 
-      {savedExternal && (
-        <PanelCard className="flex flex-col gap-4 p-4">
-          <div className="flex flex-col gap-1">
-            <h3 className="flex items-center gap-2 text-sm font-medium">
-              <KeyRoundIcon className="size-4" />
-              Provisioning API
-              {apiKeyHint ? (
-                <Badge variant="outline">
-                  <span className="font-mono">{apiKeyHint}…</span>
-                </Badge>
-              ) : (
-                <Badge variant="secondary">no key</Badge>
-              )}
-            </h3>
-            <p className="text-muted-foreground text-xs">
-              Your billing module creates, suspends, upgrades and terminates
-              servers through this API. Enter the URL and key in the module’s
-              server settings. Use plan and game IDs from{" "}
-              <code>GET /catalog</code> when configuring products.
-            </p>
-          </div>
-          <Field id="api-url" label="API URL">
-            <CopyBlock value={apiBaseUrl} />
-          </Field>
-          {newKey && (
-            <Field
-              hint="Copy it now — it won't be shown again."
-              id="api-key"
-              label="API key"
-            >
-              <CopyBlock secret value={newKey} />
-            </Field>
-          )}
-          <div className="flex flex-wrap justify-end gap-2">
-            {apiKeyHint && (
-              <Button
-                disabled={pending}
-                variant="ghost"
-                onClick={async () => {
-                  const result = await run(revokeApiKey, "API key revoked");
-                  if (result?.ok) {
-                    setNewKey(null);
-                  }
-                }}
-              >
-                Revoke key
-              </Button>
+      <PanelCard className="flex flex-col gap-4 p-4">
+        <div className="flex flex-col gap-1">
+          <h3 className="flex items-center gap-2 text-sm font-medium">
+            <KeyRoundIcon className="size-4" />
+            Billing API
+            {apiKeyHint ? (
+              <Badge variant="outline">
+                <span className="font-mono">{apiKeyHint}…</span>
+              </Badge>
+            ) : (
+              <Badge variant="secondary">no key</Badge>
             )}
+          </h3>
+          <p className="text-muted-foreground text-xs">
+            BytePay creates, suspends, upgrades and terminates servers through
+            this API. Enter the URL and key in the BytePanel server extension.
+            Use plan and game IDs from <code>GET /catalog</code> when
+            configuring products.
+          </p>
+        </div>
+        <Field id="api-url" label="API URL">
+          <CopyBlock value={apiBaseUrl} />
+        </Field>
+        {newKey && (
+          <Field
+            hint="Copy it now. It won't be shown again."
+            id="api-key"
+            label="API key"
+          >
+            <CopyBlock secret value={newKey} />
+          </Field>
+        )}
+        <div className="flex flex-wrap justify-end gap-2">
+          {apiKeyHint && (
             <Button
               disabled={pending}
-              variant={apiKeyHint ? "outline" : "default"}
+              variant="ghost"
               onClick={async () => {
-                const result = await run(
-                  generateApiKey,
-                  apiKeyHint ? "API key regenerated" : "API key created"
-                );
+                const result = await run(revokeApiKey, "API key revoked");
                 if (result?.ok) {
-                  setNewKey(result.data.key);
+                  setNewKey(null);
                 }
               }}
             >
-              {apiKeyHint ? "Regenerate key" : "Generate key"}
+              Revoke key
             </Button>
-          </div>
-        </PanelCard>
-      )}
+          )}
+          <Button
+            disabled={pending}
+            variant={apiKeyHint ? "outline" : "default"}
+            onClick={async () => {
+              const result = await run(
+                generateApiKey,
+                apiKeyHint ? "API key regenerated" : "API key created"
+              );
+              if (result?.ok) {
+                setNewKey(result.data.key);
+              }
+            }}
+          >
+            {apiKeyHint ? "Regenerate key" : "Generate key"}
+          </Button>
+        </div>
+      </PanelCard>
     </Panel>
   );
 };

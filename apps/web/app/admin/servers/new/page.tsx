@@ -18,7 +18,7 @@ const AdminNewServerPage = async () => {
     }),
     prisma.location.findMany({ orderBy: { short: "asc" } }),
     prisma.plan.findMany({
-      orderBy: [{ sort: "asc" }, { priceMonthCents: "asc" }],
+      orderBy: [{ sort: "asc" }, { name: "asc" }],
     }),
   ]);
 

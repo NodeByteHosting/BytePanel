@@ -35,8 +35,6 @@ interface PlanValues {
   io: number;
   backupLimit: number;
   allocationLimit: number;
-  priceMonthCents: number;
-  currency: string;
   locationId: string | null;
   active: boolean;
   sort: number;
@@ -47,14 +45,12 @@ const DEFAULT_PLAN: PlanValues = {
   allocationLimit: 2,
   backupLimit: 2,
   cpu: 200,
-  currency: "GBP",
   description: "",
   disk: 20_480,
   io: 500,
   locationId: null,
   memory: 4096,
   name: "",
-  priceMonthCents: 800,
   sort: 0,
   swap: 0,
 };
@@ -151,7 +147,6 @@ export const PlanDialog = ({
           {num("swap", "Swap (MiB)", "-1 = unlimited")}
           {num("backupLimit", "Backups")}
           {num("allocationLimit", "Ports")}
-          {num("priceMonthCents", "Price per month (pence)")}
           {num("sort", "Sort order")}
           <Label
             htmlFor="plan-active"

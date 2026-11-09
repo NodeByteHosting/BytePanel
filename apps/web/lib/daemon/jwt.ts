@@ -4,15 +4,13 @@ import { randomUUID } from "node:crypto";
 import {
   TRANSFER_TOKEN_TTL_SECONDS,
   WEBSOCKET_TOKEN_TTL_SECONDS,
-} from "@nodebyte/protocol";
-import type { FileTransferClaims, WebsocketClaims } from "@nodebyte/protocol";
+} from "@bytepanel/protocol";
+import type { FileTransferClaims, WebsocketClaims } from "@bytepanel/protocol";
 import type { Node } from "@prisma/client";
 import { SignJWT } from "jose";
 
 import { nodeToken } from "./tokens";
 
-// JWTs the browser presents directly to a daemon. Signed with the node's
-// token (HS256) and scoped to that node via the audience claim.
 const sign = (
   node: Pick<Node, "uuid" | "daemonToken">,
   claims: Record<string, unknown>,

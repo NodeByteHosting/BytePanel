@@ -3,7 +3,7 @@ type Level = "debug" | "info" | "warn" | "error";
 const LEVELS: Record<Level, number> = { debug: 10, error: 40, info: 20, warn: 30 };
 
 const threshold =
-  LEVELS[(process.env.NODEBYTE_LOG_LEVEL as Level | undefined) ?? "info"] ??
+  LEVELS[(process.env.BYTEPANEL_LOG_LEVEL as Level | undefined) ?? "info"] ??
   LEVELS.info;
 
 const write = (level: Level, scope: string, message: string, extra?: unknown) => {

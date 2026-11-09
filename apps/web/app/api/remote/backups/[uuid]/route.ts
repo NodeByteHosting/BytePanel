@@ -1,4 +1,4 @@
-import { backupStatusSchema } from "@nodebyte/protocol";
+import { backupStatusSchema } from "@bytepanel/protocol";
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
@@ -7,7 +7,6 @@ import { parseJson, remoteHandler } from "@/lib/remote/handler";
 
 export const runtime = "nodejs";
 
-// Daemon reports a finished (or failed) backup.
 export const POST = remoteHandler<{ uuid: string }>(
   async ({ node, params, request }) => {
     const backup = await prisma.backup.findFirst({

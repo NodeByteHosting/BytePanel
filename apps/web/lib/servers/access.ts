@@ -14,8 +14,6 @@ export interface ServerAccess {
   server: Server & { node: Node | null };
 }
 
-// For API routes / server actions: resolves the caller's role on a server and
-// returns null (→ 404) when they lack `minRole`, instead of redirecting.
 export const getServerAccess = async (
   serverId: string,
   minRole: ServerRole = "viewer"

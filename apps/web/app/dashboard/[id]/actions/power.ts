@@ -1,6 +1,6 @@
 "use server";
 
-import { POWER_ACTIONS } from "@nodebyte/protocol";
+import { POWER_ACTIONS } from "@bytepanel/protocol";
 import { headers } from "next/headers";
 import { z } from "zod";
 
@@ -17,8 +17,6 @@ export type PowerServerInput = z.infer<typeof inputSchema>;
 
 export type PowerServerResult = { ok: true } | { error: string; ok: false };
 
-// HTTP fallback for power actions (the console normally sends them over the
-// daemon websocket).
 export const sendPowerAction = async (
   input: PowerServerInput
 ): Promise<PowerServerResult> => {

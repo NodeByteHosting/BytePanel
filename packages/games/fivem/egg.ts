@@ -3,8 +3,6 @@ import { GB } from "../egg";
 import { fivem } from "./index";
 import { dockerImage } from "./install";
 
-// Shared by FiveM and RedM: both run FXServer from the yolks image, installed
-// by the same script as the Pterodactyl Cfx.re eggs.
 export const cfxInstallScript = (gameName: "gta5" | "rdr3") =>
   [
     "#!/bin/bash",
@@ -44,7 +42,6 @@ export const cfxInstallScript = (gameName: "gta5" | "rdr3") =>
     "echo 'Install complete'",
   ].join("\n");
 
-// Pterodactyl Cfx.re egg startup: musl loader → FXServer, txAdmin optional.
 export const cfxStartup = (licenseVar: string) =>
   [
     "$(pwd)/alpine/opt/cfx-server/ld-musl-x86_64.so.1",
@@ -122,7 +119,6 @@ export const cfxVariables = (input: {
 export const fivemEgg: EggDefinition = {
   configFiles: cfxConfigFiles,
   containerUser: "daemon",
-  // game (tcp+udp), txAdmin
   containerPorts: [0, 0],
   description: fivem.description,
   dockerImages: { Default: dockerImage },

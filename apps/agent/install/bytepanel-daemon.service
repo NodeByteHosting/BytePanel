@@ -1,0 +1,19 @@
+[Unit]
+Description=BytePanel Daemon
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+User=root
+WorkingDirectory=/etc/bytepanel
+LimitNOFILE=4096
+ExecStart=/usr/local/bin/bytepanel-daemon run
+Restart=on-failure
+StartLimitInterval=180
+StartLimitBurst=30
+RestartSec=5s
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

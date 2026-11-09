@@ -1,9 +1,8 @@
-import type { DaemonPermission } from "@nodebyte/protocol";
+import type { DaemonPermission } from "@bytepanel/protocol";
 
 import type { ServerRole } from "@/lib/server-roles";
 import { meetsMinServerRole } from "@/lib/server-roles";
 
-// Maps panel server roles onto the permissions embedded in daemon JWTs.
 export const daemonPermissionsFor = (
   role: ServerRole,
   isSystemAdmin: boolean

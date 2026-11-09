@@ -15,7 +15,7 @@ const AdminPlansPage = async () => {
         _count: { select: { servers: { where: { deletedAt: null } } } },
         location: true,
       },
-      orderBy: [{ sort: "asc" }, { priceMonthCents: "asc" }],
+      orderBy: [{ sort: "asc" }, { name: "asc" }],
     }),
     prisma.location.findMany({ orderBy: { short: "asc" } }),
   ]);
@@ -61,23 +61,18 @@ const AdminPlansPage = async () => {
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-sm">
-                    {(plan.priceMonthCents / 100).toFixed(2)} {plan.currency}/mo
-                  </span>
                   <PlanDialog
                     initial={{
                       active: plan.active,
                       allocationLimit: plan.allocationLimit,
                       backupLimit: plan.backupLimit,
                       cpu: plan.cpu,
-                      currency: plan.currency,
                       description: plan.description ?? "",
                       disk: plan.disk,
                       io: plan.io,
                       locationId: plan.locationId,
                       memory: plan.memory,
                       name: plan.name,
-                      priceMonthCents: plan.priceMonthCents,
                       sort: plan.sort,
                       swap: plan.swap,
                     }}

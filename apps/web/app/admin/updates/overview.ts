@@ -1,5 +1,5 @@
 import "server-only";
-import type { SystemInfo } from "@nodebyte/protocol";
+import type { SystemInfo } from "@bytepanel/protocol";
 import type { Node } from "@prisma/client";
 import { cache } from "react";
 
@@ -15,8 +15,6 @@ const fetchAgent = async (node: Node) => {
   }
 };
 
-// Panel + every node's agent against the latest GitHub releases. Cached per
-// request so the admin banner and the updates page share one round of calls.
 export const getUpdateOverview = cache(async () => {
   const [panelLatest, agentLatest, nodes] = await Promise.all([
     getLatestRelease("panel"),

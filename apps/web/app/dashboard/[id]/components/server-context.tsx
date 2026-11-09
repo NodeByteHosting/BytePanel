@@ -1,5 +1,5 @@
 "use client";
-import type { ServerStatus } from "@nodebyte/protocol";
+import type { ServerStatus } from "@bytepanel/protocol";
 import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 
@@ -28,7 +28,6 @@ export interface ServerView {
   description: string | null;
   status: ServerStatus | null;
   errorReason: string | null;
-  // Not yet placed on a node (awaiting payment / deployment, or a legacy VPS).
   deployed: boolean;
   game: {
     slug: string | null;
@@ -49,7 +48,6 @@ export interface ServerView {
     allocationLimit: number;
   };
   planName: string | null;
-  // Present when the viewer may manage files and the server is on a node.
   sftp: { host: string; port: number; username: string } | null;
   variables: VariableView[];
 }

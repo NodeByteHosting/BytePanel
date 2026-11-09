@@ -1,24 +1,22 @@
-# NodeByte Game Server Manager (GSM)
+# BytePanel
 
-NodeByte GSM is the web control plane for provisioning, configuring, and operating dedicated game servers.
+BytePanel is the web control plane for provisioning, configuring, and operating dedicated game servers.
 
 It includes:
 
 - Server lifecycle management and provisioning flows
-- Billing and subscription integration
-- Third-Party Provider integrations
-- Snapshot and automation workflows
-- Integration with the NodeByte Game Server Agent (GSA)
+- Billing through BytePay, using the panel's billing API
+- Integration with the BytePanel agent
 
 ## Architecture
 
 A [Turborepo](https://turbo.build) monorepo using Bun workspaces:
 
 - `apps/web`: The panel, with Next.js App Router pages, API routes and Prisma
-- `apps/agent`: The NodeByte Game Server Agent (GSA), which runs on server hosts
+- `apps/agent`: The BytePanel agent, which runs on server hosts
 - `packages/games`: Game recipes, settings and compose generators
 - `packages/protocol`: Schemas and constants shared by the panel and the agent
-- `images`: Docker images for games, runtimes, operating systems and installers, published to GHCR by the `images-*` workflows
+- `recipes`: Docker images for games, runtimes, operating systems and installers, published to GHCR by the `images-*` workflows
 
 ## Quick Start
 
@@ -27,6 +25,8 @@ Prerequisites:
 - Bun 1.3.13+
 - Node.js 24+
 - PostgreSQL
+- Redis
+- Any S3-compatible object storage, for avatars
 
 Setup:
 
@@ -36,6 +36,17 @@ cp apps/web/.env.example apps/web/.env.local
 bun run migrate
 bun run dev
 ```
+
+## Deployment
+
+The root `Dockerfile` builds the panel and runs `prisma migrate deploy` when the container starts. `docker-compose.yml` adds PostgreSQL and Redis:
+
+```bash
+cp apps/web/.env.example apps/web/.env
+POSTGRES_PASSWORD=change-me docker compose up -d --build
+```
+
+Set `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and the `S3_*` values in `apps/web/.env` first.
 
 ## Development Commands
 
@@ -66,4 +77,4 @@ Read `CONTRIBUTING.md` for contribution workflow and quality expectations.
 
 ## License
 
-AGPL-3.0-only.
+The panel, agent and packages are AGPL-3.0-only. Everything in `recipes` is MIT, as stated in `recipes/LICENSE`.

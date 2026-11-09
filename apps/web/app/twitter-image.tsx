@@ -1,7 +1,7 @@
 import { makePanelOGImage } from "./_og/image-generator";
 
 export const runtime = "nodejs";
-export const alt = "NodeByte Game Server Manager — GSM";
+export const alt = "BytePanel";
 export {
   OG_CONTENT_TYPE as contentType,
   OG_SIZE as size,

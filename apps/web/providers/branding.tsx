@@ -7,13 +7,12 @@ import type { Branding } from "@/lib/settings";
 
 const BrandingContext = createContext<Branding>({
   logoUrl: null,
-  panelName: "NodeByte",
+  panelName: "BytePanel",
   signUpEnabled: true,
   supportUrl: null,
   websiteUrl: null,
 });
 
-// Set once in the root layout from /admin/settings.
 export const BrandingProvider = ({
   branding,
   children,

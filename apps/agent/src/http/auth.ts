@@ -19,8 +19,6 @@ export const checkBearer = (req: Request, config: Config): boolean => {
 
 export class TokenError extends Error {}
 
-// Verifies a panel-issued HS256 JWT (signed with this node's token, audience
-// = node uuid) and validates its custom claims with `parse`.
 export const verifyPanelJwt = async <T>(
   token: string,
   config: Config,

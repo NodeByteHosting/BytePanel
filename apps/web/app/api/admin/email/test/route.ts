@@ -11,7 +11,6 @@ const schema = z.object({
   to: z.string().email(),
 });
 
-// POST /api/admin/email/test
 export const POST = async (req: Request) => {
   const actor = await requireAdmin();
   const actorId = (actor as { id?: string }).id ?? null;

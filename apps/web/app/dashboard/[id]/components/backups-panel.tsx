@@ -98,11 +98,10 @@ export const BackupsPanel = ({ serverId }: { serverId: string }) => {
   }, [base]);
 
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
+    // oxlint-disable-next-line react/set-state-in-effect
     void load();
   }, [load]);
 
-  // Poll while a backup is still running.
   const pending = backups?.some((b) => !b.completedAt) ?? false;
   useEffect(() => {
     if (!pending) {

@@ -29,8 +29,6 @@ describe("encryptSecret/decryptSecret", () => {
   test("rejects ciphertext whose auth tag has been tampered", () => {
     const encrypted = encryptSecret("payload");
     const buf = Buffer.from(encrypted, "base64");
-    // Replace a byte inside the auth-tag region (offset 12..28) so GCM
-    // authentication fails on decrypt.
     buf[15] = (buf[15] + 1) % 256;
     const tampered = buf.toString("base64");
     expect(() => decryptSecret(tampered)).toThrow();

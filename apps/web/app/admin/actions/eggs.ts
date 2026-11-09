@@ -81,7 +81,6 @@ export const deleteNest = async (id: string): Promise<ActionResult> => {
   return { ok: true };
 };
 
-// Imports a Pterodactyl egg export (PTDL JSON). With `eggId`, updates that egg.
 export const importEgg = async (input: {
   nestId: string;
   json: string;
@@ -191,7 +190,7 @@ export const saveEggVariables = async (
       where: { eggId, envVariable: { notIn: envs } },
     });
     for (const [index, v] of parsed.data.entries()) {
-      // oxlint-disable-next-line no-await-in-loop -- interactive transaction queries must run one at a time
+      // oxlint-disable-next-line no-await-in-loop
       await tx.eggVariable.upsert({
         create: { eggId, id: ulid(), sort: index, ...v },
         update: { sort: index, ...v },

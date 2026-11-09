@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-// [primary, accent] colors per theme — used for preview swatches
 const THEME_COLORS: Record<string, [string, string]> = {
   amber: ["oklch(0.46 0.18 60)", "oklch(0.52 0.16 50)"],
   "catppuccin-frappe": ["#8caaee", "#ca9ee6"],
@@ -105,7 +104,6 @@ const THEME_GROUPS = [
   },
 ] as const;
 
-/** Two-dot color pill previewing a theme's primary + accent colors */
 const ThemeSwatch = ({ value }: { value: string }) => {
   const colors = THEME_COLORS[value];
   if (!colors) {
@@ -120,7 +118,6 @@ const ThemeSwatch = ({ value }: { value: string }) => {
   );
 };
 
-/** Split half-light / half-dark circle for the system theme */
 const SystemSwatch = () => (
   <span
     className="size-3.5 shrink-0 overflow-hidden rounded-full border border-white/10"
@@ -131,10 +128,7 @@ const SystemSwatch = () => (
   />
 );
 
-// The theme is only known on the client: false during SSR/hydration, then true.
-const subscribeNoop = () => () => {
-  // Nothing to unsubscribe: mounted never changes after hydration.
-};
+const subscribeNoop = () => () => false;
 const useMounted = () =>
   useSyncExternalStore(
     subscribeNoop,
@@ -194,7 +188,6 @@ export const ModeToggle = () => {
                     active && "bg-accent/20 text-foreground font-medium"
                   )}
                 >
-                  {/* Left: icon or color swatch */}
                   {value === "system" && <SystemSwatch />}
                   {value !== "system" && Icon && (
                     <Icon className="text-muted-foreground size-3.5 shrink-0" />
@@ -203,7 +196,6 @@ export const ModeToggle = () => {
 
                   <span className="flex-1 truncate text-sm">{label}</span>
 
-                  {/* Right: checkmark when active */}
                   {active && (
                     <CheckIcon className="text-foreground size-3.5 shrink-0" />
                   )}

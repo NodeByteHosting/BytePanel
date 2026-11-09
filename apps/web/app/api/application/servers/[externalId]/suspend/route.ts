@@ -13,7 +13,6 @@ import { setSuspended } from "@/lib/servers/service";
 
 export const runtime = "nodejs";
 
-// POST suspends (overdue invoice); DELETE lifts the suspension once paid.
 const toggle = (suspended: boolean) =>
   applicationHandler<{ externalId: string }>(async ({ params }) => {
     const server = await findExternalServer(params.externalId);

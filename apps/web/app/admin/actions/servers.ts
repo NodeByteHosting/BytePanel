@@ -75,8 +75,6 @@ const createSchema = z.object({
 
 export type AdminCreateServerInput = z.input<typeof createSchema>;
 
-// Admin-created servers are placed and installed immediately (no billing),
-// like creating a server in Pterodactyl's admin area.
 export const adminCreateServer = async (
   input: AdminCreateServerInput
 ): Promise<ActionResult<{ id: string }>> => {
@@ -119,7 +117,6 @@ export const adminCreateServer = async (
   return { data: { id }, ok: true };
 };
 
-// Retry placement for a server whose deployment failed or is still pending.
 export const adminDeployServer = async (
   serverId: string,
   nodeId?: string
@@ -179,7 +176,6 @@ export const adminSetSuspended = async (
   try {
     await setSuspended(serverId, suspended);
   } catch (error) {
-    // The panel-side status is already updated; the node applies it on next sync.
     if (!(error instanceof DaemonError)) {
       throw error;
     }

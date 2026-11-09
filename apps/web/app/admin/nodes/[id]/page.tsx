@@ -1,4 +1,4 @@
-import type { SystemInfo } from "@nodebyte/protocol";
+import type { SystemInfo } from "@bytepanel/protocol";
 import type { Node } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -65,7 +65,7 @@ const AdminNodePage = async ({
 
   const system = await fetchSystem(node);
   const config = buildNodeDaemonConfig(node);
-  const configureCommand = `nodebyte-daemon configure --panel ${API_URL} --token ${node.daemonTokenId}.${config.token}`;
+  const configureCommand = `bytepanel-daemon configure --panel ${API_URL} --token ${node.daemonTokenId}.${config.token}`;
   const info: SystemInfo | null = system.ok ? system.info : null;
   const agentStatus = info ? await fetchAgentStatus(info) : null;
 
@@ -132,15 +132,15 @@ const AdminNodePage = async ({
             <PanelCard className="flex flex-col gap-3 text-sm">
               <ol className="ml-4 list-decimal space-y-1.5">
                 <li>
-                  Install Docker on the node and open the daemon port (
-                  {node.daemonListen}), the SFTP port ({node.daemonSftp}) and
+                  Install Docker and unzip on the node and open the daemon port
+                  ({node.daemonListen}), the SFTP port ({node.daemonSftp}) and
                   your allocation ports.
                 </li>
                 <li>
-                  Build the daemon with <code>bun run agent:build</code> and
-                  copy <code>dist/nodebyte-daemon</code> to{" "}
+                  Build the daemon with <code>bun run build:agent</code> and
+                  copy <code>apps/agent/dist/bytepanel-daemon</code> to{" "}
                   <code>/usr/local/bin/</code>, with{" "}
-                  <code>agent/install/nodebyte-daemon.service</code> in{" "}
+                  <code>apps/agent/install/bytepanel-daemon.service</code> in{" "}
                   <code>/etc/systemd/system/</code>.
                 </li>
                 <li>
@@ -152,11 +152,11 @@ const AdminNodePage = async ({
               </ol>
               <CopyBlock
                 secret
-                value={`${configureCommand}\nsystemctl enable --now nodebyte-daemon`}
+                value={`${configureCommand}\nsystemctl enable --now bytepanel-daemon`}
               />
               <details>
                 <summary className="text-muted-foreground cursor-pointer">
-                  Or write /etc/nodebyte/daemon.json by hand
+                  Or write /etc/bytepanel/daemon.json by hand
                 </summary>
                 <CopyBlock secret value={JSON.stringify(config, null, 2)} />
               </details>

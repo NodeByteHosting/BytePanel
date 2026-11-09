@@ -1,10 +1,10 @@
 "use client";
-import { WS_EVENTS } from "@nodebyte/protocol";
+import { WS_EVENTS } from "@bytepanel/protocol";
 import type {
   PowerAction,
   PowerState,
   ResourceUsage,
-} from "@nodebyte/protocol";
+} from "@bytepanel/protocol";
 import {
   createContext,
   useCallback,
@@ -27,10 +27,8 @@ type SocketStatus = "connecting" | "connected" | "disconnected" | "unavailable";
 interface DaemonSocketValue {
   status: SocketStatus;
   error: string | null;
-  // Live power state from the daemon; "installing" while an install runs.
   state: PowerState | "installing" | null;
   stats: ResourceUsage | null;
-  // Rolling history of CPU / memory samples for the graphs tab.
   history: { t: number; cpu: number; memory: number; rx: number; tx: number }[];
   lines: ConsoleLine[];
   sendCommand: (command: string) => void;
@@ -51,9 +49,6 @@ export const useDaemonSocket = () => {
 const MAX_LINES = 1000;
 const MAX_HISTORY = 120;
 
-// One websocket per server page, shared by the header, console and graphs
-// (Pterodactyl's model). The panel issues a short-lived JWT; we refresh it
-// before expiry and reconnect with backoff.
 export const DaemonSocketProvider = ({
   serverId,
   enabled,
@@ -95,7 +90,6 @@ export const DaemonSocketProvider = ({
     }
   }, []);
 
-  // Live stats sample → current usage + rolling history (with network rates).
   const recordStats = useCallback((raw: string) => {
     let usage: ResourceUsage;
     try {
@@ -126,7 +120,6 @@ export const DaemonSocketProvider = ({
     }
   }, []);
 
-  // Events that don't depend on the connection lifecycle.
   const handleEvent = useCallback(
     (event: string, arg: string) => {
       switch (event) {
@@ -137,7 +130,7 @@ export const DaemonSocketProvider = ({
         case WS_EVENTS.CONSOLE_OUTPUT: {
           pushLines(
             [arg],
-            arg.includes("[NodeByte Daemon]") ? "daemon" : "console"
+            arg.includes("[BytePanel Daemon]") ? "daemon" : "console"
           );
           break;
         }
@@ -208,8 +201,6 @@ export const DaemonSocketProvider = ({
       }
     };
 
-    // Assigned below; declared first because connect and scheduleRetry
-    // reference each other.
     let connect: () => Promise<void> = () => Promise.resolve();
 
     const scheduleRetry = () => {
@@ -305,7 +296,6 @@ export const DaemonSocketProvider = ({
       setPower: (action) => send(WS_EVENTS.SET_STATE, [action]),
       state,
       stats,
-      // Derived rather than set from the effect: a disabled socket never connects.
       status: enabled ? status : "unavailable",
     }),
     [enabled, error, history, lines, send, state, stats, status]

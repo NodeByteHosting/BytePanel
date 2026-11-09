@@ -1,13 +1,11 @@
 "use client";
 
-import { DollarSign, Server, TrendingUp, Users, Loader2 } from "lucide-react";
+import { Server, TrendingUp, Users, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
   AreaChart,
   Area,
   PieChart,
@@ -89,16 +87,13 @@ const ChartSkeleton = () => (
 );
 
 interface AnalyticsData {
-  mrr: number;
   activeServers: number;
   totalServers: number;
   serverUptime: number;
   newUsersThisMonth: number;
-  revenueTrend: { date: string; revenue: number }[];
   serversByGame: { game: string; count: number }[];
   serverStatus: { status: string; count: number }[];
   signupsTrend: { date: string; signups: number }[];
-  subscriptionStatus: { status: string; count: number }[];
 }
 
 const tooltipStyle = {
@@ -114,20 +109,7 @@ const KPICards = ({
   isLoading: boolean;
   data: AnalyticsData | null;
 }) => (
-  <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-    <StatCard
-      title="Monthly Recurring Revenue"
-      value={
-        isLoading
-          ? "..."
-          : `£${(data?.mrr || 0).toLocaleString("en-GB", {
-              maximumFractionDigits: 2,
-              minimumFractionDigits: 2,
-            })}`
-      }
-      icon={DollarSign}
-      isLoading={isLoading}
-    />
+  <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
     <StatCard
       title="Active Servers"
       value={
@@ -162,57 +144,6 @@ const ChartsGrid = ({
   data: AnalyticsData | null;
 }) => (
   <div className="grid gap-6 lg:grid-cols-2">
-    {/* Revenue Trend */}
-    <Card>
-      <CardHeader>
-        <CardTitle>Revenue Trend</CardTitle>
-        <CardDescription>
-          Daily revenue over the selected period
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <ChartSkeleton />
-        ) : (
-          <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data?.revenueTrend || []}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="date"
-                  style={{ fontSize: "0.875rem" }}
-                  tickFormatter={(date: string) => {
-                    const d = new Date(date);
-                    return `${d.getMonth() + 1}/${d.getDate()}`;
-                  }}
-                />
-                <YAxis style={{ fontSize: "0.875rem" }} />
-                <Tooltip
-                  formatter={(value: unknown) =>
-                    `£${Number(value ?? 0).toFixed(2)}`
-                  }
-                  labelFormatter={(date: unknown) =>
-                    new Date(String(date)).toLocaleDateString()
-                  }
-                  contentStyle={tooltipStyle}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#3b82f6"
-                  dot={false}
-                  strokeWidth={2}
-                  name="Revenue"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-
-    {/* Server Count by Game */}
     <Card>
       <CardHeader>
         <CardTitle>Server Count by Game</CardTitle>
@@ -243,7 +174,6 @@ const ChartsGrid = ({
       </CardContent>
     </Card>
 
-    {/* Server Status Breakdown */}
     <Card>
       <CardHeader>
         <CardTitle>Server Status Breakdown</CardTitle>
@@ -284,7 +214,6 @@ const ChartsGrid = ({
       </CardContent>
     </Card>
 
-    {/* New Signups Trend */}
     <Card>
       <CardHeader>
         <CardTitle>New Signups Trend</CardTitle>
@@ -328,47 +257,6 @@ const ChartsGrid = ({
                   name="Signups"
                 />
               </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-
-    {/* Subscription Status Distribution */}
-    <Card className="lg:col-span-2">
-      <CardHeader>
-        <CardTitle>Subscription Status Distribution</CardTitle>
-        <CardDescription>Active vs inactive subscriptions</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <ChartSkeleton />
-        ) : (
-          <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data?.subscriptionStatus || []}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={2}
-                  dataKey="count"
-                  label={(entry: unknown) => {
-                    const itemData = entry as Record<string, unknown>;
-                    return String(itemData.status ?? "");
-                  }}
-                >
-                  {(data?.subscriptionStatus || []).map((_, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} />
-              </PieChart>
             </ResponsiveContainer>
           </div>
         )}

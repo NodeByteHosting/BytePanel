@@ -2,8 +2,6 @@
 
 import { useRef, useEffect, useState } from "react";
 
-// ─── Config ───────────────────────────────────────────────────────────────────
-
 const SIZE = 420;
 const R = 155;
 const TILT = -0.32;
@@ -15,8 +13,6 @@ const CX = SIZE / 2;
 const CY = SIZE / 2;
 const cT = Math.cos(TILT);
 const sT = Math.sin(TILT);
-
-// ─── Locations ────────────────────────────────────────────────────────────────
 
 type Region = "eu" | "am" | "ap";
 
@@ -59,8 +55,6 @@ const CONNECTIONS = [
   { a: "fal", b: "waw", phase: 0.5, speed: 0.35 },
 ];
 
-// ─── Projection ───────────────────────────────────────────────────────────────
-
 const proj = (lat: number, lon: number, rot: number, r = R) => {
   const phi = lat * 0.017453;
   const lam = lon * 0.017453 + rot;
@@ -76,8 +70,6 @@ const proj = (lat: number, lon: number, rot: number, r = R) => {
     z: r * (y * sT + z * cT),
   };
 };
-
-// ─── Great-circle slerp ───────────────────────────────────────────────────────
 
 const gcPath = (
   lat1: number,
@@ -132,8 +124,6 @@ const ARC_PATHS = CONNECTIONS.map((c) => {
   return gcPath(a.lat, a.lon, b.lat, b.lon, 50);
 });
 
-// ─── Theme colours ────────────────────────────────────────────────────────────
-
 const cssHex = (v: string, el: HTMLElement): string => {
   el.style.color = `var(${v})`;
   const m = getComputedStyle(el).color.match(/\d+/gu);
@@ -173,8 +163,6 @@ const useThemeColors = () => {
   return colors;
 };
 
-// ─── Colour helpers ───────────────────────────────────────────────────────────
-
 const regCol = (region: Region, accent: string) => {
   if (region === "eu") {
     return accent;
@@ -184,8 +172,6 @@ const regCol = (region: Region, accent: string) => {
 
 const rgba = (hex: string, a: number) =>
   `rgba(${Number.parseInt(hex.slice(1, 3), 16)},${Number.parseInt(hex.slice(3, 5), 16)},${Number.parseInt(hex.slice(5, 7), 16)},${a})`;
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 const HeroGraphic = () => {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -216,7 +202,6 @@ const HeroGraphic = () => {
       const rot = sec * ROT_SPEED;
       ctx.clearRect(0, 0, SIZE, SIZE);
 
-      /* background glow */
       const bg = ctx.createRadialGradient(CX, CY, R * 0.05, CX, CY, R * 1.35);
       bg.addColorStop(0, rgba(accent, 0.07));
       bg.addColorStop(0.55, rgba(accent, 0.025));
@@ -226,14 +211,12 @@ const HeroGraphic = () => {
       ctx.arc(CX, CY, R * 1.35, 0, 6.2832);
       ctx.fill();
 
-      /* globe edge ring */
       ctx.beginPath();
       ctx.arc(CX, CY, R + 0.5, 0, 6.2832);
       ctx.strokeStyle = rgba(accent, 0.1);
       ctx.lineWidth = 0.8;
       ctx.stroke();
 
-      /* dot grid */
       for (let lat = -85; lat <= 85; lat += DOT_DEG) {
         const step = DOT_DEG / Math.max(Math.cos(lat * 0.017453), 0.28);
         for (let lon = 0; lon < 360; lon += step) {
@@ -247,7 +230,6 @@ const HeroGraphic = () => {
         }
       }
 
-      /* arcs + packets */
       ctx.save();
       for (let ci = 0; ci < CONNECTIONS.length; ci += 1) {
         const conn = CONNECTIONS[ci];
@@ -288,7 +270,6 @@ const HeroGraphic = () => {
       }
       ctx.restore();
 
-      /* PoP markers */
       for (const pop of POPS) {
         const { x, y, z } = proj(pop.lat, pop.lon, rot, R * 1.004);
         if (z <= 0) {

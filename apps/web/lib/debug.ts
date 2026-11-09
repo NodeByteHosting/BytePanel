@@ -1,11 +1,8 @@
 import "server-only";
 import { env } from "@/lib/env";
 
-// With NODEBYTE_DEBUG set, describes an unexpected error so a server action can
-// return it to the UI (production builds otherwise redact thrown errors).
-// Returns null when debug mode is off, so callers fall back to rethrowing.
 export const debugErrorMessage = (error: unknown): string | null => {
-  if (!env.NODEBYTE_DEBUG) {
+  if (!env.BYTEPANEL_DEBUG) {
     return null;
   }
   console.error("[debug] Unexpected action error:", error);

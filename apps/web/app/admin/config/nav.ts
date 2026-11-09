@@ -36,12 +36,6 @@ export const ADMIN_NAV_ITEMS = [
     label: "Plans",
   },
   {
-    href: "/admin/subscriptions",
-    icon: "DollarSign",
-    label: "Subscriptions",
-    superAdminOnly: true,
-  },
-  {
     href: "/admin/audit",
     icon: "ScrollText",
     label: "Audit Log",

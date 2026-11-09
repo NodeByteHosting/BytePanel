@@ -2,7 +2,6 @@
 import { ConnectPanel } from "../components/connect-panel";
 import { useServer } from "../components/server-context";
 
-// Join password = a password-like variable that isn't for remote admin.
 const JOIN_PASSWORD = /pass(?:word)?$|_pw$/iu;
 const ADMIN_PASSWORD = /rcon|admin/iu;
 

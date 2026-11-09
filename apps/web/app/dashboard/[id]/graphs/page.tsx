@@ -87,8 +87,6 @@ const LiveChart = ({
   </Panel>
 );
 
-// Live resource graphs fed by the daemon websocket (last ~2 minutes),
-// like Pterodactyl's console graphs.
 const GraphsTab = () => {
   const { server } = useServer();
   const { history, state } = useDaemonSocket();

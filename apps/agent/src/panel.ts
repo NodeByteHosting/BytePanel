@@ -5,7 +5,7 @@ import {
   serverConfigurationPageSchema,
   serverConfigurationSchema,
   sftpAuthResponseSchema,
-} from "@nodebyte/protocol";
+} from "@bytepanel/protocol";
 import type {
   BackupStatus,
   DaemonActivity,
@@ -14,7 +14,7 @@ import type {
   ServerConfiguration,
   SftpAuthRequest,
   SftpAuthResponse,
-} from "@nodebyte/protocol";
+} from "@bytepanel/protocol";
 import type { Config } from "./config";
 import { logger } from "./log";
 
@@ -29,8 +29,6 @@ export class PanelError extends Error {
   }
 }
 
-// Client for the panel's /api/remote/* endpoints, authenticated with the
-// node's `tokenId.token` pair.
 export class PanelClient {
   constructor(private readonly config: Config) {}
 
@@ -50,7 +48,7 @@ export class PanelClient {
             accept: "application/json",
             authorization: `Bearer ${this.config.tokenId}.${this.config.token}`,
             "content-type": "application/json",
-            "user-agent": "nodebyte-daemon",
+            "user-agent": "bytepanel-daemon",
           },
           method,
           signal: AbortSignal.timeout(30_000),
@@ -64,7 +62,6 @@ export class PanelClient {
             `${method} ${path} -> ${res.status}: ${text.slice(0, 200)}`,
             res.status,
           );
-          // 4xx won't get better by retrying.
           if (res.status < 500) {
             throw error;
           }
@@ -130,7 +127,6 @@ export class PanelClient {
     );
   }
 
-  // Throws PanelError (403/429) when the login is refused.
   async validateSftpCredentials(input: SftpAuthRequest): Promise<SftpAuthResponse> {
     return sftpAuthResponseSchema.parse(
       await this.request("POST", "/api/remote/sftp/auth", input, 1),
@@ -145,8 +141,6 @@ export class PanelClient {
   }
 }
 
-// Buffers user-attributed events (websocket power actions, console commands)
-// and ships them to the panel in batches.
 export class ActivityBuffer {
   private queue: DaemonActivity[] = [];
 

@@ -7,8 +7,6 @@ import { cn } from "@/lib/utils";
 
 import type { ConsoleLine } from "./daemon-socket";
 
-// Some upstream log producers emit ANSI in caret notation (`^[[0m`) rather than
-// the raw ESC byte. Convert it back so anser can parse it.
 const CARET_CSI = /\^\[\[(?<params>[0-9;]*)(?<cmd>[a-zA-Z])/gu;
 const normalizeAnsi = (text: string) =>
   text.replaceAll(CARET_CSI, "\u001B[$<params>$<cmd>");

@@ -6,13 +6,10 @@ import { DaemonError } from "@/lib/daemon/client";
 import { prisma } from "@/lib/db";
 import { API_URL } from "@/lib/env";
 import { ServiceError } from "@/lib/servers/service";
-import { readPanelSettings, verifyBillingApiKey } from "@/lib/settings";
+import { verifyBillingApiKey } from "@/lib/settings";
 
 export { parseJson } from "@/lib/remote/handler";
 
-// Wraps /api/application/* handlers, which external billing modules (WHMCS,
-// Blesta, Paymenter) call with `Authorization: Bearer <key>` from
-// /admin/settings. Maps service errors to JSON responses.
 export const applicationHandler =
   <P extends Record<string, string>>(
     handler: (ctx: { request: Request; params: P }) => Promise<Response>
@@ -23,8 +20,7 @@ export const applicationHandler =
     if (!key || !(await verifyBillingApiKey(key))) {
       return NextResponse.json(
         {
-          error:
-            "Invalid API key, or external billing is not enabled in /admin/settings",
+          error: "Invalid API key",
         },
         { status: 401 }
       );
@@ -54,7 +50,6 @@ export const serializeServer = (server: Server) => ({
   id: server.id,
   name: server.name,
   planId: server.planId,
-  // null in the database means installed and ready.
   status: server.status ?? "installed",
   suspended: server.status === "suspended",
   url: `${API_URL}/dashboard/${server.id}`,
@@ -62,8 +57,4 @@ export const serializeServer = (server: Server) => ({
   uuid: server.uuid,
 });
 
-// Audit-log actor for calls made by the billing module, e.g. "billing:whmcs".
-export const billingActor = async () => {
-  const { billingMode } = await readPanelSettings();
-  return `billing:${billingMode}`;
-};
+export const billingActor = () => Promise.resolve("billing:bytepay");

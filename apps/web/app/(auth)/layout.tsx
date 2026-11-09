@@ -23,9 +23,7 @@ const AuthLayout = async ({ children }: { children: ReactNode }) => {
 
   return (
     <main className="bg-background relative flex min-h-screen items-center justify-center overflow-hidden px-6">
-      {/* Background gradient */}
       <div className="from-primary/5 via-background to-background absolute inset-0 bg-linear-to-b" />
-      {/* Animated orbs */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="bg-primary/10 absolute top-1/4 left-1/4 h-125 w-125 animate-pulse rounded-full blur-[120px]" />
         <div
@@ -33,7 +31,6 @@ const AuthLayout = async ({ children }: { children: ReactNode }) => {
           style={{ animationDelay: "1s" }}
         />
       </div>
-      {/* Grid overlay */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] mask-[radial-gradient(ellipse_60%_60%_at_50%_50%,black_40%,transparent_100%)] bg-size-[64px_64px]" />
       <div className="relative z-10 w-full max-w-sm space-y-6">{children}</div>
     </main>

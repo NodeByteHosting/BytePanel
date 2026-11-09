@@ -93,7 +93,6 @@ const validateRecipeShape = (gameDir, recipeIndexSource) => {
     /\bname\s*:/u,
     /\bdescription\s*:/u,
     /\benabled\s*:/u,
-    /\bbuildCompose\b/u,
     /\bdockerImage\b/u,
     /\bports\s*:/u,
     /\brequirements\s*:/u,
@@ -112,13 +111,8 @@ const validateRecipeShape = (gameDir, recipeIndexSource) => {
 const main = () => {
   const rootIndexPath = join(ROOT, "index.ts");
   const rootSettingsPath = join(ROOT, "settings.ts");
-  const rootComposePath = join(ROOT, "compose.ts");
 
-  for (const requiredRootFile of [
-    rootIndexPath,
-    rootSettingsPath,
-    rootComposePath,
-  ]) {
+  for (const requiredRootFile of [rootIndexPath, rootSettingsPath]) {
     if (!isFile(requiredRootFile)) {
       fail(`Missing required root file: ${requiredRootFile}`);
     }

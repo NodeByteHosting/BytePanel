@@ -7,8 +7,6 @@ const globalForRedis = globalThis as unknown as {
   redis: Redis | undefined;
 };
 
-// lazyConnect defers the TCP connection to the first command, so importing
-// this module during build or tests doesn't require a reachable server.
 const createClient = () =>
   new Redis(env.REDIS_URL, {
     lazyConnect: true,

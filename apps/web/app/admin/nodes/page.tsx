@@ -38,8 +38,8 @@ const AdminNodesPage = async () => {
             <PanelCard className="flex flex-col gap-1">
               {nodes.length === 0 && (
                 <p className="text-muted-foreground px-3 py-2 text-sm">
-                  No nodes yet. A node is a machine running the NodeByte daemon;
-                  many servers share one node.
+                  No nodes yet. A node is a machine running the BytePanel
+                  daemon; many servers share one node.
                 </p>
               )}
               {nodes.map((node) => {

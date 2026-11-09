@@ -1,4 +1,4 @@
-import { installStatusSchema } from "@nodebyte/protocol";
+import { installStatusSchema } from "@bytepanel/protocol";
 import { NextResponse } from "next/server";
 
 import {
@@ -32,7 +32,6 @@ export const GET = remoteHandler<{ uuid: string }>(async ({ node, params }) => {
   return NextResponse.json(buildInstallScript(server));
 });
 
-// Daemon reports the outcome of an install / reinstall.
 export const POST = remoteHandler<{ uuid: string }>(
   async ({ node, params, request }) => {
     const server = await findNodeServer(node, params.uuid);
@@ -57,7 +56,6 @@ export const POST = remoteHandler<{ uuid: string }>(
           ? null
           : "The install script exited with an error",
         installedAt: successful && firstInstall ? new Date() : undefined,
-        // An install never un-suspends a server.
         status: server.status === "suspended" ? "suspended" : status,
       },
       where: { id: server.id },
@@ -92,7 +90,6 @@ export const POST = remoteHandler<{ uuid: string }>(
               reason:
                 "The game install script failed. Our team has been notified.",
               serverName: server.name,
-              // Filled in from /admin/settings by sendMail.
               supportUrl: "{{supportUrl}}",
               toEmail: owner.email,
               userName: owner.name,

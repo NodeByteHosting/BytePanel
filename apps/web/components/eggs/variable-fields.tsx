@@ -25,8 +25,6 @@ const BOOLEAN_PAIRS: [string, string][] = [
   ["TRUE", "FALSE"],
 ];
 
-// Picks an input from the variable's validation rules: in:true,false → switch,
-// in:a,b,c → select, integer/numeric → number, otherwise text.
 const VariableInput = ({
   variable,
   value,

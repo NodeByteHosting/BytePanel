@@ -17,8 +17,6 @@ type Handler<P> = (ctx: {
   daemon: DaemonClient;
 }) => Promise<Response>;
 
-// /api/servers/[id]/* routes that talk to the server's daemon: checks the
-// caller's role, requires the server to be deployed and maps daemon errors.
 export const daemonRoute =
   <P extends { id: string } = { id: string }>(
     minRole: ServerRole,

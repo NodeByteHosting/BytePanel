@@ -1,6 +1,6 @@
-# Contributing to NodeByte GSM
+# Contributing to BytePanel
 
-Thanks for contributing to NodeByte Game Server Manager (GSM). This repository contains the web control plane plus shared platform logic for managing dedicated game servers.
+Thanks for contributing to BytePanel. This repository contains the web control plane plus shared platform logic for managing dedicated game servers.
 
 ## Ways to contribute
 

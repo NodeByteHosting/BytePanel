@@ -10,10 +10,9 @@ import { env } from "@/lib/env";
 
 const otelRegex = /@opentelemetry\/instrumentation/u;
 
-// Build-time version info, inlined for lib/version.ts.
 const readCommit = () => {
-  if (env.VERCEL_GIT_COMMIT_SHA) {
-    return env.VERCEL_GIT_COMMIT_SHA;
+  if (process.env.BYTEPANEL_COMMIT_SHA) {
+    return process.env.BYTEPANEL_COMMIT_SHA;
   }
   try {
     return execSync("git rev-parse HEAD", {
@@ -29,12 +28,12 @@ const { version } = JSON.parse(readFileSync("./package.json", "utf-8")) as {
   version: string;
 };
 
-const WORKSPACE_PACKAGES = ["@nodebyte/games", "@nodebyte/protocol"];
+const WORKSPACE_PACKAGES = ["@bytepanel/games", "@bytepanel/protocol"];
 
 const baseConfig: NextConfig = {
   env: {
-    NODEBYTE_COMMIT_SHA: readCommit(),
-    NODEBYTE_PANEL_VERSION: version,
+    BYTEPANEL_COMMIT_SHA: readCommit(),
+    BYTEPANEL_PANEL_VERSION: version,
   },
 
   images: {
@@ -50,23 +49,6 @@ const baseConfig: NextConfig = {
 
   outputFileTracingRoot: path.join(process.cwd(), "../.."),
 
-  rewrites() {
-    return Promise.resolve([
-      {
-        destination: "https://us-assets.i.posthog.com/static/:path*",
-        source: "/ingest/static/:path*",
-      },
-      {
-        destination: "https://us.i.posthog.com/:path*",
-        source: "/ingest/:path*",
-      },
-      {
-        destination: "https://us.i.posthog.com/decide",
-        source: "/ingest/decide",
-      },
-    ]);
-  },
-
   transpilePackages: WORKSPACE_PACKAGES,
 
   webpack(cfg) {
@@ -76,7 +58,7 @@ const baseConfig: NextConfig = {
 };
 
 const withSentry = (config: NextConfig): NextConfig =>
-  env.VERCEL
+  env.SENTRY_ORG && env.SENTRY_PROJECT
     ? withSentryConfig(
         {
           ...config,
@@ -85,10 +67,9 @@ const withSentry = (config: NextConfig): NextConfig =>
         {
           org: env.SENTRY_ORG,
           project: env.SENTRY_PROJECT,
-          silent: !env.CI,
+          silent: !process.env.CI,
           tunnelRoute: "/monitoring",
           webpack: {
-            automaticVercelMonitors: true,
             treeshake: {
               removeDebugLogging: true,
             },

@@ -7,8 +7,6 @@ import { daemonPermissionsFor } from "@/lib/servers/permissions";
 
 export const runtime = "nodejs";
 
-// Issues a short-lived JWT the browser presents to the node's websocket
-// (console, live stats, power). Same flow as Pterodactyl's /websocket endpoint.
 export const GET = async (
   _request: Request,
   context: { params: Promise<{ id: string }> }

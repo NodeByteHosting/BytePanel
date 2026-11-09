@@ -113,7 +113,6 @@ export const UsersTable = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Ban dialog state
   const [banTarget, setBanTarget] = useState<AdminUser | null>(null);
   const [banReason, setBanReason] = useState("");
   const [banning, setBanning] = useState(false);
@@ -138,7 +137,7 @@ export const UsersTable = () => {
   }, [page, search]);
 
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
+    // oxlint-disable-next-line react/set-state-in-effect
     void fetchUsers();
   }, [fetchUsers]);
 
@@ -153,7 +152,6 @@ export const UsersTable = () => {
       toast.error(json.error ?? "Action failed.");
       return false;
     }
-    // Refresh in place
     setData((prev) =>
       prev
         ? {
@@ -222,13 +220,11 @@ export const UsersTable = () => {
       return;
     }
     toast.success(`Now impersonating ${user.name ?? user.email}. Redirecting…`);
-    // Redirect to the dashboard — the impersonation cookie is now set
     window.location.href = "/dashboard";
   };
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Search */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-0 flex-1">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
@@ -257,7 +253,6 @@ export const UsersTable = () => {
         </Button>
       </div>
 
-      {/* Table */}
       <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
         {(loading || !data) && (
           <div className="divide-border/50 divide-y">
@@ -289,7 +284,6 @@ export const UsersTable = () => {
                   user.banned && "bg-red-500/5"
                 )}
               >
-                {/* Avatar */}
                 <Avatar className="size-8 shrink-0 rounded-lg">
                   {user.image && (
                     <AvatarImage
@@ -308,7 +302,6 @@ export const UsersTable = () => {
                   </AvatarFallback>
                 </Avatar>
 
-                {/* Name / email */}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                     <span className="truncate text-sm font-medium">
@@ -331,7 +324,6 @@ export const UsersTable = () => {
                   )}
                 </div>
 
-                {/* Stats — hidden on mobile */}
                 <div className="text-muted-foreground hidden shrink-0 items-center gap-4 text-xs sm:flex">
                   <span className="tabular-nums">
                     {user._count.servers}{" "}
@@ -340,7 +332,6 @@ export const UsersTable = () => {
                   <span>{new Date(user.createdAt).toLocaleDateString()}</span>
                 </div>
 
-                {/* Actions */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -419,7 +410,6 @@ export const UsersTable = () => {
         )}
       </div>
 
-      {/* Pagination */}
       {data && data.totalPages > 1 && (
         <div className="text-muted-foreground flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
           <span>
@@ -454,7 +444,6 @@ export const UsersTable = () => {
         </div>
       )}
 
-      {/* Ban dialog */}
       <Dialog open={!!banTarget} onOpenChange={(o) => !o && setBanTarget(null)}>
         <DialogContent>
           <DialogHeader>

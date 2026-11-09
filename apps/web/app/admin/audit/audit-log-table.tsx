@@ -111,13 +111,12 @@ export const AuditLogTable = () => {
   }, [page, search]);
 
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
+    // oxlint-disable-next-line react/set-state-in-effect
     void fetchLogs();
   }, [fetchLogs]);
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Search */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
@@ -145,7 +144,6 @@ export const AuditLogTable = () => {
         </Button>
       </div>
 
-      {/* Timeline */}
       <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
         {(loading || !data) && (
           <div className="divide-border/50 divide-y">
@@ -177,7 +175,6 @@ export const AuditLogTable = () => {
                   key={log.id}
                   className="hover:bg-muted/30 flex gap-4 px-5 py-4 transition-colors"
                 >
-                  {/* Left: coloured timeline dot + line */}
                   <div className="flex flex-col items-center gap-1 pt-1">
                     <div
                       className={cn("size-2 shrink-0 rounded-full", style.dot)}
@@ -185,11 +182,9 @@ export const AuditLogTable = () => {
                     <div className="bg-border/40 w-px flex-1" />
                   </div>
 
-                  {/* Content */}
                   <div className="min-w-0 flex-1 pb-1">
                     <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
                       <div className="min-w-0">
-                        {/* Action badge */}
                         <span
                           className={cn(
                             "inline-flex items-center rounded-md px-2 py-0.5 font-mono text-xs font-medium",
@@ -200,7 +195,6 @@ export const AuditLogTable = () => {
                           {fmtAction(log.action)}
                         </span>
 
-                        {/* Actor + target */}
                         <p className="text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5 text-xs">
                           <span>
                             by{" "}
@@ -226,7 +220,6 @@ export const AuditLogTable = () => {
                           )}
                         </p>
 
-                        {/* Metadata */}
                         {log.metadata &&
                           Object.keys(log.metadata).length > 0 && (
                             <p className="text-muted-foreground/60 mt-1 font-mono text-[11px] break-all">
@@ -235,7 +228,6 @@ export const AuditLogTable = () => {
                           )}
                       </div>
 
-                      {/* Timestamp */}
                       <time
                         className="text-muted-foreground/70 shrink-0 text-xs"
                         dateTime={log.createdAt}
@@ -251,7 +243,6 @@ export const AuditLogTable = () => {
         )}
       </div>
 
-      {/* Pagination */}
       {data && data.totalPages > 1 && (
         <div className="text-muted-foreground flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
           <span>

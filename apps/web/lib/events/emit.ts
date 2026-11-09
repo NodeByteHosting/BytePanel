@@ -1,5 +1,5 @@
 import "server-only";
-import { REDIS_KEYS } from "@nodebyte/protocol";
+import { REDIS_KEYS } from "@bytepanel/protocol";
 import { ulid } from "ulid";
 
 import { prisma } from "@/lib/db";
@@ -7,7 +7,6 @@ import { redis } from "@/lib/redis";
 
 export interface ActivityPayload {
   serverId: string;
-  // Dot/colon-namespaced event name, e.g. "server:power.start", "install".
   phase: string;
   message: string;
   metadata?: Record<string, unknown>;

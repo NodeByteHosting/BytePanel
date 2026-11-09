@@ -45,7 +45,7 @@ const AdminNestsPage = async () => {
           {nests.length === 0 && (
             <Panel>
               <PanelCard className="text-muted-foreground text-sm">
-                No eggs yet. Sync the built-in NodeByte games, or import
+                No eggs yet. Sync the built-in BytePanel games, or import
                 Pterodactyl eggs (PTDL JSON) into a nest.
               </PanelCard>
             </Panel>

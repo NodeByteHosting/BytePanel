@@ -1,7 +1,7 @@
 import type { ServerWebSocket } from "bun";
 
-import { websocketClaimsSchema, wsFrameSchema, WS_EVENTS } from "@nodebyte/protocol";
-import type { DaemonPermission, PowerAction, WebsocketClaims } from "@nodebyte/protocol";
+import { websocketClaimsSchema, wsFrameSchema, WS_EVENTS } from "@bytepanel/protocol";
+import type { DaemonPermission, PowerAction, WebsocketClaims } from "@bytepanel/protocol";
 import type { Config } from "../config";
 import { errorMessage, logger } from "../log";
 
@@ -25,7 +25,6 @@ const POWER_PERMISSION: Record<PowerAction, DaemonPermission> = {
   stop: "control.stop",
 };
 
-// Events only delivered to sockets holding the given permission.
 const GATED_EVENTS: Record<string, DaemonPermission> = {
   [WS_EVENTS.INSTALL_OUTPUT]: "admin.websocket.install",
   [WS_EVENTS.INSTALL_STARTED]: "admin.websocket.install",
@@ -184,7 +183,6 @@ export const websocketHandlers = (config: Config, activity: ActivityBuffer) => (
     }
   },
   open: (ws: ServerWebSocket<SocketData>) => {
-    // Client must send {"event":"auth","args":[token]} within 10s.
     setTimeout(() => {
       if (!ws.data.claims && ws.readyState === 1) {
         ws.close(4001, "authentication timeout");

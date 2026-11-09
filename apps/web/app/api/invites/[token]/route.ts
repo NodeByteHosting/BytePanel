@@ -4,7 +4,6 @@ import { ulid } from "ulid";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
-// POST /api/invites/[token] — accept a server invite
 export const POST = async (
   _req: Request,
   { params }: { params: Promise<{ token: string }> }
@@ -29,7 +28,6 @@ export const POST = async (
     return NextResponse.json({ error: "Invite has expired." }, { status: 410 });
   }
 
-  // Must match the invited email
   if (invite.email.toLowerCase() !== user.email.toLowerCase()) {
     return NextResponse.json(
       { error: "This invite is for a different email address." },
@@ -37,12 +35,10 @@ export const POST = async (
     );
   }
 
-  // Check they're not already a member
   const existing = await prisma.serverMember.findUnique({
     where: { serverId_userId: { serverId: invite.serverId, userId: user.id } },
   });
   if (existing) {
-    // Mark the invite as accepted anyway
     await prisma.serverInvite.update({
       data: { acceptedAt: new Date() },
       where: { id: invite.id },
@@ -50,7 +46,6 @@ export const POST = async (
     return NextResponse.json({ error: "Already a member." }, { status: 409 });
   }
 
-  // Add as member and mark invite accepted
   const [member] = await prisma.$transaction([
     prisma.serverMember.create({
       data: {

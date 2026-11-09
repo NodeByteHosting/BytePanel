@@ -12,7 +12,6 @@ const STATUS_FILTERS: Record<string, Prisma.ServerWhereInput> = {
   undeployed: { nodeId: null },
 };
 
-// GET /api/admin/servers?page=1&q=search&status=installed&node=<id>
 export const GET = async (req: Request) => {
   await requireAdmin();
 

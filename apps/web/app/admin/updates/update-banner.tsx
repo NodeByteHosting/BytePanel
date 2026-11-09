@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 
 import { getUpdateOverview } from "./overview";
 
-// Shown across the admin area when the panel or any node's agent is behind.
 export const UpdateBanner = async () => {
   const { agent, panel } = await getUpdateOverview();
   const outdatedNodes = agent.nodes.filter((n) => n.status === "outdated");

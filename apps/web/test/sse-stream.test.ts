@@ -19,7 +19,7 @@ const readChunks = async (
   const deadline = Date.now() + timeoutMs;
   let buffer = "";
   while (Date.now() < deadline) {
-    // oxlint-disable-next-line no-await-in-loop -- stream reads are inherently sequential
+    // oxlint-disable-next-line no-await-in-loop
     const { done, value } = await reader.read();
     if (done) {
       return buffer;
@@ -46,8 +46,6 @@ describe("createSseResponse", () => {
   });
 
   test("emits fetched events as named SSE messages and advances the cursor across polls", async () => {
-    // Each call returns the next event only if the cursor matches the expected
-    // value, proving the cursor is being passed forward between polls.
     const res = createSseResponse({
       eventName: "tick",
       fetchSince: (cursor) => {
@@ -85,9 +83,6 @@ describe("createSseResponse", () => {
   });
 
   test("drops queued writes after the consumer cancels mid-poll", async () => {
-    // fetchSince hangs until we resolve it. We cancel while it's pending so
-    // that, by the time the loop tries to write the queued events, the abort
-    // signal is already firing and the early-return guard in write() runs.
     const { promise: fetchPromise, resolve: resolveFetch } =
       Promise.withResolvers<{ event: unknown; seq: number }[]>();
     let fetchCalls = 0;
@@ -101,13 +96,8 @@ describe("createSseResponse", () => {
     });
 
     const reader = getReader(res);
-    // Kick off the start() body by starting a read. We don't await it here.
     const firstRead = reader.read();
-    // Give the loop a tick to enter fetchSince.
     await delay(10);
-    // Cancelling triggers the stream's cancel() callback, which aborts the
-    // controller. The pending fetch then resolves with events and the writer
-    // hits the aborted-signal early return.
     await reader.cancel();
     resolveFetch([
       { event: { ignored: true }, seq: 1 },

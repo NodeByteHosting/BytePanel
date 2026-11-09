@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
-import { rm, stat } from "node:fs/promises";
+import { rm, stat, statfs } from "node:fs/promises";
 import { join } from "node:path";
 
-import { WS_EVENTS } from "@nodebyte/protocol";
+import { WS_EVENTS } from "@bytepanel/protocol";
 import type { Config } from "../config";
 import { errorMessage, logger } from "../log";
 import type { PanelClient } from "../panel";
@@ -24,14 +24,12 @@ const sha1File = async (path: string): Promise<string> => {
 
 const runTar = async (args: string[]): Promise<void> => {
   const proc = Bun.spawn({ cmd: ["tar", ...args], stderr: "pipe", stdout: "ignore" });
-  const code = await proc.exited;
-  // GNU tar exits 1 when files changed while being read; the archive is still usable.
+  const [code, err] = await Promise.all([proc.exited, new Response(proc.stderr).text()]);
   if (code !== 0 && code !== 1) {
-    throw new Error((await new Response(proc.stderr).text()).trim().slice(0, 300));
+    throw new Error(err.trim().slice(0, 300));
   }
 };
 
-// Local backups stored on the node (Wings' "wings" adapter equivalent).
 export class Backups {
   constructor(
     private readonly node: Config,
@@ -46,6 +44,10 @@ export class Backups {
     void (async () => {
       const target = backupPath(this.node, backupUuid);
       try {
+        const disk = await statfs(this.node.system.backups);
+        if (disk.bavail * disk.bsize < (await server.fs.diskUsage(true))) {
+          throw new Error("not enough free space on the node for this backup");
+        }
         const excludes = ignore
           .split(/\r?\n/u)
           .map((line) => line.trim())
@@ -88,8 +90,7 @@ export class Backups {
           await rm(server.fs.root, { force: true, recursive: true });
           await server.fs.ensureRoot();
         }
-        await runTar(["--no-same-owner", "-xzf", archive, "-C", server.fs.root]);
-        await server.fs.chownRecursive();
+        await server.fs.restoreArchive(archive);
         successful = true;
         server.daemonMessage("Backup restored.");
       } catch (error) {

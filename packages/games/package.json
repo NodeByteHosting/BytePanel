@@ -1,8 +1,8 @@
 {
-  "name": "@nodebyte/games",
+  "name": "@bytepanel/games",
   "version": "0.1.0",
   "private": true,
-  "description": "Game server recipes for NodeByte GSM.",
+  "description": "Game server recipes for BytePanel.",
   "license": "AGPL-3.0-only",
   "type": "module",
   "exports": {

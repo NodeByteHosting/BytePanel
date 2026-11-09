@@ -3,13 +3,13 @@ import {
   daemonServerDetailsSchema,
   filesListResultSchema,
   systemInfoSchema,
-} from "@nodebyte/protocol";
+} from "@bytepanel/protocol";
 import type {
   DaemonServerDetails,
   FilesListResult,
   PowerAction,
   SystemInfo,
-} from "@nodebyte/protocol";
+} from "@bytepanel/protocol";
 import type { Node } from "@prisma/client";
 
 import { DaemonError } from "./errors";
@@ -28,7 +28,6 @@ const contentTypeHeader = (init: {
   return init.contentType ? { "content-type": init.contentType } : {};
 };
 
-// Panel → daemon HTTP client (one per node). Mirrors the Wings API surface.
 export class DaemonClient {
   private readonly base: string;
   private readonly token: string;
@@ -71,9 +70,7 @@ export class DaemonClient {
       let message = `Daemon responded ${res.status}`;
       try {
         message = ((await res.json()) as { error?: string }).error ?? message;
-      } catch {
-        // non-JSON error body
-      }
+      } catch {}
       throw new DaemonError(message, res.status);
     }
     return res;
@@ -136,8 +133,6 @@ export class DaemonClient {
     );
     return ((await res.json()) as { data: string[] }).data;
   }
-
-  // ─── files ─────────────────────────────────────────────────────────────────
 
   async listDirectory(
     uuid: string,
@@ -242,8 +237,6 @@ export class DaemonClient {
       timeoutMs: 10 * 60_000,
     });
   }
-
-  // ─── backups ───────────────────────────────────────────────────────────────
 
   async createBackup(
     uuid: string,

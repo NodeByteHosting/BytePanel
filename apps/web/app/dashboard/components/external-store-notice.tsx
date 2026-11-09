@@ -10,8 +10,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 
-// Shown in place of in-panel checkout/billing when an external billing system
-// (WHMCS, Blesta, Paymenter) sells the servers.
 export const ExternalStoreNotice = ({
   description,
   storeUrl,

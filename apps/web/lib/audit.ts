@@ -3,12 +3,7 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "./db";
 
-// ---------------------------------------------------------------------------
-// Dot-namespaced action codes
-// ---------------------------------------------------------------------------
-
 export type AuditAction =
-  // ── Account ─────────────────────────────────────────────────────────────
   | "account.signup"
   | "account.signin"
   | "account.signout"
@@ -16,7 +11,6 @@ export type AuditAction =
   | "account.email_changed"
   | "account.passkey_added"
   | "account.passkey_removed"
-  // ── Server ──────────────────────────────────────────────────────────────
   | "server.create"
   | "server.delete"
   | "server.start"
@@ -26,30 +20,18 @@ export type AuditAction =
   | "server.member_invited"
   | "server.member_removed"
   | "server.member_role_changed"
-  // ── Billing ─────────────────────────────────────────────────────────────
-  | "billing.subscription_created"
-  | "billing.subscription_canceled"
-  | "billing.plan_changed"
-  | "billing.promo_applied"
-  | "billing.subscription_suspended"
-  | "billing.subscription_unsuspended"
-  | "billing.invoice_paid"
-  | "billing.invoice_failed"
-  // ── Admin: user management ───────────────────────────────────────────────
   | "admin.user.ban"
   | "admin.user.unban"
   | "admin.user.set_role"
   | "admin.user.set_super_admin"
   | "admin.user.impersonate"
   | "admin.user.delete"
-  // ── Admin: server management ─────────────────────────────────────────────
   | "admin.server.create"
   | "admin.server.delete"
   | "admin.server.suspend"
   | "admin.server.unsuspend"
   | "admin.server.reinstall"
   | "admin.server.build_changed"
-  // ── Admin: infrastructure ────────────────────────────────────────────────
   | "admin.location.create"
   | "admin.location.delete"
   | "admin.node.create"
@@ -58,7 +40,6 @@ export type AuditAction =
   | "admin.node.delete"
   | "admin.allocation.create"
   | "admin.allocation.delete"
-  // ── Admin: nests / eggs / plans ──────────────────────────────────────────
   | "admin.nest.create"
   | "admin.nest.delete"
   | "admin.egg.sync"
@@ -68,22 +49,19 @@ export type AuditAction =
   | "admin.plan.create"
   | "admin.plan.update"
   | "admin.plan.delete"
-  // ── Admin: email ─────────────────────────────────────────────────────────
   | "admin.email.test_sent"
   | "admin.email.broadcast_sent"
-  // ── Admin: sessions ──────────────────────────────────────────────────────
   | "admin.session.revoked"
-  // ── Admin: panel settings ────────────────────────────────────────────────
   | "admin.settings.branding_changed"
   | "admin.settings.billing_changed"
   | "admin.settings.api_key_generated"
   | "admin.settings.api_key_revoked"
-  // ── Application API (external billing) ───────────────────────────────────
   | "application.user.create"
   | "application.server.create"
   | "application.server.suspend"
   | "application.server.unsuspend"
   | "application.server.change_plan"
+  | "application.server.login_link"
   | "application.server.terminate";
 
 export interface LogEventOptions {
@@ -97,10 +75,6 @@ export interface LogEventOptions {
   userAgent?: string | null;
 }
 
-/**
- * Write an audit log entry. Never throws — failures are logged to stderr so
- * they never break the calling request.
- */
 export const logEvent = async (opts: LogEventOptions): Promise<void> => {
   try {
     await prisma.auditLog.create({
@@ -122,14 +96,6 @@ export const logEvent = async (opts: LogEventOptions): Promise<void> => {
   }
 };
 
-// ---------------------------------------------------------------------------
-// Convenience helpers for extracting request context
-// ---------------------------------------------------------------------------
-
-/**
- * Pull the client IP from a Next.js Request object.
- * Respects x-forwarded-for when behind a proxy.
- */
 export const getRequestIp = (req: Request): string | null => {
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {

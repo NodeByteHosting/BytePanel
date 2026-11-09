@@ -1,9 +1,7 @@
-import { games } from "@nodebyte/games";
+import { games } from "@bytepanel/games";
 import {
   ArrowRight,
   CheckCircle2,
-  CreditCard,
-  Cpu,
   HelpCircle,
   Monitor,
   Server,
@@ -11,7 +9,6 @@ import {
   Sparkles,
   Terminal,
   Users,
-  X,
   Zap,
 } from "lucide-react";
 import Image from "next/image";
@@ -26,23 +23,20 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db";
-import { formatMib } from "@/lib/format";
 import { getSession } from "@/lib/session";
 import { getPanelSettings } from "@/lib/settings";
 
 import HeroGraphic from "./components/hero-graphic";
-import { PricingSection } from "./components/pricing-section";
-import type { PricingPlan } from "./components/pricing-section";
 
 const FAQS = [
   {
     answer:
-      "NodeByte Panel is the control panel for NodeByte Hosting customers. It lets you spin up, manage, and monitor your game servers without touching a command line.",
-    question: "What is NodeByte Panel?",
+      "BytePanel is the control panel for NodeByte Hosting customers. It lets you spin up, manage, and monitor your game servers without touching a command line.",
+    question: "What is BytePanel?",
   },
   {
     answer:
-      "Your server is usually ready within 60–90 seconds of placing an order. We pre-build golden images so the majority of setup is already done before you click Deploy.",
+      "Your server is installed as soon as your order is complete. Install time depends on the game.",
     question: "How long does it take to spin up a server?",
   },
   {
@@ -52,18 +46,13 @@ const FAQS = [
   },
   {
     answer:
-      "All billing is handled through Stripe. You can view invoices, update your payment method, and cancel subscriptions from the Billing page inside your account settings.",
+      "Orders, invoices and payments are handled in our store. Servers appear in the panel as soon as your order is complete.",
     question: "How does billing work?",
   },
   {
     answer:
       "You can restart or reinstall your server at any time from the panel. Each server also supports manual backups which you can restore in one click.",
     question: "What happens if my server crashes?",
-  },
-  {
-    answer:
-      "NodeByte partners with multiple leading cloud infrastructure providers to power our services, giving you enterprise-grade NVMe SSD storage, DDoS protection, and redundant networking across multiple regions.",
-    question: "What infrastructure powers NodeByte servers?",
   },
 ];
 
@@ -141,7 +130,6 @@ const STEPS = [
 const HomePage = async () => {
   const { landingPage } = await getPanelSettings();
   if (!landingPage) {
-    // /dashboard sends signed-out visitors on to /sign-in.
     redirect("/dashboard");
   }
   const session = await getSession();
@@ -150,23 +138,6 @@ const HomePage = async () => {
   const serverCount = await prisma.server
     .count({ where: { deletedAt: null } })
     .catch(() => 0);
-
-  // Active plans for the pricing section — skipped if none are configured.
-  const plans = await prisma.plan
-    .findMany({
-      orderBy: [{ sort: "asc" }, { priceMonthCents: "asc" }],
-      where: { active: true },
-    })
-    .catch(() => []);
-  const currency = plans[0]?.currency ?? "GBP";
-  const serverTypes: PricingPlan[] = plans.map((plan) => ({
-    backups: plan.backupLimit,
-    cores: plan.cpu > 0 ? (plan.cpu / 100).toFixed(1) : "∞",
-    disk: formatMib(plan.disk),
-    memory: formatMib(plan.memory),
-    name: plan.name,
-    pricePerMonth: plan.priceMonthCents / 100,
-  }));
 
   const stats = [
     ...BASE_STATS,
@@ -187,18 +158,14 @@ const HomePage = async () => {
         ]),
   ];
 
-  // First 3 games get large artwork cards; the rest appear as compact chips.
   const featuredGames = games.slice(0, 3);
   const remainingGames = games.slice(3);
 
   return (
     <div className="flex flex-col">
-      {/* ── Hero ── */}
       <section className="relative flex min-h-screen items-center justify-center overflow-hidden pt-32 pb-20">
-        {/* Background gradient */}
         <div className="from-primary/5 via-background to-background absolute inset-0 bg-linear-to-b" />
 
-        {/* Animated orbs */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="bg-primary/10 absolute top-1/4 left-1/4 h-125 w-125 animate-pulse rounded-full blur-[120px]" />
           <div
@@ -208,14 +175,11 @@ const HomePage = async () => {
           <div className="bg-primary/5 absolute top-1/2 left-1/2 h-150 w-150 -translate-x-1/2 -translate-y-1/2 rounded-full blur-[150px]" />
         </div>
 
-        {/* Subtle grid overlay */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] mask-[radial-gradient(ellipse_60%_60%_at_50%_50%,black_40%,transparent_100%)] bg-size-[64px_64px]" />
 
         <div className="relative z-10 mx-auto w-full max-w-6xl px-6">
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-            {/* Left: text + CTA */}
             <div className="flex flex-col gap-8 text-center lg:text-left">
-              {/* Badge */}
               <div className="border-primary/20 bg-primary/10 inline-flex items-center gap-2 self-center rounded-full border px-4 py-2 text-sm backdrop-blur-sm lg:self-start">
                 <Sparkles className="text-primary size-4" />
                 <span className="text-muted-foreground">
@@ -226,11 +190,10 @@ const HomePage = async () => {
                 </span>
               </div>
 
-              {/* Heading */}
               <div className="flex flex-col gap-4">
                 <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-5xl xl:text-6xl">
                   <span className="from-foreground to-foreground/80 bg-linear-to-r bg-clip-text text-transparent">
-                    NodeByte Game
+                    BytePanel Game
                   </span>
                   <br />
                   <span className="from-primary via-primary to-accent bg-linear-to-r bg-clip-text text-transparent">
@@ -238,13 +201,12 @@ const HomePage = async () => {
                   </span>
                 </h1>
                 <p className="text-muted-foreground mx-auto max-w-xl text-lg leading-relaxed lg:mx-0">
-                  Deploy, monitor, and manage your NodeByte game servers. Invite
-                  team members, track performance, and keep your worlds running
-                  all from one place.
+                  Deploy, monitor, and manage your game servers. Invite team
+                  members, track performance, and keep your worlds running all
+                  from one place.
                 </p>
               </div>
 
-              {/* CTAs */}
               <div className="flex flex-col items-center gap-4 sm:flex-row lg:justify-start">
                 {isAuthenticated ? (
                   <Button
@@ -285,7 +247,6 @@ const HomePage = async () => {
                 )}
               </div>
 
-              {/* Stats row */}
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {stats.map(({ icon: Icon, label, value }) => (
                   <div
@@ -304,7 +265,6 @@ const HomePage = async () => {
               </div>
             </div>
 
-            {/* Right: globe graphic */}
             <div className="hidden lg:flex lg:items-center lg:justify-center">
               <HeroGraphic />
             </div>
@@ -312,7 +272,6 @@ const HomePage = async () => {
         </div>
       </section>
 
-      {/* ── Features ── */}
       <section className="relative py-24">
         <div className="from-background via-primary/5 to-background absolute inset-0 bg-linear-to-b" />
         <div className="relative z-10 mx-auto max-w-6xl px-6">
@@ -327,7 +286,7 @@ const HomePage = async () => {
               Everything you need to run game servers
             </h2>
             <p className="text-muted-foreground mx-auto max-w-lg">
-              No DevOps experience required. NodeByte Panel handles the
+              No DevOps experience required. BytePanel handles the
               infrastructure so you can focus on playing.
             </p>
           </div>
@@ -366,105 +325,6 @@ const HomePage = async () => {
         </div>
       </section>
 
-      {/* ── Dedicated infrastructure ── */}
-      <section className="relative py-24">
-        <div className="from-background via-accent/3 to-background absolute inset-0 bg-linear-to-b" />
-        <div className="relative z-10 mx-auto max-w-6xl px-6">
-          <div className="mb-12 flex flex-col gap-3 text-center">
-            <div className="border-primary/20 bg-primary/10 inline-flex items-center gap-2 self-center rounded-full border px-3 py-1 text-xs backdrop-blur-sm">
-              <Cpu className="text-primary size-3" />
-              <span className="text-primary font-medium">Infrastructure</span>
-            </div>
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Your server.{" "}
-              <span className="from-primary to-accent bg-linear-to-r bg-clip-text text-transparent">
-                Not shared.
-              </span>
-            </h2>
-            <p className="text-muted-foreground mx-auto max-w-xl">
-              Most game hosting panels cram hundreds of servers onto a single
-              machine. Every server on NodeByte runs on its own dedicated VM
-              with its own IP address, CPU, and RAM. What you pay for is yours,
-              period.
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* NodeByte: dedicated */}
-            <div className="border-primary/30 bg-card/40 relative overflow-hidden rounded-2xl border p-8 backdrop-blur-sm">
-              <div className="from-primary/5 absolute inset-0 bg-linear-to-br to-transparent" />
-              <div className="relative flex flex-col gap-6">
-                <div className="flex items-center gap-3">
-                  <div className="bg-primary/15 text-primary flex size-10 items-center justify-center rounded-xl">
-                    <Shield className="size-5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold">NodeByte</div>
-                    <div className="text-muted-foreground text-xs">
-                      Dedicated VM per server
-                    </div>
-                  </div>
-                  <div className="border-primary/30 bg-primary/10 text-primary ml-auto rounded-full border px-2.5 py-0.5 text-xs font-medium">
-                    How we do it
-                  </div>
-                </div>
-                <ul className="flex flex-col gap-3">
-                  {[
-                    "Dedicated VM no neighbours sharing your CPU",
-                    "Your own public IPv4 address, every time",
-                    "Isolated RAM and disk always what you paid for",
-                    "Full network isolation no cross-tenant traffic",
-                    "Consistent performance regardless of other users",
-                  ].map((fact) => (
-                    <li key={fact} className="flex items-start gap-2.5 text-sm">
-                      <CheckCircle2 className="text-primary mt-0.5 size-4 shrink-0" />
-                      <span>{fact}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* Others: shared */}
-            <div className="border-border/40 bg-card/20 relative overflow-hidden rounded-2xl border p-8 backdrop-blur-sm">
-              <div className="relative flex flex-col gap-6">
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted/50 text-muted-foreground flex size-10 items-center justify-center rounded-xl">
-                    <Server className="size-5" />
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground text-sm font-semibold">
-                      Most other hosts
-                    </div>
-                    <div className="text-muted-foreground text-xs">
-                      Shared container model
-                    </div>
-                  </div>
-                </div>
-                <ul className="flex flex-col gap-3">
-                  {[
-                    "Hundreds of servers share a single physical machine",
-                    "Shared IP or dynamic port not a real address",
-                    "Over-allocated resources other tenants affect you",
-                    "Noisy neighbours cause unpredictable lag spikes",
-                    "Performance degrades when the node is busy",
-                  ].map((fact) => (
-                    <li
-                      key={fact}
-                      className="text-muted-foreground flex items-start gap-2.5 text-sm"
-                    >
-                      <X className="text-destructive/60 mt-0.5 size-4 shrink-0" />
-                      <span>{fact}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Games showcase ── */}
       <section className="relative py-24">
         <div className="from-background via-accent/3 to-background absolute inset-0 bg-linear-to-b" />
         <div className="relative z-10 mx-auto max-w-6xl px-6">
@@ -481,7 +341,6 @@ const HomePage = async () => {
             </p>
           </div>
 
-          {/* Featured game cards — large artwork */}
           <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {featuredGames.map((game) => (
               <div
@@ -512,7 +371,6 @@ const HomePage = async () => {
             ))}
           </div>
 
-          {/* Remaining games — compact chips */}
           {remainingGames.length > 0 && (
             <div className="flex flex-wrap justify-center gap-2.5">
               {remainingGames.map((game) => (
@@ -535,7 +393,6 @@ const HomePage = async () => {
         </div>
       </section>
 
-      {/* ── How it works ── */}
       <section className="relative py-24">
         <div className="from-background via-primary/5 to-background absolute inset-0 bg-linear-to-b" />
         <div className="relative z-10 mx-auto max-w-4xl px-6">
@@ -554,7 +411,6 @@ const HomePage = async () => {
           </div>
 
           <div className="relative grid gap-6 sm:grid-cols-3">
-            {/* Connector line visible on desktop */}
             <div className="via-border absolute top-8 right-[16.666%] left-[16.666%] hidden h-px bg-linear-to-r from-transparent to-transparent sm:block" />
             {STEPS.map(({ num, title, body }) => (
               <div
@@ -589,34 +445,6 @@ const HomePage = async () => {
         </div>
       </section>
 
-      {/* ── Pricing ── */}
-      {serverTypes.length > 0 && (
-        <section className="relative py-24">
-          <div className="from-background via-primary/5 to-background absolute inset-0 bg-linear-to-b" />
-          <div className="relative z-10 mx-auto max-w-6xl px-6">
-            <div className="mb-12 flex flex-col gap-3 text-center">
-              <div className="border-primary/20 bg-primary/10 inline-flex items-center gap-2 self-center rounded-full border px-3 py-1 text-xs backdrop-blur-sm">
-                <CreditCard className="text-primary size-3" />
-                <span className="text-primary font-medium">Pricing</span>
-              </div>
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                Simple, transparent pricing
-              </h2>
-              <p className="text-muted-foreground mx-auto max-w-lg">
-                Pick any server size. Pay monthly, cancel anytime. No contracts,
-                no hidden fees. All prices in GBP.
-              </p>
-            </div>
-            <PricingSection
-              serverTypes={serverTypes}
-              currency={currency}
-              isAuthenticated={isAuthenticated}
-            />
-          </div>
-        </section>
-      )}
-
-      {/* ── CTA ── */}
       <section className="relative py-24">
         <div className="from-background via-primary/5 to-background absolute inset-0 bg-linear-to-b" />
         <div className="relative z-10 mx-auto max-w-4xl px-6">
@@ -636,7 +464,7 @@ const HomePage = async () => {
                 </span>
               </h2>
               <p className="text-muted-foreground max-w-xl">
-                Join NodeByte Panel today. Deploy your first server whenever
+                Join BytePanel today. Deploy your first server whenever
                 you&apos;re ready.
               </p>
               <div className="flex flex-col items-center gap-3 sm:flex-row">
@@ -672,7 +500,6 @@ const HomePage = async () => {
         </div>
       </section>
 
-      {/* ── FAQ ── */}
       <section className="relative py-24">
         <div className="from-background via-accent/5 to-background absolute inset-0 bg-linear-to-b" />
         <div className="relative z-10 mx-auto max-w-3xl px-6">

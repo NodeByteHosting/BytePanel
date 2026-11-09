@@ -1,0 +1,15 @@
+.git
+.github
+.husky
+.turbo
+**/.env
+**/.env.*
+!apps/web/.env.example
+**/.next
+**/.vercel
+**/coverage
+**/dist
+**/node_modules
+recipes
+Dockerfile
+docker-compose.yml

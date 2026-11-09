@@ -40,12 +40,6 @@ export const getGame = (id: string): Game | undefined =>
   games.find((g) => g.id === id);
 
 export {
-  buildUfwRules,
-  type ComposeConfig,
-  GAME_CONTAINER_NAME,
-  type GamePort,
-} from "./compose";
-export {
   defineSettings,
   getDefaults,
   hasRequiredFields,
@@ -56,8 +50,6 @@ export {
   type SettingsValues,
   validateSettings,
 } from "./settings";
-
-// ─── Eggs (Pterodactyl-style definitions synced into the panel) ─────────────
 
 import { cs2Egg } from "./cs2/egg";
 import { dontStarveTogetherEgg } from "./dontstarvetogether/egg";

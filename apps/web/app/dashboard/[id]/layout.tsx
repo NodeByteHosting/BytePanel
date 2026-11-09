@@ -24,7 +24,6 @@ const ServerLayout = async ({
   const userSuperAdmin = (user as { superAdmin?: boolean }).superAdmin ?? false;
   const isSystemAdmin = userSuperAdmin || userRole === "admin";
 
-  // Enforce at least viewer-level access (admins get implicit access)
   const serverRole: ServerRole = await requireServerRole(
     user.id,
     id,

@@ -1,13 +1,7 @@
-import type { ComposeConfig } from "../compose";
-import { resolveSettings } from "../settings";
-import { buildMinecraftCompose, dockerImage } from "./install";
+import { dockerImage } from "./install";
 import { minecraftSettings } from "./settings";
 
-const buildCompose = (config: ComposeConfig, raw: unknown): string =>
-  buildMinecraftCompose(config, resolveSettings(minecraftSettings, raw));
-
 export const minecraft = {
-  buildCompose,
   description:
     "Minecraft is a sandbox game where you can build your own world.",
   dockerImage,
@@ -17,13 +11,11 @@ export const minecraft = {
   image: "/games/minecraft.png",
   name: "Minecraft",
   ports: [
-    // This is the default port for Minecraft Java Edition, used for game traffic.
     {
       from: 25_565,
       protocol: "tcp",
       to: 25_565,
     },
-    // For Bedrock clients via a proxy like Geyser.
     {
       from: 19_132,
       protocol: "udp",

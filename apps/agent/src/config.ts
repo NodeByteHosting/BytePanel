@@ -6,22 +6,18 @@ import { z } from "zod";
 
 import pkg from "../package.json";
 
-// Injected by scripts/build.ts (`--define`); absent under `bun run`.
 declare const __AGENT_COMMIT__: string | undefined;
 
 export const CONFIG_PATH =
-  process.env.NODEBYTE_CONFIG_PATH ?? "/etc/bytepanel/daemon.json";
+  process.env.BYTEPANEL_CONFIG_PATH ?? "/etc/bytepanel/daemon.json";
 
 export const VERSION = pkg.version;
 
-// Git commit the binary was built from, reported to the panel for update checks.
 export const COMMIT =
   typeof __AGENT_COMMIT__ === "string" && __AGENT_COMMIT__
     ? __AGENT_COMMIT__
     : null;
 
-// Node configuration. The panel renders this file for each node (admin →
-// nodes → configuration) and `nodebyte-daemon configure` can fetch it.
 export const configSchema = z.object({
   allowedOrigins: z.array(z.string()).default([]),
   api: z
@@ -82,6 +78,7 @@ export const configSchema = z.object({
       data: z.string().default("/var/lib/bytepanel/volumes"),
       diskCheckIntervalSeconds: z.number().int().positive().default(60),
       logs: z.string().default("/var/log/bytepanel"),
+      state: z.string().default("/var/lib/bytepanel/state"),
       timezone: z.string().default("UTC"),
       tmp: z.string().default("/tmp/bytepanel"),
       user: z
@@ -96,6 +93,7 @@ export const configSchema = z.object({
       data: "/var/lib/bytepanel/volumes",
       diskCheckIntervalSeconds: 60,
       logs: "/var/log/bytepanel",
+      state: "/var/lib/bytepanel/state",
       timezone: "UTC",
       tmp: "/tmp/bytepanel",
       user: { gid: 988, uid: 988 },
@@ -104,7 +102,6 @@ export const configSchema = z.object({
     .object({
       enabled: z.boolean().default(true),
       host: z.string().default("0.0.0.0"),
-      // Generated on first start when missing.
       hostKey: z.string().default(join(dirname(CONFIG_PATH), "ssh_host_ed25519_key")),
       port: z.number().int().min(1).max(65_535).default(2022),
     })
@@ -124,7 +121,7 @@ export type Config = z.infer<typeof configSchema>;
 export const loadConfig = async (path = CONFIG_PATH): Promise<Config> => {
   if (!existsSync(path)) {
     throw new Error(
-      `No configuration at ${path}. Run "nodebyte-daemon configure" or paste the config from the panel.`,
+      `No configuration at ${path}. Run "bytepanel-daemon configure" or paste the config from the panel.`,
     );
   }
   return configSchema.parse(JSON.parse(await readFile(path, "utf-8")));
@@ -144,6 +141,7 @@ export const ensureDirectories = async (config: Config): Promise<void> => {
   for (const dir of [
     config.system.data,
     config.system.backups,
+    config.system.state,
     config.system.tmp,
     `${config.system.logs}/install`,
   ]) {

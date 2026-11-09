@@ -20,7 +20,6 @@ export class ServiceError extends Error {
 
 export const RANDOM_DEFAULT = "@random";
 
-// Memory, swap and disk are MiB; cpu is a percentage of one core.
 export interface BuildLimits {
   memory: number;
   swap: number;
@@ -41,8 +40,6 @@ const defaultImage = (dockerImages: Prisma.JsonValue): string => {
   return first;
 };
 
-// Validates user-supplied variable values against the egg's rules. Only
-// editable variables may be set unless `asAdmin`.
 export const validateEnvironment = async (
   eggId: string,
   values: Record<string, string>,
@@ -64,7 +61,6 @@ export const validateEnvironment = async (
     }
     rows.push({ value, variableId: variable.id });
   }
-  // Required variables must end up with a value (default or supplied).
   for (const variable of variables) {
     const supplied = rows.find((r) => r.variableId === variable.id)?.value;
     const effective = supplied ?? variable.defaultValue;
@@ -76,8 +72,6 @@ export const validateEnvironment = async (
   return rows;
 };
 
-// Creates the server record without placing it on a node yet (used before
-// payment). Call deployServer() to place and install it.
 export const prepareServer = async (input: {
   userId: string;
   name: string;
@@ -100,8 +94,6 @@ export const prepareServer = async (input: {
     input.environment ?? {},
     input.asAdmin ?? false
   );
-  // NodeByte convention: a default of "@random" (e.g. RCON passwords) is
-  // replaced with a per-server random secret.
   const randomDefaults = await prisma.eggVariable.findMany({
     where: { defaultValue: RANDOM_DEFAULT, eggId: egg.id },
   });
@@ -153,8 +145,6 @@ export const prepareServer = async (input: {
 const overallocated = (capacity: number, percent: number) =>
   percent < 0 ? Number.POSITIVE_INFINITY : capacity * (1 + percent / 100);
 
-// Picks the least-loaded eligible node with enough memory/disk headroom and a
-// free allocation (Pterodactyl's deployment service equivalent).
 export const findDeployableNode = async (input: {
   locationId?: string | null;
   memory: number;
@@ -195,8 +185,6 @@ export const findDeployableNode = async (input: {
   return candidates[0]?.node ?? null;
 };
 
-// Places a prepared server on a node, claims allocations and asks the daemon
-// to create + install it. Rolls the placement back if the daemon refuses.
 export const deployServer = async (
   serverId: string,
   options: {
@@ -232,8 +220,6 @@ export const deployServer = async (
     throw new ServiceError("No node has capacity for this server right now");
   }
 
-  // Claim free allocations atomically; SKIP LOCKED keeps concurrent
-  // deployments from grabbing the same port.
   const claimed = await prisma.$transaction(async (tx) => {
     let ids: string[];
     if (options.allocationIds?.length) {
@@ -316,7 +302,6 @@ const nodeOf = async (serverId: string) => {
   return { node: server.node, server };
 };
 
-// Removes the server from its node and soft-deletes it.
 export const destroyServer = async (
   serverId: string,
   options: { force?: boolean } = {}
@@ -343,7 +328,6 @@ export const destroyServer = async (
   ]);
 };
 
-// Pushes the latest configuration to the daemon (if the server is placed).
 export const syncServer = async (serverId: string) => {
   const { server, node } = await nodeOf(serverId);
   if (node) {
@@ -351,7 +335,6 @@ export const syncServer = async (serverId: string) => {
   }
 };
 
-// Best effort: the daemon re-fetches the configuration on every start anyway.
 export const trySyncServer = async (serverId: string): Promise<void> => {
   try {
     await syncServer(serverId);

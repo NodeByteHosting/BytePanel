@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { serverConfigurationSchema } from "@nodebyte/protocol";
+import { serverConfigurationSchema } from "@bytepanel/protocol";
 
 import {
   buildInstallScript,

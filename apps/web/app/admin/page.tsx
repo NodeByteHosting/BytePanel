@@ -1,10 +1,4 @@
-import {
-  CreditCardIcon,
-  DollarSignIcon,
-  ServerIcon,
-  UsersIcon,
-  ZapIcon,
-} from "lucide-react";
+import { ServerIcon, UsersIcon, ZapIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -29,7 +23,6 @@ const getHealthClass = (pct: number) => {
   return "text-red-600 dark:text-red-400";
 };
 
-// Boundaries for the "this month vs last month" stats.
 const monthBounds = () => {
   const now = new Date();
   return {
@@ -49,15 +42,11 @@ const AdminOverviewPage = async () => {
     totalServers,
     activeServers,
     failedServers,
-    activeSubscriptions,
-    monthlyRevenueCents,
-    lastMonthRevenueCents,
     recentUsers,
     recentServers,
     serversByGame,
     eggList,
   ] = await Promise.all([
-    // User stats
     prisma.user.count(),
     prisma.user.count({
       where: {
@@ -74,7 +63,6 @@ const AdminOverviewPage = async () => {
         },
       },
     }),
-    // Server stats
     prisma.server.count({ where: { deletedAt: null } }),
     prisma.server.count({
       where: { deletedAt: null, nodeId: { not: null }, status: null },
@@ -85,22 +73,6 @@ const AdminOverviewPage = async () => {
         status: { in: ["install_failed", "reinstall_failed", "suspended"] },
       },
     }),
-    // Subscription stats
-    prisma.subscription.count({ where: { status: "active" } }),
-    prisma.subscription.aggregate({
-      _sum: { pricePerMonthCents: true },
-      where: { status: "active" },
-    }),
-    prisma.subscription.aggregate({
-      _sum: { pricePerMonthCents: true },
-      where: {
-        createdAt: {
-          lt: thisMonthStart,
-        },
-        status: "active",
-      },
-    }),
-    // Recent data
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -131,7 +103,6 @@ const AdminOverviewPage = async () => {
       },
       take: 5,
     }),
-    // Servers by game
     prisma.server.groupBy({
       _count: true,
       by: ["eggId"],
@@ -141,21 +112,9 @@ const AdminOverviewPage = async () => {
     prisma.egg.findMany({ select: { id: true, name: true } }),
   ]);
 
-  const revenue = (
-    (monthlyRevenueCents._sum.pricePerMonthCents ?? 0) / 100
-  ).toFixed(2);
-  const lastMonthRevenue = (
-    (lastMonthRevenueCents._sum.pricePerMonthCents ?? 0) / 100
-  ).toFixed(2);
   const userChange =
     newUsersLastMonth > 0
       ? ((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100
-      : 0;
-  const revenueChange =
-    Number(lastMonthRevenue) > 0
-      ? ((Number(revenue) - Number(lastMonthRevenue)) /
-          Number(lastMonthRevenue)) *
-        100
       : 0;
 
   const stoppedServers = totalServers - activeServers - failedServers;
@@ -199,7 +158,6 @@ const AdminOverviewPage = async () => {
       <PageHeader title="Overview" />
       <PageBody>
         <div className="flex flex-col gap-8">
-          {/* Stat cards */}
           <MetricsGrid
             columns={4}
             metrics={[
@@ -225,33 +183,10 @@ const AdminOverviewPage = async () => {
                 title: "Active servers",
                 value: activeServers,
               },
-              {
-                accent: "violet",
-                description: "active plans",
-                icon: <CreditCardIcon className="size-4" />,
-                title: "Subscriptions",
-                value: activeSubscriptions.toLocaleString(),
-              },
-              {
-                accent: "amber",
-                change:
-                  Number(lastMonthRevenue) > 0
-                    ? {
-                        isPositive: revenueChange >= 0,
-                        period: "vs last month",
-                        value: Math.round(Math.abs(revenueChange)),
-                      }
-                    : undefined,
-                icon: <DollarSignIcon className="size-4" />,
-                title: "Monthly revenue",
-                value: `£${revenue}`,
-              },
             ]}
           />
 
-          {/* Health bar + charts row */}
           <div className="grid gap-6 lg:grid-cols-2">
-            {/* Platform health */}
             <div className="border-border/60 bg-card flex flex-col gap-4 rounded-xl border p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -270,7 +205,6 @@ const AdminOverviewPage = async () => {
                 </span>
               </div>
 
-              {/* Segmented bar */}
               {totalServers > 0 && (
                 <div className="bg-muted flex h-3 w-full overflow-hidden rounded-full">
                   <div
@@ -335,7 +269,6 @@ const AdminOverviewPage = async () => {
               </div>
             </div>
 
-            {/* Games chart */}
             {gameData.length > 0 && (
               <SimpleBarChart
                 title="Servers by game"
@@ -346,9 +279,7 @@ const AdminOverviewPage = async () => {
             )}
           </div>
 
-          {/* Recent activity */}
           <div className="grid gap-6 lg:grid-cols-2">
-            {/* Recent signups */}
             <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
               <div className="border-border/50 flex items-center justify-between border-b px-5 py-4">
                 <div>
@@ -406,7 +337,6 @@ const AdminOverviewPage = async () => {
               )}
             </div>
 
-            {/* Recent servers */}
             <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
               <div className="border-border/50 flex items-center justify-between border-b px-5 py-4">
                 <div>

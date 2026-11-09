@@ -1,13 +1,7 @@
-import type { ComposeConfig } from "../compose";
-import { resolveSettings } from "../settings";
-import { buildHytaleCompose, dockerImage } from "./install";
+import { dockerImage } from "./install";
 import { hytaleSettings } from "./settings";
 
-const buildCompose = (config: ComposeConfig, raw: unknown): string =>
-  buildHytaleCompose(config, resolveSettings(hytaleSettings, raw));
-
 export const hytale = {
-  buildCompose,
   description:
     "Set out on an adventure built for both creation and play. Hytale blends the freedom of a sandbox with the momentum of an RPG.",
   dockerImage,
@@ -21,13 +15,11 @@ export const hytale = {
   image: "/games/hytale.png",
   name: "Hytale",
   ports: [
-    // Main game port — clients connect here.
     {
       from: 25_565,
       protocol: "tcp" as const,
       to: 25_565,
     },
-    // Source Query port (A2S) — used by the SourceQuery plugin for player count etc.
     {
       from: 25_566,
       protocol: "udp" as const,

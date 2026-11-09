@@ -13,7 +13,6 @@ import { cs2Settings } from "./settings";
 
 export const cs2Egg: EggDefinition = {
   containerUser: "image",
-  // Allocation 0 = game (tcp+udp), allocation 1 = CSTV.
   containerPorts: [0, 0],
   description: cs2.description,
   dockerImages: { Default: dockerImage },

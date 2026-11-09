@@ -4,7 +4,6 @@ import { getRequestIp, logEvent } from "@/lib/audit";
 import { prisma } from "@/lib/db";
 import { requireSuperAdmin } from "@/lib/session";
 
-// DELETE /api/admin/sessions/[id]
 export const DELETE = async (
   req: Request,
   { params }: { params: Promise<{ id: string }> }

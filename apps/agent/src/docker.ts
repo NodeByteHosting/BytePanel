@@ -49,11 +49,7 @@ export interface AttachedStream {
   close: () => void;
 }
 
-// Minimal Docker Engine API client over the unix socket. Uses fetch's `unix`
-// option for request/response calls and a raw socket for the hijacked
-// attach stream (stdin + stdout of the game process).
 export class Docker {
-  // Flipped off the first time the kernel rejects a block-IO weight.
   ioWeightSupported = true;
 
   constructor(private readonly socketPath: string) {}
@@ -62,13 +58,14 @@ export class Docker {
     method: string,
     path: string,
     body?: unknown,
-    init: { signal?: AbortSignal; allow404?: boolean } = {},
+    init: { signal?: AbortSignal; allow404?: boolean; noIdleTimeout?: boolean } = {},
   ): Promise<Response> {
     const res = await fetch(`http://docker${path}`, {
       body: body === undefined ? undefined : JSON.stringify(body),
       headers: body === undefined ? undefined : { "content-type": "application/json" },
       method,
       signal: init.signal,
+      ...(init.noIdleTimeout ? { timeout: false } : {}),
       unix: this.socketPath,
     });
     if (!res.ok && !(init.allow404 && res.status === 404) && res.status !== 304) {
@@ -77,7 +74,6 @@ export class Docker {
       try {
         message = (JSON.parse(text) as { message?: string }).message ?? text;
       } catch {
-        // not JSON
       }
       throw new DockerError(`${method} ${path}: ${message}`, res.status);
     }
@@ -120,7 +116,6 @@ export class Docker {
     try {
       await this.request("POST", "/networks/create", body);
     } catch (error) {
-      // Another network already uses the configured subnet; let Docker pick one.
       if (!(error instanceof DockerError && /overlap/iu.test(error.message))) {
         throw error;
       }
@@ -139,14 +134,14 @@ export class Docker {
     return res.status !== 404;
   }
 
-  // Pulls an image, reporting coarse progress lines. Falls back to a local
-  // copy if the registry is unreachable but the image already exists.
   async pullImage(image: string, onProgress?: (line: string) => void): Promise<void> {
     const [repo, tag] = splitImage(image);
     try {
       const res = await this.request(
         "POST",
         `/images/create?fromImage=${encodeURIComponent(repo)}&tag=${encodeURIComponent(tag)}`,
+        undefined,
+        { noIdleTimeout: true },
       );
       let lastStatus = "";
       for await (const line of readLines(res.body)) {
@@ -211,7 +206,6 @@ export class Docker {
         allow404: true,
       });
     } catch (error) {
-      // 409 = container not running
       if (!(error instanceof DockerError && error.status === 409)) {
         throw error;
       }
@@ -225,7 +219,12 @@ export class Docker {
   }
 
   async wait(name: string): Promise<number> {
-    const res = await this.request("POST", `/containers/${name}/wait?condition=not-running`);
+    const res = await this.request(
+      "POST",
+      `/containers/${name}/wait?condition=not-running`,
+      undefined,
+      { noIdleTimeout: true },
+    );
     return ((await res.json()) as { StatusCode: number }).StatusCode;
   }
 
@@ -243,26 +242,23 @@ export class Docker {
     return text.split(/\r?\n/u).filter((line) => line.length > 0);
   }
 
-  // Streams `docker stats` samples until the signal aborts or the container stops.
   async streamStats(
     name: string,
     signal: AbortSignal,
     onSample: (stats: ContainerStats) => void,
   ): Promise<void> {
     const res = await this.request("GET", `/containers/${name}/stats?stream=1`, undefined, {
+      noIdleTimeout: true,
       signal,
     });
     for await (const line of readLines(res.body)) {
       try {
         onSample(JSON.parse(line) as ContainerStats);
       } catch {
-        // partial / malformed sample
       }
     }
   }
 
-  // Hijacks POST /containers/:id/attach to get a raw duplex stream. Containers
-  // are created with Tty=true so the output is not multiplexed.
   async attach(
     name: string,
     onData: (chunk: Uint8Array) => void,
@@ -361,7 +357,6 @@ export async function* readLines(
   }
 }
 
-// Same CPU maths as `docker stats`.
 export const computeCpuPercent = (stats: ContainerStats): number => {
   const cpuDelta =
     stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
@@ -374,7 +369,6 @@ export const computeCpuPercent = (stats: ContainerStats): number => {
   return Math.round((cpuDelta / systemDelta) * cpus * 100 * 1000) / 1000;
 };
 
-// Memory usage excluding page cache, matching what `docker stats` reports.
 export const computeMemoryBytes = (stats: ContainerStats): number => {
   const usage = stats.memory_stats.usage ?? 0;
   const cache =

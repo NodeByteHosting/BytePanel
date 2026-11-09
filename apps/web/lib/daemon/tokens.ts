@@ -4,7 +4,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import {
   DAEMON_TOKEN_ID_LENGTH,
   DAEMON_TOKEN_LENGTH,
-} from "@nodebyte/protocol";
+} from "@bytepanel/protocol";
 import type { Node } from "@prisma/client";
 
 import { decryptSecret, encryptSecret } from "@/lib/crypto";
@@ -22,8 +22,6 @@ const randomString = (length: number): string => {
   return out;
 };
 
-// A node authenticates to the panel with `tokenId.token`; the panel
-// authenticates to the node (and signs JWTs) with `token` alone.
 export const generateDaemonToken = () => {
   const token = randomString(DAEMON_TOKEN_LENGTH);
   return {
@@ -43,7 +41,6 @@ export class RemoteAuthError extends Error {
   }
 }
 
-// Authenticates a daemon calling /api/remote/*.
 export const authenticateNode = async (request: Request): Promise<Node> => {
   const header = request.headers.get("authorization") ?? "";
   const match =

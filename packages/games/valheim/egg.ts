@@ -4,8 +4,6 @@ import { valheim } from "./index";
 import { dockerImage } from "./install";
 import { valheimSettings } from "./settings";
 
-// lloesche/valheim-server listens on SERVER_PORT and SERVER_PORT+1 (query),
-// so the two allocations must be consecutive (the panel prefers that).
 export const valheimEgg: EggDefinition = {
   containerUser: "image",
   containerPorts: [0, 0],

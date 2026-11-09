@@ -13,7 +13,6 @@ import { palworldSettings } from "./settings";
 
 export const palworldEgg: EggDefinition = {
   containerUser: "image",
-  // game (udp), query (udp), rcon (tcp)
   containerPorts: [0, 0, 0],
   description: palworld.description,
   dockerImages: { Default: dockerImage },

@@ -20,7 +20,6 @@ import { ServerGrid } from "./components/server-grid";
 
 const DashboardPage = async () => {
   const user = await requireUser();
-  // Owned servers plus servers the user was invited to (sub-users).
   const rows = await prisma.server.findMany({
     include: {
       allocation: { select: { ip: true, ipAlias: true, port: true } },

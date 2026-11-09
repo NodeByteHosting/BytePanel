@@ -12,7 +12,6 @@ const schema = z.object({
   subject: z.string().min(1),
 });
 
-// POST /api/admin/email/broadcast — superAdmin only
 export const POST = async (req: Request) => {
   const actor = await requireSuperAdmin();
   const actorId = (actor as { id?: string }).id ?? null;
@@ -63,7 +62,6 @@ export const POST = async (req: Request) => {
 </body>
 </html>`.trim();
 
-  // Send individually so one failure doesn't block the rest
   const results = await Promise.allSettled(
     users.map((u) => sendMail({ html, subject, text: bodyText, to: u.email }))
   );

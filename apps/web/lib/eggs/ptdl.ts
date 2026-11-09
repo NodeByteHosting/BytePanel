@@ -1,9 +1,6 @@
-import { DEFAULT_INSTALL_CONTAINER } from "@nodebyte/protocol";
-import type { ConfigFile } from "@nodebyte/protocol";
+import { DEFAULT_INSTALL_CONTAINER } from "@bytepanel/protocol";
+import type { ConfigFile } from "@bytepanel/protocol";
 import { z } from "zod";
-
-// Parser for Pterodactyl egg exports (PTDL_v1 / PTDL_v2 JSON), so the large
-// community egg catalogue can be imported directly.
 
 const ptdlSchema = z.object({
   author: z.string().optional(),

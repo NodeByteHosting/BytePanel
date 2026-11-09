@@ -4,13 +4,11 @@ import { hytale } from "./index";
 import { dockerImage } from "./install";
 import { hytaleSettings } from "./settings";
 
-// Optional CLI flags use the Pterodactyl shell idiom so booleans can toggle them.
 const flag = (variable: string, value: string) =>
   `$( [ "{{${variable}}}" = "1" ] && printf %s "${value}" )`;
 
 export const hytaleEgg: EggDefinition = {
   containerUser: "image",
-  // game (tcp+udp) and query
   containerPorts: [0, 0],
   description: hytale.description,
   dockerImages: { Default: dockerImage },

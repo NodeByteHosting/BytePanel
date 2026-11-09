@@ -11,11 +11,9 @@ on:
       - main
       - develop
     paths:
-      - 'images/python/**'
+      - 'recipes/python/**'
       - '.github/workflows/images-python.yml'
   
-  release:
-    types: [published]
 
 permissions:
   contents: read
@@ -52,7 +50,7 @@ jobs:
       - name: Check if Dockerfile exists
         id: check
         run: |
-          if [ -f "./images/python/${{ matrix.version }}/Dockerfile" ]; then
+          if [ -f "./recipes/python/${{ matrix.version }}/Dockerfile" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -97,8 +95,8 @@ jobs:
         if: steps.check.outputs.exists == 'true'
         uses: docker/build-push-action@v6
         with:
-          context: ./images/python
-          file: ./images/python/${{ matrix.version }}/Dockerfile
+          context: ./recipes/python
+          file: ./recipes/python/${{ matrix.version }}/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.tags.outputs.tags }}

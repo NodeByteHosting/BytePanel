@@ -14,7 +14,7 @@ const MarketingLayout = async ({ children }: { children: ReactNode }) => {
 
       <footer className="border-border/50 border-t">
         <p className="text-muted-foreground mx-auto w-full max-w-6xl px-6 py-10 text-center text-sm">
-          {/* oxlint-disable-next-line react/purity -- server component, renders once per request */}
+          {/* oxlint-disable-next-line react/purity */}
           &copy; {new Date().getFullYear()}{" "}
           <Link
             href="https://nodebyte.co.uk"

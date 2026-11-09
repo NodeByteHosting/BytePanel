@@ -2,11 +2,6 @@ import { z } from "zod";
 
 import { DAEMON_PERMISSIONS, POWER_ACTIONS, POWER_STATES } from "./constants";
 
-// ─── Panel → daemon: server configuration ────────────────────────────────────
-// Served by the panel at GET /api/remote/servers/:uuid. Every placeholder
-// (`{{SERVER_MEMORY}}`, `{{server.build.default.port}}`, …) is resolved by the
-// panel before it is sent, so the daemon never needs to know about eggs.
-
 export const configFileParserSchema = z.enum([
   "file",
   "properties",
@@ -24,8 +19,6 @@ export const configFileSchema = z.object({
 export type ConfigFile = z.infer<typeof configFileSchema>;
 
 export const allocationMappingSchema = z.object({
-  // Port inside the container. Equal to `port` unless the egg pins a fixed
-  // container port (images that cannot change their listen port).
   containerPort: z.number().int().min(1).max(65_535),
   ip: z.string().min(1),
   port: z.number().int().min(1).max(65_535),
@@ -37,8 +30,6 @@ export const serverConfigurationSchema = z.object({
     default: z.object({ ip: z.string(), port: z.number().int() }),
     mappings: z.array(allocationMappingSchema),
   }),
-  // cpuLimit is a percentage of one core; diskSpace, memoryLimit and swap are
-  // MiB. 0 means unlimited (-1 for swap).
   build: z.object({
     cpuLimit: z.number().int().nonnegative(),
     diskSpace: z.number().int().nonnegative(),
@@ -49,18 +40,12 @@ export const serverConfigurationSchema = z.object({
     threads: z.string().nullable(),
   }),
   container: z.object({
-    // Extra bind mounts of sub-directories of the server volume, for images
-    // that expect data in more than one place (e.g. /config + /opt/game).
     extraMounts: z.array(
       z.object({ source: z.string().min(1), target: z.string().min(1) })
     ),
     image: z.string().min(1),
     mountPath: z.string().min(1),
-    // "daemon": run as the node's unprivileged uid/gid (Pterodactyl yolks).
-    // "image": keep the image's USER (images that drop privileges themselves).
     user: z.enum(["daemon", "image"]),
-    // Owner the volume is chowned to when user = "image" (e.g. the image's
-    // steam user). Null leaves ownership alone.
     volumeOwner: z
       .object({
         gid: z.number().int().nonnegative(),
@@ -69,12 +54,7 @@ export const serverConfigurationSchema = z.object({
       .nullable(),
   }),
   environment: z.record(z.string(), z.string()),
-  // Empty = use the image's own entrypoint/command.
   invocation: z.string(),
-  // How `invocation` reaches the container:
-  //  env   — only as the STARTUP env var (Pterodactyl yolks entrypoints eval it)
-  //  args  — shell-split into Cmd, i.e. arguments to the image's entrypoint
-  //  shell — run as `sh -c "<invocation>"`, replacing the entrypoint
   invocationMode: z.enum(["env", "args", "shell"]),
   name: z.string(),
   process: z.object({
@@ -110,8 +90,6 @@ export const installScriptSchema = z.object({
 });
 export type InstallScript = z.infer<typeof installScriptSchema>;
 
-// ─── Daemon → panel: callbacks ───────────────────────────────────────────────
-
 export const installStatusSchema = z.object({
   reinstall: z.boolean(),
   successful: z.boolean(),
@@ -142,8 +120,6 @@ export const daemonActivityBatchSchema = z.object({
   data: z.array(daemonActivitySchema).max(500),
 });
 
-// SFTP logins: the daemon forwards the credentials, the panel checks the
-// account password and the user's role on the server.
 export const sftpAuthRequestSchema = z.object({
   ip: z.string().nullable(),
   password: z.string().min(1).max(1024),
@@ -156,8 +132,6 @@ export const sftpAuthResponseSchema = z.object({
   userUuid: z.string().min(1),
 });
 export type SftpAuthResponse = z.infer<typeof sftpAuthResponseSchema>;
-
-// ─── Panel → daemon: HTTP API bodies ─────────────────────────────────────────
 
 export const createServerRequestSchema = z.object({
   startOnCompletion: z.boolean().default(false),
@@ -211,8 +185,6 @@ export const backupRestoreRequestSchema = z.object({
   truncateDirectory: z.boolean().default(false),
 });
 
-// ─── Daemon → panel: HTTP API responses ──────────────────────────────────────
-
 export const fileEntrySchema = z.object({
   mime: z.string().optional(),
   mode: z.string().optional(),
@@ -253,7 +225,6 @@ export type DaemonServerDetails = z.infer<typeof daemonServerDetailsSchema>;
 
 export const systemInfoSchema = z.object({
   architecture: z.string(),
-  // Build commit SHA. Optional so daemons built before it was added still parse.
   commit: z.string().nullable().optional(),
   cpuCount: z.number().int(),
   dockerVersion: z.string().nullable(),
@@ -263,9 +234,6 @@ export const systemInfoSchema = z.object({
 });
 export type SystemInfo = z.infer<typeof systemInfoSchema>;
 
-// ─── JWTs issued by the panel, verified by the daemon ───────────────────────
-// Signed HS256 with the node's daemon token as the key.
-
 export const websocketClaimsSchema = z.object({
   permissions: z.array(z.enum(DAEMON_PERMISSIONS)),
   serverUuid: z.string().uuid(),
@@ -274,8 +242,6 @@ export const websocketClaimsSchema = z.object({
 export type WebsocketClaims = z.infer<typeof websocketClaimsSchema>;
 
 export const fileTransferClaimsSchema = z.object({
-  // download: `path` is a file to stream back. upload: `path` is the target
-  // directory. backup: `path` is the backup uuid.
   kind: z.enum(["download", "upload", "backup"]),
   path: z.string(),
   serverUuid: z.string().uuid(),
@@ -283,7 +249,6 @@ export const fileTransferClaimsSchema = z.object({
 });
 export type FileTransferClaims = z.infer<typeof fileTransferClaimsSchema>;
 
-// Websocket frames, both directions: { event, args? }
 export const wsFrameSchema = z.object({
   args: z.array(z.string()).optional(),
   event: z.string().min(1),

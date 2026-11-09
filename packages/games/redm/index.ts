@@ -1,13 +1,7 @@
-import type { ComposeConfig } from "../compose";
-import { resolveSettings } from "../settings";
-import { buildRedmCompose, dockerImage } from "./install";
+import { dockerImage } from "./install";
 import { redmSettings } from "./settings";
 
-const buildCompose = (config: ComposeConfig, raw: unknown): string =>
-  buildRedmCompose(config, resolveSettings(redmSettings, raw));
-
 export const redm = {
-  buildCompose,
   description:
     "A multiplayer modification for Red Dead Redemption 2, bringing custom roleplay, hunting, and Wild West servers to life.",
   dockerImage,
@@ -22,7 +16,6 @@ export const redm = {
   image: "/games/redm.png",
   name: "RedM",
   ports: [
-    // Game traffic — TCP and UDP.
     {
       from: 30_120,
       protocol: "tcp",

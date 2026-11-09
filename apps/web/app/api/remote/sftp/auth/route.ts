@@ -1,5 +1,5 @@
-import { REDIS_KEYS, sftpAuthRequestSchema } from "@nodebyte/protocol";
-import type { SftpAuthResponse } from "@nodebyte/protocol";
+import { REDIS_KEYS, sftpAuthRequestSchema } from "@bytepanel/protocol";
+import type { SftpAuthResponse } from "@bytepanel/protocol";
 import type { Node } from "@prisma/client";
 import { hashPassword, verifyPassword } from "better-auth/crypto";
 import { NextResponse } from "next/server";
@@ -19,8 +19,6 @@ const MAX_ATTEMPTS_PER_MINUTE = 10;
 const denied = (message = "Invalid credentials") =>
   NextResponse.json({ error: message }, { status: 403 });
 
-// Verified against when the account doesn't exist, so unknown emails take as
-// long to reject as wrong passwords.
 let dummyHash: Promise<string> | null = null;
 
 const checkPassword = async (
@@ -34,7 +32,7 @@ const checkPassword = async (
       })
     : null;
   if (!account?.password) {
-    dummyHash ??= hashPassword("nodebyte-sftp-dummy");
+    dummyHash ??= hashPassword("bytepanel-sftp-dummy");
     await verifyPassword({ hash: await dummyHash, password });
     return false;
   }
@@ -60,8 +58,6 @@ const roleOn = (
   return (server.members[0]?.role as ServerRole | undefined) ?? null;
 };
 
-// Servers on this node the user may manage files on (server role "admin"+,
-// the same requirement as the file manager), optionally narrowed to one id.
 const manageableServers = async (
   node: Node,
   user: SftpUser,
@@ -87,7 +83,6 @@ const manageableServers = async (
   });
 };
 
-// Resolves one reading of the username. Null = no such account, try the next.
 const login = async (
   node: Node,
   candidate: { email: string; serverId: string | null },
@@ -139,7 +134,6 @@ const login = async (
   } satisfies SftpAuthResponse);
 };
 
-// Called by the daemon for every SFTP login.
 export const POST = remoteHandler(async ({ node, request }) => {
   const body = await parseJson(request, sftpAuthRequestSchema);
   if ("response" in body) {
@@ -161,7 +155,7 @@ export const POST = remoteHandler(async ({ node, request }) => {
 
   let response: Response | null = null;
   for (const candidate of parseSftpUsername(username)) {
-    // oxlint-disable-next-line no-await-in-loop -- at most two readings, tried in order
+    // oxlint-disable-next-line no-await-in-loop
     response = await login(node, candidate, password, ip);
     if (response) {
       break;

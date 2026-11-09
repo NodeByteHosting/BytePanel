@@ -1,4 +1,4 @@
-import type { ServerConfigurationPage } from "@nodebyte/protocol";
+import type { ServerConfigurationPage } from "@bytepanel/protocol";
 import { NextResponse } from "next/server";
 
 import {
@@ -12,8 +12,6 @@ export const runtime = "nodejs";
 
 const PER_PAGE = 50;
 
-// Every server assigned to the calling node, paginated. The daemon loads this
-// on boot.
 export const GET = remoteHandler(async ({ node, request }) => {
   const page = Math.max(
     1,

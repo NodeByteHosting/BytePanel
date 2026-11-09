@@ -131,7 +131,7 @@ export const TeamPanel = ({
         toast.success("User added to server.");
       } else {
         setInvites((prev) => [data.invite, ...prev]);
-        toast.success("Invite sent — share the token with the user.");
+        toast.success("Invite sent. Share the token with the user.");
       }
       setInviteEmail("");
       setInviteOpen(false);
@@ -183,7 +183,6 @@ export const TeamPanel = ({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Team members */}
       <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
         <div className="border-border/50 flex items-center justify-between gap-4 border-b px-5 py-4">
           <div>
@@ -230,13 +229,13 @@ export const TeamPanel = ({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="viewer">
-                        Viewer — read-only access
+                        Viewer: read-only access
                       </SelectItem>
                       <SelectItem value="member">
-                        Member — start/stop/restart
+                        Member: start/stop/restart
                       </SelectItem>
                       <SelectItem value="admin">
-                        Admin — files, backups, settings
+                        Admin: files, backups, settings
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -259,7 +258,6 @@ export const TeamPanel = ({
         </div>
 
         <div className="divide-border/50 divide-y">
-          {/* Owner row */}
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <div className="flex items-center gap-3">
               <UserAvatar user={owner} />
@@ -282,7 +280,6 @@ export const TeamPanel = ({
             </div>
           </div>
 
-          {/* Member rows */}
           {members.map((member) => (
             <div
               key={member.id}
@@ -352,7 +349,6 @@ export const TeamPanel = ({
         </div>
       </div>
 
-      {/* Pending invites */}
       {invites.length > 0 && (
         <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
           <div className="border-border/50 border-b px-5 py-4">

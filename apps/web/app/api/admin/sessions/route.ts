@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireSuperAdmin } from "@/lib/session";
 
-// GET /api/admin/sessions?page=1
 export const GET = async (req: Request) => {
   await requireSuperAdmin();
 
@@ -34,7 +33,6 @@ export const GET = async (req: Request) => {
     prisma.session.count({ where: { expiresAt: { gt: now } } }),
   ]);
 
-  // Never expose session tokens to the client
   return NextResponse.json({
     page,
     pageSize,

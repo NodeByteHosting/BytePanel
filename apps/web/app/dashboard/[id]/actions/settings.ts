@@ -35,8 +35,6 @@ const startupSchema = z.object({
   serverId: z.string().min(1),
 });
 
-// Startup variables / docker image (Pterodactyl's "Startup" tab). Applied the
-// next time the server starts.
 export const updateServerStartup = async (
   input: z.infer<typeof startupSchema>
 ): Promise<Result> => {

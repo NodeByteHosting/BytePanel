@@ -6,8 +6,6 @@ import type { z } from "zod";
 import { authenticateNode, RemoteAuthError } from "@/lib/daemon/tokens";
 import { prisma } from "@/lib/db";
 
-// Wraps /api/remote/* handlers: authenticates the calling node and maps
-// errors to JSON responses.
 export const remoteHandler =
   <P extends Record<string, string>>(
     handler: (ctx: {
@@ -53,7 +51,6 @@ export const parseJson = async <T extends z.ZodType>(
   return { data: parsed.data };
 };
 
-// A server on the calling node, or null (never leak other nodes' servers).
 export const findNodeServer = (node: Node, uuid: string) =>
   prisma.server.findFirst({
     where: { deletedAt: null, nodeId: node.id, uuid },

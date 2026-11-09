@@ -6,7 +6,6 @@ import { terrariaSettings } from "./settings";
 
 export const terrariaEgg: EggDefinition = {
   containerUser: "image",
-  // game, TShock REST API
   containerPorts: [0, 0],
   description: terraria.description,
   dockerImages: { Default: dockerImage },
@@ -44,7 +43,7 @@ export const terrariaEgg: EggDefinition = {
       worldSize: "WORLD_SIZE",
     }),
     {
-      default: "nodebyte.wld",
+      default: "bytepanel.wld",
       env: "WORLD_FILENAME",
       name: "World file",
       rules: "required|string|max:64",

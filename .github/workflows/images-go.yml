@@ -11,11 +11,9 @@ on:
       - main
       - develop
     paths:
-      - 'images/golang/**'
+      - 'recipes/golang/**'
       - '.github/workflows/images-go.yml'
   
-  release:
-    types: [published]
 
 permissions:
   contents: read
@@ -59,7 +57,7 @@ jobs:
       - name: Check if Dockerfile exists
         id: check
         run: |
-          if [ -f "./images/golang/${{ matrix.version }}/Dockerfile" ]; then
+          if [ -f "./recipes/golang/${{ matrix.version }}/Dockerfile" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -104,8 +102,8 @@ jobs:
         if: steps.check.outputs.exists == 'true'
         uses: docker/build-push-action@v6
         with:
-          context: ./images/golang
-          file: ./images/golang/${{ matrix.version }}/Dockerfile
+          context: ./recipes/golang
+          file: ./recipes/golang/${{ matrix.version }}/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.tags.outputs.tags }}

@@ -1,5 +1,5 @@
-import { existsSync } from "node:fs";
-import { chmod, lstat, mkdir, open, readdir, readFile, rename, rmdir, stat, unlink, utimes, writeFile } from "node:fs/promises";
+import { constants, existsSync } from "node:fs";
+import { chmod, lstat, mkdir, open, readdir, readFile, realpath, rename, rmdir, stat, unlink, utimes, writeFile } from "node:fs/promises";
 import type { FileHandle } from "node:fs/promises";
 import { dirname, join, posix } from "node:path";
 import type { Stats } from "node:fs";
@@ -27,7 +27,6 @@ type Handle =
   | { kind: "file"; fd: FileHandle; path: string; written: boolean }
   | { kind: "dir"; path: string; entries: Promise<FileEntry[]> | null };
 
-// Loads the node's SSH host key, generating an ed25519 one on first start.
 export const loadHostKey = async (path: string): Promise<string> => {
   if (existsSync(path)) {
     return readFile(path, "utf-8");
@@ -37,6 +36,21 @@ export const loadHostKey = async (path: string): Promise<string> => {
   await writeFile(path, key, { mode: 0o600 });
   log.info(`generated SSH host key at ${path}`);
   return key;
+};
+
+export const openFlags = (mode: string): number => {
+  const access = mode.includes("+")
+    ? constants.O_RDWR
+    : mode.includes("r")
+      ? constants.O_RDONLY
+      : constants.O_WRONLY;
+  const create = mode.includes("w")
+    ? constants.O_CREAT | constants.O_TRUNC
+    : mode.includes("a")
+      ? constants.O_CREAT | constants.O_APPEND
+      : 0;
+  const exclusive = mode.includes("x") ? constants.O_EXCL : 0;
+  return access | create | exclusive | (constants.O_NOFOLLOW ?? 0);
 };
 
 const toAttrs = (info: Stats): Attributes => ({
@@ -58,7 +72,6 @@ const permissionString = (mode: number): string => {
   return type + bits;
 };
 
-// `ls -l` style line; clients like FileZilla parse it for directory listings.
 const longname = (name: string, info: Stats): string => {
   const date = info.mtime;
   const when =
@@ -74,7 +87,6 @@ const longname = (name: string, info: Stats): string => {
   ].join(" ");
 };
 
-// Client paths are absolute from the server root ("/" = the volume).
 const virtualPath = (path: string): string => posix.normalize(posix.join("/", path || "."));
 
 const statusFor = (error: unknown): number => {
@@ -91,7 +103,6 @@ const statusFor = (error: unknown): number => {
   return STATUS_CODE.FAILURE;
 };
 
-// One authenticated SFTP channel, jailed to a single server's volume.
 class SftpSession {
   private handles = new Map<number, Handle>();
   private nextHandle = 1;
@@ -114,7 +125,6 @@ class SftpSession {
     return this.server.fs;
   }
 
-  // Batches file events so an upload of 1000 files is one activity entry.
   private record(event: string, path: string): void {
     const list = this.pending.get(event) ?? [];
     list.push(path);
@@ -167,7 +177,6 @@ class SftpSession {
     return [id, this.handles.get(id)];
   }
 
-  // Runs a request handler, turning thrown errors into SFTP status replies.
   private handle<A extends unknown[]>(
     name: string,
     fn: (reqId: number, ...args: A) => Promise<void>,
@@ -178,7 +187,6 @@ class SftpSession {
         if (code === STATUS_CODE.FAILURE) {
           log.debug(`${name} on ${this.server.uuid} failed`, error);
         }
-        // OS errors name host paths; only our own messages go to the client.
         this.sftp.status(reqId, code, error instanceof FilesystemError ? error.message : undefined);
       });
     };
@@ -189,6 +197,17 @@ class SftpSession {
       throw new FilesystemError("server is suspended");
     }
     const abs = await this.fs.safePath(path);
+    if (abs === this.fs.root) {
+      throw new FilesystemError("cannot modify the server root");
+    }
+    return abs;
+  }
+
+  private async removable(path: string): Promise<string> {
+    if (this.server.config.suspended) {
+      throw new FilesystemError("server is suspended");
+    }
+    const abs = await this.fs.safeEntryPath(path);
     if (abs === this.fs.root) {
       throw new FilesystemError("cannot modify the server root");
     }
@@ -219,7 +238,7 @@ class SftpSession {
 
     const statHandler = (follow: boolean) =>
       this.handle("STAT", async (reqId, path: string) => {
-        const abs = await this.fs.safePath(path);
+        const abs = follow ? await this.fs.safePath(path) : await this.fs.safeEntryPath(path);
         sftp.attrs(reqId, toAttrs(follow ? await stat(abs) : await lstat(abs)));
       });
     sftp.on("STAT", statHandler(true));
@@ -239,7 +258,8 @@ class SftpSession {
           sftp.status(reqId, STATUS_CODE.FAILURE, "not enough disk space");
           return;
         }
-        const fd = await open(abs, mode, 0o644);
+        const real = await realpath(abs).catch(() => abs);
+        const fd = await open(real, openFlags(mode), 0o644);
         sftp.handle(reqId, this.allocate({ fd, kind: "file", path: virtual, written: writing }));
       }),
     );
@@ -296,7 +316,6 @@ class SftpSession {
       }),
     );
 
-    // Mode bits and timestamps only; ownership always stays with the server.
     const setstat = async (abs: string, attrs: Partial<Attributes>) => {
       if (typeof attrs.mode === "number") {
         await chmod(abs, attrs.mode & 0o777);
@@ -362,7 +381,6 @@ class SftpSession {
           sftp.status(reqId, STATUS_CODE.FAILURE, "invalid handle");
           return;
         }
-        // Clients pipeline READDIRs on one handle; they must share one listing.
         handle.entries ??= this.listDirectory(handle.path);
         const entries = await handle.entries;
         const batch = entries.splice(0, READDIR_BATCH);
@@ -389,7 +407,7 @@ class SftpSession {
     const remove = (directory: boolean) =>
       this.handle(directory ? "RMDIR" : "REMOVE", async (reqId, path: string) => {
         const virtual = virtualPath(path);
-        const abs = await this.writable(virtual);
+        const abs = await this.removable(virtual);
         await (directory ? rmdir(abs) : unlink(abs));
         this.fs.invalidateUsage();
         this.record("server:sftp.delete", virtual);
@@ -403,7 +421,6 @@ class SftpSession {
       this.handle("RENAME", async (reqId, from: string, to: string) => {
         const source = await this.writable(from);
         const target = await this.writable(to);
-        // SFTPv3 rename never overwrites.
         if (await lstat(target).catch(() => null)) {
           sftp.status(reqId, STATUS_CODE.FAILURE, "target already exists");
           return;
@@ -414,15 +431,12 @@ class SftpSession {
       }),
     );
 
-    // Links could be used to point outside the volume; not offered.
     for (const event of ["READLINK", "SYMLINK"] as const) {
       sftp.on(event, (reqId: number) => sftp.status(reqId, STATUS_CODE.OP_UNSUPPORTED));
     }
   }
 }
 
-// SSH server that only offers the SFTP subsystem. Credentials are checked by
-// the panel; each connection is bound to the one server the username names.
 export class SftpServer {
   private ssh: InstanceType<typeof ssh2.Server>;
   private connections = new Map<string, Set<Connection>>();
@@ -434,7 +448,7 @@ export class SftpServer {
     private readonly manager: ServerManager,
     private readonly activity: ActivityBuffer,
   ) {
-    this.ssh = new ssh2.Server({ hostKeys: [hostKey], ident: "NodeByte" }, (client, info) =>
+    this.ssh = new ssh2.Server({ hostKeys: [hostKey], ident: "BytePanel" }, (client, info) =>
       this.accept(client, info.ip),
     );
     this.ssh.on("error", (error: Error) => log.error("ssh server error", error));
@@ -450,7 +464,6 @@ export class SftpServer {
     });
   }
 
-  // Drops every SFTP connection to a server (suspension, deletion).
   disconnect(serverUuid: string): void {
     for (const client of this.connections.get(serverUuid) ?? []) {
       client.end();
@@ -508,8 +521,6 @@ export class SftpServer {
       this.connections.set(server.uuid, set);
       client.on("close", () => set.delete(client));
 
-      // Shell, exec and port forwarding requests have no listener, so ssh2
-      // rejects them.
       client.on("session", (acceptSession) => {
         acceptSession().on("sftp", (acceptSftp) => {
           new SftpSession(acceptSftp(), server, { ip, uuid: userUuid }, this.activity);

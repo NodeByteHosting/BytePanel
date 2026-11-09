@@ -39,9 +39,7 @@ const SignInPage = () => {
         }
         router.push("/dashboard");
         router.refresh();
-      } catch {
-        // autofill is best-effort; ignore failures
-      }
+      } catch {}
     });
 
     return () => {

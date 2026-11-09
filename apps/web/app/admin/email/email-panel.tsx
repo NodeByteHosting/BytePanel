@@ -28,10 +28,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-// ---------------------------------------------------------------------------
-// Test email tab
-// ---------------------------------------------------------------------------
-
 const TestEmailTab = () => {
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
@@ -115,10 +111,6 @@ const TestEmailTab = () => {
     </div>
   );
 };
-
-// ---------------------------------------------------------------------------
-// Broadcast tab
-// ---------------------------------------------------------------------------
 
 const BroadcastTab = () => {
   const [subject, setSubject] = useState("");
@@ -221,10 +213,6 @@ const BroadcastTab = () => {
   );
 };
 
-// ---------------------------------------------------------------------------
-// Logs tab (email events from audit log)
-// ---------------------------------------------------------------------------
-
 interface AuditEntry {
   id: string;
   action: string;
@@ -267,7 +255,7 @@ const EmailLogsTab = () => {
   }, [page]);
 
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
+    // oxlint-disable-next-line react/set-state-in-effect
     void fetchLogs();
   }, [fetchLogs]);
 
@@ -328,7 +316,7 @@ const EmailLogsTab = () => {
                         {isBroadcast ? "broadcast" : "test"}
                       </Badge>
                       <span className="text-sm font-medium">
-                        {String(meta.subject ?? "—")}
+                        {String(meta.subject ?? "-")}
                       </span>
                     </div>
                     <p className="text-muted-foreground mt-1 text-xs">
@@ -388,10 +376,6 @@ const EmailLogsTab = () => {
     </div>
   );
 };
-
-// ---------------------------------------------------------------------------
-// Root component
-// ---------------------------------------------------------------------------
 
 export const EmailPanel = () => (
   <Tabs defaultValue="test">

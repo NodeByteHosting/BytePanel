@@ -25,7 +25,6 @@ const AdminLayout = async ({ children }: { children: ReactNode }) => {
         navItems={[...ADMIN_NAV_ITEMS]}
       />
       <AdminContainer>
-        {/* Streams in after the page so slow or offline nodes never block it. */}
         <Suspense fallback={null}>
           <UpdateBanner />
         </Suspense>

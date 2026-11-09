@@ -1,5 +1,5 @@
 "use client";
-import { games } from "@nodebyte/games";
+import { games } from "@bytepanel/games";
 import { CheckIcon, CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { Fragment, useState } from "react";
 import type { ReactNode } from "react";

@@ -2,12 +2,6 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-// Why: packages/protocol (shared zod schemas) is compiled into both the panel and the
-// node daemon (apps/agent). Two different zod versions produce structurally
-// incompatible schema types and subtly different runtime validation, so both
-// packages must pin the exact same zod release. `npm-check-updates` and
-// similar tools love to bump this — guard the pin here.
-
 const ROOT = path.join(import.meta.dir, "..");
 
 interface PackageJson {

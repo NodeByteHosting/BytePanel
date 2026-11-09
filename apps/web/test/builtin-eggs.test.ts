@@ -1,10 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import { eggs, games } from "@nodebyte/games";
+import { eggs, games } from "@bytepanel/games";
 
 import { validateVariable } from "@/lib/eggs/rules";
 
-// Placeholders the panel resolves itself (see lib/eggs/placeholders.ts).
 const BUILT_IN =
   /^(?:SERVER_MEMORY|SERVER_PORT|SERVER_IP|SERVER_PORT_\d+|server\.[\w.]+|env\.\w+|config\.docker\.interface)$/u;
 
@@ -32,14 +31,12 @@ describe("built-in GSG eggs", () => {
 
       test("defaults satisfy their own rules", () => {
         for (const variable of egg.variables) {
-          // Placeholder and "@random" defaults are resolved at runtime.
           if (
             variable.default.includes("{{") ||
             variable.default === "@random"
           ) {
             continue;
           }
-          // Required-but-empty defaults force the customer to enter a value.
           if (variable.default === "" && variable.rules.includes("required")) {
             continue;
           }

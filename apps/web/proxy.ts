@@ -1,4 +1,4 @@
-import { createMiddleware, defaults, withVercelToolbar } from "@nosecone/next";
+import { createMiddleware, defaults } from "@nosecone/next";
 import type { NoseconeOptions } from "@nosecone/next";
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse } from "next/server";
@@ -8,9 +8,6 @@ export const noseconeOptions: NoseconeOptions = {
   ...defaults,
   contentSecurityPolicy: false,
 };
-
-export const noseconeOptionsWithToolbar: NoseconeOptions =
-  withVercelToolbar(noseconeOptions);
 
 const securityHeaders = createMiddleware(noseconeOptions);
 
@@ -23,7 +20,6 @@ const PUBLIC_PATHS = [
   "/sitemap.xml",
   "/api/auth",
   "/api/remote",
-  // Authenticated with the billing API key, not a session
   "/api/application",
   "/api/branding",
   "/monitoring",

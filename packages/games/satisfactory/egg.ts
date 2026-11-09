@@ -6,7 +6,6 @@ import { satisfactorySettings } from "./settings";
 
 export const satisfactoryEgg: EggDefinition = {
   containerUser: "image",
-  // game (tcp+udp), messaging (tcp)
   containerPorts: [0, 0],
   description: satisfactory.description,
   dockerImages: { Default: dockerImage },

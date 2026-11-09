@@ -67,7 +67,6 @@ export const SharedSidebar = ({
 
   return (
     <Sidebar collapsible="offcanvas" className="border-none">
-      {/* Header */}
       <SidebarHeader className="border-b border-border/40 px-4 py-3.5">
         <Link
           href={headerHref}
@@ -85,12 +84,9 @@ export const SharedSidebar = ({
         </Link>
       </SidebarHeader>
 
-      {/* Main Content */}
       <SidebarContent className="px-0">{children}</SidebarContent>
 
-      {/* Footer */}
       <SidebarFooter className="border-t border-border/40 px-0 py-2 gap-0">
-        {/* Theme Selector */}
         <SidebarMenu className="px-2 gap-1">
           <SidebarMenuItem>
             <div className="flex items-center justify-between rounded-lg px-3 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
@@ -102,7 +98,6 @@ export const SharedSidebar = ({
           </SidebarMenuItem>
         </SidebarMenu>
 
-        {/* User Menu */}
         <SidebarMenu className="px-2 gap-0">
           <SidebarMenuItem>
             <DropdownMenu>
@@ -136,7 +131,6 @@ export const SharedSidebar = ({
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="top" align="end" className="w-56">
-                {/* User Info */}
                 <DropdownMenuLabel className="font-normal">
                   <div className="grid text-left leading-tight">
                     <div className="flex items-center gap-2">
@@ -161,7 +155,6 @@ export const SharedSidebar = ({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                {/* Menu Items */}
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/account" className="cursor-pointer">
                     <User className="h-4 w-4 mr-2" />

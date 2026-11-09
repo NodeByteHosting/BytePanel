@@ -40,7 +40,6 @@ const AdminServerPage = async ({
         egg: { include: { nest: true } },
         node: true,
         plan: true,
-        subscription: { select: { status: true } },
         user: { select: { email: true, id: true, name: true } },
       },
       where: { deletedAt: null, id },
@@ -80,7 +79,7 @@ const AdminServerPage = async ({
               <Row label="Egg">
                 {server.egg
                   ? `${server.egg.nest.name} / ${server.egg.name}`
-                  : "—"}
+                  : "-"}
               </Row>
               <Row label="Node">
                 {server.node ? (
@@ -91,7 +90,7 @@ const AdminServerPage = async ({
                     {server.node.name}
                   </Link>
                 ) : (
-                  "—"
+                  "-"
                 )}
               </Row>
               <Row label="Allocations">
@@ -101,13 +100,10 @@ const AdminServerPage = async ({
                       (a) =>
                         `${a.ipAlias ?? a.ip}:${a.port}${a.id === server.allocationId ? "*" : ""}`
                     )
-                    .join(", ") || "—"}
+                    .join(", ") || "-"}
                 </span>
               </Row>
               <Row label="Plan">{server.plan?.name ?? "Custom"}</Row>
-              <Row label="Subscription">
-                {server.subscription?.status ?? "none"}
-              </Row>
               <Row label="UUID">
                 <code className="text-xs">{server.uuid}</code>
               </Row>

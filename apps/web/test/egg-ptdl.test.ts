@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 
 import { parsePtdlEgg } from "@/lib/eggs/ptdl";
 
-// Trimmed-down shape of Pterodactyl's official Paper egg export.
 const paperEgg = {
   author: "parker@pterodactyl.io",
   config: {

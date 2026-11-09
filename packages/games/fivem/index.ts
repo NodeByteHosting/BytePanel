@@ -1,13 +1,7 @@
-import type { ComposeConfig } from "../compose";
-import { resolveSettings } from "../settings";
-import { buildFivemCompose, dockerImage } from "./install";
+import { dockerImage } from "./install";
 import { fivemSettings } from "./settings";
 
-const buildCompose = (config: ComposeConfig, raw: unknown): string =>
-  buildFivemCompose(config, resolveSettings(fivemSettings, raw));
-
 export const fivem = {
-  buildCompose,
   description:
     "A multiplayer modification for Grand Theft Auto V, letting you play on custom roleplay, racing, and game-mode servers.",
   dockerImage,
@@ -22,7 +16,6 @@ export const fivem = {
   image: "/games/fivem.webp",
   name: "FiveM",
   ports: [
-    // Game traffic — TCP and UDP.
     {
       from: 30_120,
       protocol: "tcp",

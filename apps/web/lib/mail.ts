@@ -30,8 +30,6 @@ const escapeHtml = (value: string) =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 
-// Templates use {{panelName}}, {{logo}}, {{supportUrl}}, {{websiteUrl}} and
-// {{websiteHost}}; they are filled from /admin/settings at send time.
 const brandTokens = async () => {
   const settings = await readPanelSettings();
   const panelUrl = env.BETTER_AUTH_URL;
@@ -62,10 +60,6 @@ const fillTokens = (template: string, values: Record<string, string>) =>
     Object.hasOwn(values, key) ? (values[key] as string) : match
   );
 
-/**
- * Sends an email. Returns `true` on success, `false` if SMTP is unconfigured
- * or the send fails. Never throws — email failures should never crash a request.
- */
 export const sendMail = async (options: MailOptions): Promise<boolean> => {
   const transporter = getTransporter();
   if (!transporter) {
@@ -86,10 +80,6 @@ export const sendMail = async (options: MailOptions): Promise<boolean> => {
     return false;
   }
 };
-
-// ---------------------------------------------------------------------------
-// Shared base template
-// ---------------------------------------------------------------------------
 
 const baseTemplate = (contentHtml: string) =>
   `
@@ -134,22 +124,12 @@ const baseTemplate = (contentHtml: string) =>
 </body>
 </html>`.trim();
 
-// ---------------------------------------------------------------------------
-// Email templates
-// ---------------------------------------------------------------------------
-
 interface ServerInviteParams {
-  /** Recipient's email address */
   toEmail: string;
-  /** Name of the server they were invited to */
   serverName: string;
-  /** Display name of the person who sent the invite */
   invitedByName: string;
-  /** Role they will be granted */
   role: string;
-  /** The accept URL (e.g. https://panel.nodebyte.host/invite/TOKEN) */
   acceptUrl: string;
-  /** ISO string when the invite expires */
   expiresAt: string;
 }
 
@@ -173,7 +153,7 @@ export const sendServerInviteEmail = (
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Server Invite — {{panelName}}</title>
+  <title>Server Invite - {{panelName}}</title>
   <style>
     body { margin: 0; padding: 0; background: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #e5e5e5; }
     .wrapper { max-width: 560px; margin: 40px auto; background: #111111; border: 1px solid #222; border-radius: 12px; overflow: hidden; }
@@ -239,10 +219,6 @@ export const sendServerInviteEmail = (
   });
 };
 
-// ---------------------------------------------------------------------------
-// Welcome email
-// ---------------------------------------------------------------------------
-
 export const sendWelcomeEmail = (
   toEmail: string,
   displayName: string | null | undefined = "there"
@@ -277,10 +253,6 @@ export const sendWelcomeEmail = (
   });
 };
 
-// ---------------------------------------------------------------------------
-// Password reset email
-// ---------------------------------------------------------------------------
-
 export const sendPasswordResetEmail = (
   toEmail: string,
   resetUrl: string
@@ -312,62 +284,6 @@ export const sendPasswordResetEmail = (
   });
 };
 
-// ---------------------------------------------------------------------------
-// Server created email
-// ---------------------------------------------------------------------------
-
-interface ServerCreatedParams {
-  toEmail: string;
-  userName: string | null | undefined;
-  serverName: string;
-  game: string;
-  region: string;
-  serverUrl: string;
-}
-
-export const sendServerCreatedEmail = (
-  params: ServerCreatedParams
-): Promise<boolean> => {
-  const { toEmail, userName, serverName, game, region, serverUrl } = params;
-  const displayName = userName ?? "there";
-  const gameLabel =
-    game.charAt(0).toUpperCase() + game.slice(1).replaceAll("-", " ");
-
-  const html = baseTemplate(`
-    <h1>Your server is being provisioned</h1>
-    <p>Hi <span class="hl">${displayName}</span>, your new game server is spinning up and should be ready in about 60 seconds.</p>
-    <dl class="info-box">
-      <dt>Server name</dt><dd>${serverName}</dd>
-      <dt>Game</dt><dd>${gameLabel}</dd>
-      <dt>Region</dt><dd>${region}</dd>
-    </dl>
-    <a class="btn" href="${serverUrl}">View server</a>
-    <p class="meta">
-      Once provisioned, you'll find the connection details on your server page.
-    </p>
-  `);
-
-  const text = [
-    `Your {{panelName}} server "${serverName}" is being provisioned.`,
-    ``,
-    `Game: ${gameLabel}`,
-    `Region: ${region}`,
-    ``,
-    `View your server: ${serverUrl}`,
-  ].join("\n");
-
-  return sendMail({
-    html,
-    subject: `Your server "${serverName}" is being provisioned`,
-    text,
-    to: toEmail,
-  });
-};
-
-// ---------------------------------------------------------------------------
-// Server deleted email
-// ---------------------------------------------------------------------------
-
 interface ServerDeletedParams {
   toEmail: string;
   userName: string | null | undefined;
@@ -383,7 +299,7 @@ export const sendServerDeletedEmail = (
   const html = baseTemplate(`
     <h1>Server deletion initiated</h1>
     <p>Hi <span class="hl">${displayName}</span>, your server <span class="hl">${serverName}</span> has been queued for deletion.</p>
-    <p>All associated resources will be removed shortly. Your billing subscription for this server will also be cancelled.</p>
+    <p>All associated resources will be removed shortly.</p>
     <p class="meta">
       If this was a mistake or you have any questions, contact us at
       <a href="{{supportUrl}}" style="color:#737373">{{supportUrl}}</a> as soon as possible.
@@ -393,7 +309,7 @@ export const sendServerDeletedEmail = (
   const text = [
     `Your {{panelName}} server "${serverName}" has been queued for deletion.`,
     ``,
-    `All resources will be removed and your subscription will be cancelled.`,
+    `All resources will be removed.`,
     ``,
     `If this was a mistake, contact us at {{supportUrl}}`,
   ].join("\n");
@@ -405,257 +321,6 @@ export const sendServerDeletedEmail = (
     to: toEmail,
   });
 };
-
-// ---------------------------------------------------------------------------
-// Invoice paid email
-// ---------------------------------------------------------------------------
-
-interface InvoicePaidParams {
-  toEmail: string;
-  toName: string | null | undefined;
-  planName: string;
-  amountPaidCents: number;
-  currency: string;
-  invoiceUrl: string | null;
-  invoicePdf: string | null;
-  periodStart: Date | null;
-  periodEnd: Date | null;
-}
-
-export const sendInvoicePaidEmail = (
-  params: InvoicePaidParams
-): Promise<boolean> => {
-  const {
-    toEmail,
-    toName,
-    planName,
-    amountPaidCents,
-    currency,
-    invoiceUrl,
-    invoicePdf,
-    periodStart,
-    periodEnd,
-  } = params;
-  const displayName = toName ?? "there";
-
-  const amountLabel = new Intl.NumberFormat("en-GB", {
-    currency,
-    style: "currency",
-  }).format(amountPaidCents / 100);
-
-  const periodLabel =
-    periodStart && periodEnd
-      ? `${periodStart.toLocaleDateString("en-US", { dateStyle: "medium" })} – ${periodEnd.toLocaleDateString("en-US", { dateStyle: "medium" })}`
-      : null;
-
-  let invoiceLink: string;
-  if (invoiceUrl) {
-    invoiceLink = `<a class="btn" href="${invoiceUrl}">View invoice</a>`;
-  } else if (invoicePdf) {
-    invoiceLink = `<a class="btn" href="${invoicePdf}">Download PDF</a>`;
-  } else {
-    invoiceLink = "";
-  }
-
-  const html = baseTemplate(`
-    <h1>Payment confirmed</h1>
-    <p>Hi <span class="hl">${displayName}</span>, thank you — your payment has been received and your server subscription is active.</p>
-    <dl class="info-box">
-      <dt>Plan</dt><dd>${planName}</dd>
-      <dt>Amount paid</dt><dd>${amountLabel}</dd>
-      ${periodLabel ? `<dt>Billing period</dt><dd>${periodLabel}</dd>` : ""}
-    </dl>
-    ${invoiceLink}
-    <p class="meta">
-      If you have any questions about your invoice, contact us at
-      <a href="{{supportUrl}}" style="color:#737373">{{supportUrl}}</a>.
-    </p>
-  `);
-
-  let textInvoiceItem = "";
-  if (invoiceUrl) {
-    textInvoiceItem = `View invoice: ${invoiceUrl}`;
-  } else if (invoicePdf) {
-    textInvoiceItem = `Download PDF: ${invoicePdf}`;
-  }
-
-  const text = [
-    `Payment confirmed — {{panelName}}`,
-    ``,
-    `Hi ${displayName}, your payment has been received.`,
-    ``,
-    `Plan: ${planName}`,
-    `Amount paid: ${amountLabel}`,
-    periodLabel ? `Billing period: ${periodLabel}` : "",
-    ``,
-    textInvoiceItem,
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  return sendMail({
-    html,
-    subject: `Payment confirmed — ${amountLabel} for ${planName}`,
-    text,
-    to: toEmail,
-  });
-};
-
-// ---------------------------------------------------------------------------
-// Invoice payment failed email
-// ---------------------------------------------------------------------------
-
-interface InvoiceFailedParams {
-  toEmail: string;
-  toName: string | null | undefined;
-  amountDueCents: number;
-  currency: string;
-  invoiceUrl: string | null;
-  gracePeriodEnd: Date;
-}
-
-export const sendInvoiceFailedEmail = (
-  params: InvoiceFailedParams
-): Promise<boolean> => {
-  const {
-    toEmail,
-    toName,
-    amountDueCents,
-    currency,
-    invoiceUrl,
-    gracePeriodEnd,
-  } = params;
-  const displayName = toName ?? "there";
-
-  const amountLabel = new Intl.NumberFormat("en-GB", {
-    currency,
-    style: "currency",
-  }).format(amountDueCents / 100);
-
-  const deadlineLabel = gracePeriodEnd.toLocaleDateString("en-US", {
-    dateStyle: "long",
-  });
-
-  const html = baseTemplate(`
-    <h1 style="color:#dc2626">Payment failed</h1>
-    <p>Hi <span class="hl">${displayName}</span>, we were unable to collect your latest payment.</p>
-    <dl class="info-box">
-      <dt>Amount due</dt><dd style="color:#f87171">${amountLabel}</dd>
-      <dt>Suspension deadline</dt><dd>${deadlineLabel}</dd>
-    </dl>
-    ${invoiceUrl ? `<a class="btn" href="${invoiceUrl}">Pay now</a>` : ""}
-    <p>
-      Please update your payment method and settle the outstanding balance before <strong style="color:#e5e5e5">${deadlineLabel}</strong>,
-      after which your server may be automatically suspended.
-    </p>
-    <p class="meta">
-      Update your payment details in the billing portal or contact us at
-      <a href="{{supportUrl}}" style="color:#737373">{{supportUrl}}</a>.
-    </p>
-  `);
-
-  const text = [
-    `Payment failed — {{panelName}}`,
-    ``,
-    `Hi ${displayName}, we were unable to collect your latest payment of ${amountLabel}.`,
-    ``,
-    `Please update your payment method before ${deadlineLabel} to avoid server suspension.`,
-    ``,
-    invoiceUrl ? `Pay now: ${invoiceUrl}` : "",
-    ``,
-    `Contact support: {{supportUrl}}`,
-  ]
-    .filter((l) => l !== undefined)
-    .join("\n");
-
-  return sendMail({
-    html,
-    subject: `Action required: payment of ${amountLabel} failed`,
-    text,
-    to: toEmail,
-  });
-};
-
-// ---------------------------------------------------------------------------
-// Suspension warning / suspension notice email
-// ---------------------------------------------------------------------------
-
-interface SuspensionWarningParams {
-  toEmail: string;
-  toName: string | null | undefined;
-  planName: string;
-  invoiceUrl: string | null;
-  gracePeriodEnd: Date;
-  /** `true` = server has already been suspended; `false` = warning before suspension */
-  suspended: boolean;
-}
-
-export const sendSuspensionWarningEmail = (
-  params: SuspensionWarningParams
-): Promise<boolean> => {
-  const { toEmail, toName, planName, invoiceUrl, gracePeriodEnd, suspended } =
-    params;
-  const displayName = toName ?? "there";
-  const deadlineLabel = gracePeriodEnd.toLocaleDateString("en-US", {
-    dateStyle: "long",
-  });
-
-  const title = suspended
-    ? "Your server has been suspended"
-    : "Your server will be suspended soon";
-  const colour = suspended ? "#dc2626" : "#d97706";
-
-  const bodyText = suspended
-    ? `Your server (<span class="hl">${planName}</span>) has been suspended due to a failed payment. It will be permanently deleted if the outstanding balance remains unpaid.`
-    : `Your server (<span class="hl">${planName}</span>) is scheduled for suspension on <strong style="color:#e5e5e5">${deadlineLabel}</strong> due to an unpaid invoice. Please update your payment method immediately to avoid interruption.`;
-
-  const html = baseTemplate(`
-    <h1 style="color:${colour}">${title}</h1>
-    <p>Hi <span class="hl">${displayName}</span>, ${bodyText}</p>
-    ${invoiceUrl ? `<a class="btn" href="${invoiceUrl}">Pay now to restore</a>` : ""}
-    <p class="meta">
-      If you believe this is a mistake, contact us at
-      <a href="{{supportUrl}}" style="color:#737373">{{supportUrl}}</a>.
-    </p>
-  `);
-
-  const text = suspended
-    ? [
-        `Your {{panelName}} server has been suspended.`,
-        ``,
-        `Plan: ${planName}`,
-        `Reason: Failed payment — grace period exceeded`,
-        ``,
-        invoiceUrl ? `Pay now to restore: ${invoiceUrl}` : "",
-        `Contact support: {{supportUrl}}`,
-      ]
-        .filter(Boolean)
-        .join("\n")
-    : [
-        `Your {{panelName}} server will be suspended on ${deadlineLabel}.`,
-        ``,
-        `Plan: ${planName}`,
-        `Reason: Unpaid invoice`,
-        ``,
-        invoiceUrl ? `Pay now: ${invoiceUrl}` : "",
-        `Contact support: {{supportUrl}}`,
-      ]
-        .filter(Boolean)
-        .join("\n");
-
-  return sendMail({
-    html,
-    subject: suspended
-      ? `Your server has been suspended — {{panelName}}`
-      : `Action required: your server will be suspended on ${deadlineLabel}`,
-    text,
-    to: toEmail,
-  });
-};
-
-// ---------------------------------------------------------------------------
-// Server ready email
-// ---------------------------------------------------------------------------
 
 interface ServerReadyParams {
   toEmail: string;
@@ -705,10 +370,6 @@ export const sendServerReadyEmail = (
   });
 };
 
-// ---------------------------------------------------------------------------
-// Server provision failed email
-// ---------------------------------------------------------------------------
-
 interface ServerProvisionFailedParams {
   toEmail: string;
   userName: string | null | undefined;
@@ -731,20 +392,16 @@ export const sendServerProvisionFailedEmail = (
     </dl>
     <p>Our team has been notified. Please contact support and we'll get this resolved for you.</p>
     <a class="btn" href="${supportUrl}">Contact support</a>
-    <p class="meta">
-      Your subscription will not be charged for a server that failed to provision.
-    </p>
   `);
 
   const text = [
-    `Server provisioning failed — {{panelName}}`,
+    `Server provisioning failed - {{panelName}}`,
     ``,
     `Hi ${displayName}, we were unable to provision "${serverName}".`,
     ``,
     `Reason: ${reason}`,
     ``,
     `Please contact support: ${supportUrl}`,
-    `Your subscription will not be charged for a server that failed to provision.`,
   ].join("\n");
 
   return sendMail({
@@ -754,10 +411,6 @@ export const sendServerProvisionFailedEmail = (
     to: toEmail,
   });
 };
-
-// ---------------------------------------------------------------------------
-// Server member added (direct-add, no invite link)
-// ---------------------------------------------------------------------------
 
 interface ServerMemberAddedParams {
   toEmail: string;

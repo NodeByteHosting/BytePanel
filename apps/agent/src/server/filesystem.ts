@@ -1,10 +1,11 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import { createWriteStream } from "node:fs";
 import {
-  chown,
+  lchown,
   lstat,
   mkdir,
+  open,
   readdir,
   realpath,
   rename,
@@ -18,7 +19,7 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { ReadableStream as NodeReadableStream } from "node:stream/web";
 
-import type { FileEntry } from "@nodebyte/protocol";
+import type { FileEntry } from "@bytepanel/protocol";
 
 export class FilesystemError extends Error {
   constructor(
@@ -32,8 +33,6 @@ export class FilesystemError extends Error {
 const MAX_EDITOR_BYTES = 4 * 1024 * 1024;
 const MAX_PULL_BYTES = 2 * 1024 * 1024 * 1024;
 
-// Rejects loopback, link-local, private and CGNAT ranges so "pull from URL"
-// can't be used to reach the node's internal network or metadata services.
 const isPrivateAddress = (address: string): boolean => {
   if (isIP(address) === 6) {
     const lower = address.toLowerCase();
@@ -61,13 +60,50 @@ const isPrivateAddress = (address: string): boolean => {
   );
 };
 
-const run = async (cmd: string[], cwd: string): Promise<void> => {
-  const proc = Bun.spawn({ cmd, cwd, stderr: "pipe", stdout: "ignore" });
-  const code = await proc.exited;
+type Owner = { uid: number; gid: number };
+
+const run = async (
+  cmd: string[],
+  cwd: string,
+  options: { as?: Owner | null; stdin?: ReturnType<typeof Bun.file> } = {},
+): Promise<void> => {
+  const full = options.as
+    ? ["setpriv", `--reuid=${options.as.uid}`, `--regid=${options.as.gid}`, "--clear-groups", ...cmd]
+    : cmd;
+  const proc = Bun.spawn({
+    cmd: full,
+    cwd,
+    stderr: "pipe",
+    stdin: options.stdin ?? "ignore",
+    stdout: "ignore",
+  });
+  const [code, err] = await Promise.all([proc.exited, new Response(proc.stderr).text()]);
   if (code !== 0) {
-    const err = await new Response(proc.stderr).text();
     throw new FilesystemError(`${cmd[0]} failed: ${err.trim().slice(0, 300)}`, 500);
   }
+};
+
+const capture = async (cmd: string[]): Promise<string> => {
+  const proc = Bun.spawn({ cmd, stderr: "ignore", stdout: "pipe" });
+  const [code, out] = await Promise.all([proc.exited, new Response(proc.stdout).text()]);
+  if (code !== 0) {
+    throw new FilesystemError("could not read the archive");
+  }
+  return out;
+};
+
+export const parseTarListing = (listing: string): number =>
+  listing.split("\n").reduce((total, line) => {
+    const size = Number(line.trim().split(/\s+/u)[2]);
+    return Number.isFinite(size) ? total + size : total;
+  }, 0);
+
+export const parseZipSummary = (summary: string): number => {
+  const match = /([\d,]+) bytes uncompressed/u.exec(summary);
+  if (!match?.[1]) {
+    throw new FilesystemError("could not read the archive");
+  }
+  return Number(match[1].replaceAll(",", ""));
 };
 
 export class Filesystem {
@@ -76,40 +112,45 @@ export class Filesystem {
 
   constructor(
     readonly root: string,
-    private readonly owner: () => { uid: number; gid: number } | null,
+    private readonly owner: () => Owner | null,
     private readonly diskLimitBytes: () => number,
+    private readonly isIdle: () => boolean = () => true,
   ) {}
 
-  // Resolves a user path inside the root, following symlinks on the deepest
-  // existing ancestor so a link can't point outside the volume.
   async safePath(userPath: string): Promise<string> {
     const cleaned = normalize(`/${userPath}`).replace(/^[/\\]+/u, "");
     const target = resolve(this.root, cleaned);
     if (target !== this.root && !target.startsWith(this.root + sep)) {
       throw new FilesystemError("path escapes server root");
     }
-    let probe = target;
-    let suffix = "";
-    while (true) {
-      try {
-        const real = await realpath(probe);
-        const resolved = suffix ? join(real, suffix) : real;
-        const rootReal = await realpath(this.root);
-        if (resolved !== rootReal && !resolved.startsWith(rootReal + sep)) {
+    const rootReal = await realpath(this.root).catch(() => null);
+    if (!rootReal) {
+      return target;
+    }
+    let current = this.root;
+    for (const part of relative(this.root, target).split(sep).filter(Boolean)) {
+      current = join(current, part);
+      const info = await lstat(current).catch(() => null);
+      if (!info) {
+        return target;
+      }
+      if (info.isSymbolicLink()) {
+        const real = await realpath(current).catch(() => null);
+        if (!real || (real !== rootReal && !real.startsWith(rootReal + sep))) {
           throw new FilesystemError("path escapes server root");
         }
-        return target;
-      } catch (error) {
-        if (error instanceof FilesystemError) {
-          throw error;
-        }
-        if (probe === this.root) {
-          return target;
-        }
-        suffix = suffix ? join(basename(probe), suffix) : basename(probe);
-        probe = dirname(probe);
       }
     }
+    return target;
+  }
+
+  async safeEntryPath(userPath: string): Promise<string> {
+    const cleaned = normalize(`/${userPath}`);
+    return join(await this.safePath(dirname(cleaned)), basename(cleaned));
+  }
+
+  private tempPath(abs: string): string {
+    return join(dirname(abs), `.${randomUUID()}.bytepanel-part`);
   }
 
   async fixOwnership(path: string): Promise<void> {
@@ -118,9 +159,8 @@ export class Filesystem {
       return;
     }
     try {
-      await chown(path, owner.uid, owner.gid);
+      await lchown(path, owner.uid, owner.gid);
     } catch {
-      // best effort (e.g. running unprivileged in development)
     }
   }
 
@@ -129,7 +169,7 @@ export class Filesystem {
     if (!owner) {
       return;
     }
-    await run(["chown", "-R", `${owner.uid}:${owner.gid}`, this.root], this.root).catch(
+    await run(["chown", "-hR", `${owner.uid}:${owner.gid}`, this.root], this.root).catch(
       () => undefined,
     );
   }
@@ -149,13 +189,11 @@ export class Filesystem {
       await proc.exited;
       this.cachedUsage = Number.parseInt(out.split(/\s/u)[0] ?? "0", 10) || 0;
     } catch {
-      // keep the previous value
     }
     this.usageCheckedAt = Date.now();
     return this.cachedUsage;
   }
 
-  // SFTP writes bypass write(); keep the cached usage roughly current.
   noteWritten(bytes: number): void {
     this.cachedUsage += bytes;
   }
@@ -193,7 +231,6 @@ export class Filesystem {
           type: info.isSymbolicLink() ? "symlink" : info.isDirectory() ? "dir" : "file",
         });
       } catch {
-        // unreadable entry
       }
     }
     entries.sort((a, b) =>
@@ -239,8 +276,20 @@ export class Filesystem {
       throw new FilesystemError("not enough disk space", 507);
     }
     await this.mkdirp(dirname(abs));
-    const temp = `${abs}.nodebyte-part`;
-    await Bun.write(temp, data);
+    const temp = this.tempPath(abs);
+    const bytes =
+      typeof data === "string"
+        ? Buffer.from(data)
+        : Buffer.from(data instanceof Blob ? await data.arrayBuffer() : data);
+    const handle = await open(temp, "wx", 0o644);
+    try {
+      await handle.writeFile(bytes);
+    } catch (error) {
+      await unlink(temp).catch(() => undefined);
+      throw error;
+    } finally {
+      await handle.close();
+    }
     await rename(temp, abs);
     await this.fixOwnership(abs);
     this.usageCheckedAt = 0;
@@ -277,7 +326,7 @@ export class Filesystem {
 
   async delete(root: string, files: string[]): Promise<void> {
     for (const file of files) {
-      const abs = await this.safePath(join(root, file));
+      const abs = await this.safeEntryPath(join(root, file));
       if (abs === this.root) {
         throw new FilesystemError("cannot delete the server root");
       }
@@ -294,7 +343,14 @@ export class Filesystem {
       names.push(relative(base, abs));
     }
     const archiveName = `archive-${new Date().toISOString().replace(/[:.]/gu, "-")}.tar.gz`;
-    await run(["tar", "-czf", join(base, archiveName), "--", ...names], base);
+    const temp = this.tempPath(join(base, archiveName));
+    try {
+      await run(["tar", "-czf", temp, "--", ...names], base);
+      await rename(temp, join(base, archiveName));
+    } catch (error) {
+      await unlink(temp).catch(() => undefined);
+      throw error;
+    }
     await this.fixOwnership(join(base, archiveName));
     this.usageCheckedAt = 0;
     return archiveName;
@@ -307,27 +363,63 @@ export class Filesystem {
     if (!info?.isFile()) {
       throw new FilesystemError("archive not found", 404);
     }
-    if (!(await this.hasSpaceFor(info.size))) {
+    const zip = archive.endsWith(".zip");
+    const expanded = zip
+      ? parseZipSummary(await capture(["unzip", "-Zt", archive]))
+      : parseTarListing(await capture(["tar", "-tvf", archive]));
+    await this.diskUsage(true);
+    if (!(await this.hasSpaceFor(expanded))) {
       throw new FilesystemError("not enough disk space", 507);
     }
-    if (archive.endsWith(".zip")) {
-      await run(["unzip", "-o", "-q", archive, "-d", base], base);
+    const as = await this.extractionUser(base);
+    if (zip) {
+      await run(["unzip", "-o", "-q", archive, "-d", base], base, { as });
     } else {
-      // --no-same-owner / no absolute paths: tar strips leading "/" by default.
-      await run(["tar", "--no-same-owner", "-xf", archive, "-C", base], base);
+      await run(["tar", "--no-same-owner", "-xf", archive, "-C", base], base, { as });
     }
-    // Archives may contain symlinks pointing outside; remove any that do.
     await this.removeEscapingLinks(base);
     await this.chownRecursive();
     this.usageCheckedAt = 0;
   }
 
+  async restoreArchive(archive: string): Promise<void> {
+    await this.ensureRoot();
+    const as = await this.extractionUser(this.root);
+    await run(["tar", "--no-same-owner", "-xzf", "-", "-C", this.root], this.root, {
+      as,
+      stdin: Bun.file(archive),
+    });
+    await this.removeEscapingLinks(this.root);
+    await this.chownRecursive();
+    this.usageCheckedAt = 0;
+  }
+
+  private async extractionUser(base: string): Promise<Owner | null> {
+    if (process.getuid?.() !== 0) {
+      return null;
+    }
+    const owner = this.owner();
+    if (owner && owner.uid !== 0) {
+      return owner;
+    }
+    const info = await lstat(base);
+    if (info.uid !== 0) {
+      return { gid: info.gid, uid: info.uid };
+    }
+    if (!this.isIdle()) {
+      throw new FilesystemError("stop the server before extracting this archive", 409);
+    }
+    await this.removeEscapingLinks(this.root);
+    return null;
+  }
+
   private async removeEscapingLinks(dir: string): Promise<void> {
+    const rootReal = await realpath(this.root);
     for (const dirent of await readdir(dir, { withFileTypes: true })) {
       const abs = join(dir, dirent.name);
       if (dirent.isSymbolicLink()) {
         const target = await realpath(abs).catch(() => null);
-        if (!target || (target !== this.root && !target.startsWith(this.root + sep))) {
+        if (!target || (target !== rootReal && !target.startsWith(rootReal + sep))) {
           await unlink(abs);
         }
       } else if (dirent.isDirectory()) {
@@ -342,8 +434,6 @@ export class Filesystem {
     filename?: string;
     sha256?: string;
   }): Promise<{ path: string; bytes: number; sha256: string }> {
-    // Follow redirects by hand so every hop is checked against private ranges
-    // (GitHub release downloads, for example, redirect to a CDN).
     let url = new URL(input.url);
     let res: Response | null = null;
     for (let hop = 0; hop < 5; hop += 1) {
@@ -374,19 +464,22 @@ export class Filesystem {
       input.filename ?? (basename(decodeURIComponent(url.pathname)) || "download");
     const abs = await this.safePath(join(input.directory, name));
     await this.mkdirp(dirname(abs));
-    const temp = `${abs}.nodebyte-part`;
+    const temp = this.tempPath(abs);
+    const limit = this.diskLimitBytes();
+    const available =
+      limit > 0 ? Math.max(0, limit - (await this.diskUsage(true))) : Number.POSITIVE_INFINITY;
     const hash = createHash("sha256");
     let bytes = 0;
     const source = Readable.fromWeb(res.body as unknown as NodeReadableStream);
     source.on("data", (chunk: Buffer) => {
       bytes += chunk.length;
       hash.update(chunk);
-      if (bytes > MAX_PULL_BYTES) {
+      if (bytes > MAX_PULL_BYTES || bytes > available) {
         source.destroy(new FilesystemError("file too large", 507));
       }
     });
     try {
-      await pipeline(source, createWriteStream(temp));
+      await pipeline(source, createWriteStream(temp, { flags: "wx", mode: 0o644 }));
     } catch (error) {
       await unlink(temp).catch(() => undefined);
       throw error;

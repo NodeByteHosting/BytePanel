@@ -1,13 +1,13 @@
 import { appendFile, mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { WS_EVENTS } from "@nodebyte/protocol";
+import { WS_EVENTS } from "@bytepanel/protocol";
 import type {
   PowerAction,
   PowerState,
   ResourceUsage,
   ServerConfiguration,
-} from "@nodebyte/protocol";
+} from "@bytepanel/protocol";
 import type { Config } from "../config";
 import type { AttachedStream, Docker } from "../docker";
 import { computeCpuPercent, computeMemoryBytes, DockerError } from "../docker";
@@ -21,9 +21,23 @@ const STOP_TIMEOUT_MS = 10 * 60_000;
 const RESTART_KILL_AFTER_MS = 60_000;
 const CRASH_COOLDOWN_MS = 60_000;
 const CONSOLE_LINES_PER_SECOND = 2000;
+const MAX_PARTIAL_LINE = 64 * 1024;
 const ANSI_PATTERN = /\u001B\[[0-9;?]*[ -/]*[@-~]/gu;
 
 type Listener = (event: string, payload: string) => void;
+
+export const splitConsoleChunk = (
+  text: string,
+  maxPartial = MAX_PARTIAL_LINE,
+): { lines: string[]; partial: string } => {
+  const lines = text.split(/\r?\n/u);
+  const partial = lines.pop() ?? "";
+  if (partial.length > maxPartial) {
+    lines.push(partial);
+    return { lines, partial: "" };
+  }
+  return { lines, partial };
+};
 
 export class ServerError extends Error {
   constructor(
@@ -50,6 +64,7 @@ export class Server {
   private consoleBudget = CONSOLE_LINES_PER_SECOND;
   private consoleThrottled = false;
   private partialLine = "";
+  private decoder = new TextDecoder();
   private usage: ResourceUsage = {
     cpuAbsolute: 0,
     diskBytes: 0,
@@ -73,6 +88,7 @@ export class Server {
           ? node.system.user
           : this.config.container.volumeOwner,
       () => this.config.build.diskSpace * MIB,
+      () => this.state === "offline",
     );
     setInterval(() => {
       this.consoleBudget = CONSOLE_LINES_PER_SECOND;
@@ -88,8 +104,6 @@ export class Server {
     return this.config.uuid;
   }
 
-  // ─── events ────────────────────────────────────────────────────────────────
-
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
@@ -100,13 +114,12 @@ export class Server {
       try {
         listener(event, payload);
       } catch {
-        // a broken socket must not break the server
       }
     }
   }
 
   daemonMessage(message: string): void {
-    this.emit(WS_EVENTS.CONSOLE_OUTPUT, `\u001B[1m\u001B[33m[NodeByte Daemon]:\u001B[0m ${message}`);
+    this.emit(WS_EVENTS.CONSOLE_OUTPUT, `\u001B[1m\u001B[33m[BytePanel Daemon]:\u001B[0m ${message}`);
   }
 
   private setState(state: PowerState): void {
@@ -123,12 +136,11 @@ export class Server {
     this.emit(WS_EVENTS.STATUS, state);
   }
 
-  // ─── console ───────────────────────────────────────────────────────────────
-
   private onConsoleData(chunk: Uint8Array): void {
-    const text = this.partialLine + new TextDecoder().decode(chunk);
-    const lines = text.split(/\r?\n/u);
-    this.partialLine = lines.pop() ?? "";
+    const { lines, partial } = splitConsoleChunk(
+      this.partialLine + this.decoder.decode(chunk, { stream: true }),
+    );
+    this.partialLine = partial;
     for (const raw of lines) {
       const line = this.config.process.startup.stripAnsi ? raw.replaceAll(ANSI_PATTERN, "") : raw;
       this.handleLine(line);
@@ -163,8 +175,6 @@ export class Server {
   async recentLogs(lines = 100): Promise<string[]> {
     return this.docker.logs(this.containerName, lines);
   }
-
-  // ─── lifecycle helpers ────────────────────────────────────────────────────
 
   private containerBody(): Record<string, unknown> {
     const { build, container, allocations } = this.config;
@@ -206,7 +216,6 @@ export class Server {
     }
 
     const daemonUser = container.user === "daemon";
-    // Images that manage their own user need to chown/setuid on boot.
     const capDrop = [
       "setpcap",
       "mknod",
@@ -255,7 +264,7 @@ export class Server {
         Tmpfs: { "/tmp": `rw,exec,nosuid,size=${this.node.docker.tmpfsSizeMb}M` },
       },
       Image: container.image,
-      Labels: { "nodebyte.server": this.config.uuid },
+      Labels: { "bytepanel.server": this.config.uuid },
       OpenStdin: true,
       StdinOnce: false,
       Tty: true,
@@ -266,8 +275,7 @@ export class Server {
   private async attach(): Promise<void> {
     this.detach();
     this.partialLine = "";
-    // Callbacks only act while this stream is the current one, so closing an
-    // old stream (detach, recreate) is never mistaken for the process exiting.
+    this.decoder = new TextDecoder();
     const handle: { stream: AttachedStream | null } = { stream: null };
     const current = () => handle.stream !== null && this.attached === handle.stream;
     handle.stream = await this.docker.attach(
@@ -336,7 +344,6 @@ export class Server {
     this.detach();
     const info = await this.docker.inspect(this.containerName).catch(() => null);
     if (info?.State.Running) {
-      // socket dropped but the process is alive (daemon hiccup) — re-attach.
       await this.attach().catch(() => undefined);
       return;
     }
@@ -351,10 +358,12 @@ export class Server {
       `Server process exited unexpectedly (exit code ${exitCode}${oom ? ", out of memory" : ""}).`,
     );
     if (exitCode === 0 && !oom) {
+      await this.setDesiredRunning(false);
       return;
     }
     if (Date.now() - this.lastCrashAt < CRASH_COOLDOWN_MS) {
       this.daemonMessage("Not restarting: the server crashed twice within 60 seconds.");
+      await this.setDesiredRunning(false);
       return;
     }
     this.lastCrashAt = Date.now();
@@ -362,8 +371,31 @@ export class Server {
     await this.power("start").catch((error) => this.daemonMessage(errorMessage(error)));
   }
 
-  // Restores in-memory state after a daemon restart.
-  async restore(): Promise<void> {
+  private get desiredPath(): string {
+    return join(this.node.system.state, this.uuid);
+  }
+
+  private async setDesiredRunning(running: boolean): Promise<void> {
+    await (running ? writeFile(this.desiredPath, "") : rm(this.desiredPath, { force: true })).catch(
+      (error) => logger("server").warn(`could not record state for ${this.uuid}`, error),
+    );
+  }
+
+  async enforceDiskLimit(): Promise<void> {
+    const limit = this.config.build.diskSpace * MIB;
+    if (limit <= 0 || this.state === "offline" || this.state === "stopping") {
+      return;
+    }
+    if ((await this.fs.diskUsage(true)) <= limit) {
+      return;
+    }
+    this.daemonMessage("Server is over its disk limit, stopping it.");
+    const run = this.powerLock.then(() => this.stop(RESTART_KILL_AFTER_MS));
+    this.powerLock = run.catch(() => undefined);
+    await run;
+  }
+
+  async restore(): Promise<boolean> {
     await this.fs.ensureRoot();
     const info = await this.docker.inspect(this.containerName).catch(() => null);
     if (info?.State.Running) {
@@ -371,16 +403,15 @@ export class Server {
       this.state = "running";
       this.usage.state = "running";
       await this.attach();
+      return false;
     }
+    return Bun.file(this.desiredPath).exists();
   }
 
   async syncConfiguration(): Promise<void> {
     this.config = await this.panel.getServer(this.uuid);
   }
 
-  // ─── power ─────────────────────────────────────────────────────────────────
-
-  // Serialises power actions so start/stop can't interleave.
   power(action: PowerAction): Promise<void> {
     if (action === "kill") {
       return this.kill();
@@ -434,9 +465,8 @@ export class Server {
       this.daemonMessage(`Pulling Docker image ${this.config.container.image}…`);
       await this.docker.pullImage(this.config.container.image);
 
-      // Recreate the container every start so build limits and allocations
-      // always reflect the latest panel configuration (same as Wings).
       await this.createAndStart();
+      await this.setDesiredRunning(true);
       this.startedAt = Date.now();
       this.stopRequested = false;
       this.daemonMessage("Server marked as starting…");
@@ -458,9 +488,6 @@ export class Server {
     try {
       await this.docker.start(this.containerName);
     } catch (error) {
-      // Kernels without the cgroup io controller (e.g. WSL2, some VPS
-      // kernels) refuse to start containers with a block-IO weight. Drop it
-      // for this node and try once more.
       if (
         !this.docker.ioWeightSupported ||
         !(error instanceof DockerError && /io\.weight|blkio/iu.test(error.message))
@@ -482,6 +509,7 @@ export class Server {
       return;
     }
     this.stopRequested = true;
+    await this.setDesiredRunning(false);
     this.setState("stopping");
     const { stop } = this.config.process;
     try {
@@ -512,12 +540,11 @@ export class Server {
 
   private async kill(): Promise<void> {
     this.stopRequested = true;
+    await this.setDesiredRunning(false);
     await this.docker.kill(this.containerName);
     this.detach();
     this.setState("offline");
   }
-
-  // ─── install ───────────────────────────────────────────────────────────────
 
   async install(reinstall: boolean): Promise<void> {
     if (this.installing) {
@@ -578,18 +605,19 @@ export class Server {
           Tmpfs: { "/tmp": `rw,exec,nosuid,size=${this.node.docker.tmpfsSizeMb}M` },
         },
         Image: script.containerImage,
-        Labels: { "nodebyte.installer": this.uuid },
+        Labels: { "bytepanel.installer": this.uuid },
         Tty: true,
         User: "0:0",
       });
 
       let partial = "";
+      const decoder = new TextDecoder();
       const stream = await this.docker.attach(
         installer,
         (chunk) => {
-          const lines = (partial + new TextDecoder().decode(chunk)).split(/\r?\n/u);
-          partial = lines.pop() ?? "";
-          for (const line of lines) {
+          const split = splitConsoleChunk(partial + decoder.decode(chunk, { stream: true }));
+          partial = split.partial;
+          for (const line of split.lines) {
             void output(line);
           }
         },
@@ -624,12 +652,11 @@ export class Server {
     await this.docker.remove(this.containerName);
     await this.docker.remove(`${this.uuid}_installer`);
     await rm(this.fs.root, { force: true, recursive: true });
+    await this.setDesiredRunning(false);
     this.listeners.clear();
   }
 }
 
-// Splits a command line into argv, honouring single/double quotes and
-// backslash escapes (no variable expansion).
 export const splitArgs = (input: string): string[] => {
   const args: string[] = [];
   let current = "";

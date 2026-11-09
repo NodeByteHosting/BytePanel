@@ -3,7 +3,6 @@ import { ImageResponse } from "next/og";
 export const OG_SIZE = { height: 630, width: 1200 } as const;
 export const OG_CONTENT_TYPE = "image/png";
 
-// ─── Logo path data (NodeByte N-mark) ─────────────────────────────────────────
 const LOGO_CLIP = "M 30 102 L 344.917969 102 L 344.917969 273 L 30 273 Z";
 const LOGO_DIAMONDS =
   "M 236.300781 212.144531 C 238.496094 208.355469 238.695312 203.496094 236.300781 199.371094 L 225.1875 180.144531 L 214.078125 199.371094 C 211.683594 203.429688 211.882812 208.355469 214.078125 212.144531 C 215.144531 214.007812 216.738281 215.671875 218.800781 216.804688 C 220.796875 217.933594 222.992188 218.535156 225.1875 218.46875 C 227.382812 218.46875 229.582031 217.933594 231.578125 216.804688 C 233.640625 215.671875 235.234375 214.074219 236.300781 212.144531 Z M 138.695312 162.777344 C 136.5 166.570312 136.300781 171.429688 138.695312 175.554688 L 149.808594 194.78125 L 160.917969 175.554688 C 163.246094 171.496094 163.113281 166.570312 160.917969 162.777344 C 159.855469 160.914062 158.257812 159.253906 156.195312 158.121094 C 154.199219 156.992188 152.003906 156.390625 149.808594 156.457031 C 147.613281 156.457031 145.417969 156.992188 143.421875 158.121094 C 141.359375 159.253906 139.761719 160.847656 138.695312 162.777344 Z";
@@ -19,13 +18,10 @@ const LogoMark = ({ size, clipId }: { size: number; clipId: string }) => (
         <path d={LOGO_CLIP} />
       </clipPath>
     </defs>
-    {/* Accent diamonds */}
     <path fill="#5b00ef" fillRule="evenodd" d={LOGO_DIAMONDS} />
-    {/* N body */}
     <g clipPath={`url(#${clipId})`}>
       <path fill="#e4f0ff" fillRule="evenodd" d={LOGO_BODY} />
     </g>
-    {/* Arm strokes */}
     <path fill="#803cee" fillRule="evenodd" d={LOGO_STROKES} />
   </svg>
 );
@@ -43,7 +39,6 @@ export const makePanelOGImage = (): ImageResponse =>
         width: "100%",
       }}
     >
-      {/* Purple radial glow — top left */}
       <div
         style={{
           background:
@@ -58,7 +53,6 @@ export const makePanelOGImage = (): ImageResponse =>
         }}
       />
 
-      {/* Blue radial glow — bottom right */}
       <div
         style={{
           background:
@@ -73,7 +67,6 @@ export const makePanelOGImage = (): ImageResponse =>
         }}
       />
 
-      {/* Top accent bar */}
       <div
         style={{
           background:
@@ -87,7 +80,6 @@ export const makePanelOGImage = (): ImageResponse =>
         }}
       />
 
-      {/* Ghost logo watermark — right side */}
       <div
         style={{
           display: "flex",
@@ -100,7 +92,6 @@ export const makePanelOGImage = (): ImageResponse =>
         <LogoMark size={500} clipId="og-lg-clip" />
       </div>
 
-      {/* Main content */}
       <div
         style={{
           display: "flex",
@@ -110,7 +101,6 @@ export const makePanelOGImage = (): ImageResponse =>
           padding: "56px 80px 50px",
         }}
       >
-        {/* Brand identity */}
         <div
           style={{
             alignItems: "center",
@@ -148,7 +138,6 @@ export const makePanelOGImage = (): ImageResponse =>
           </div>
         </div>
 
-        {/* Headline */}
         <div
           style={{
             display: "flex",
@@ -183,7 +172,6 @@ export const makePanelOGImage = (): ImageResponse =>
           </span>
         </div>
 
-        {/* Description */}
         <div
           style={{
             color: "#4a6a8a",
@@ -198,7 +186,6 @@ export const makePanelOGImage = (): ImageResponse =>
           team members, view performance, and stay in control.
         </div>
 
-        {/* Feature row */}
         <div
           style={{
             alignItems: "center",
@@ -241,7 +228,6 @@ export const makePanelOGImage = (): ImageResponse =>
         </div>
       </div>
 
-      {/* Bottom — URL */}
       <div
         style={{
           bottom: 32,

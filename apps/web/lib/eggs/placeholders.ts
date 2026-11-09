@@ -1,22 +1,10 @@
-// Resolves Pterodactyl-style placeholders in startup commands and config
-// file values:
-//   {{SERVER_MEMORY}} {{SERVER_PORT}} {{SERVER_IP}} {{ANY_EGG_VARIABLE}}
-//   {{server.build.default.port}} {{server.build.default.ip}}
-//   {{server.build.memory}} {{server.build.env.VAR}} {{env.VAR}}
-//   {{config.docker.interface}}
-// NodeByte extension: {{SERVER_PORT_1}}, {{SERVER_PORT_2}}, … are the ports
-// of the server's additional allocations (in assignment order).
-// Unknown placeholders are left untouched so problems are visible.
-
 export interface PlaceholderContext {
   env: Record<string, string>;
   ip: string;
   port: number;
-  // All allocation ports, primary first.
   ports: number[];
   memory: number;
   dockerInterface: string;
-  // Server display name ({{server.name}}).
   name: string;
 }
 

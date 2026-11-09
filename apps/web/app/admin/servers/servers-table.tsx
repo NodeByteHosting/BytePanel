@@ -160,13 +160,12 @@ export const ServersTable = () => {
   );
 
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect -- data fetch: syncing with the API is what effects are for
+    // oxlint-disable-next-line react/set-state-in-effect
     void fetchServers();
   }, [fetchServers]);
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-0 flex-1">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
@@ -213,7 +212,6 @@ export const ServersTable = () => {
         </Button>
       </div>
 
-      {/* Table */}
       <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
         {(loading || !data) && (
           <div className="divide-border/50 divide-y">
@@ -244,7 +242,6 @@ export const ServersTable = () => {
                   key={server.id}
                   className="group hover:bg-muted/30 flex items-center gap-3 px-4 py-3 transition-colors"
                 >
-                  {/* Game image */}
                   {server.egg?.image ? (
                     <Image
                       src={server.egg.image}
@@ -259,7 +256,6 @@ export const ServersTable = () => {
                     </div>
                   )}
 
-                  {/* Name + owner */}
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                       <Link
@@ -288,16 +284,14 @@ export const ServersTable = () => {
                     </p>
                   </div>
 
-                  {/* Meta — hidden on mobile */}
                   <div className="text-muted-foreground hidden shrink-0 items-center gap-4 text-xs sm:flex">
-                    <span>{server.egg?.name ?? "—"}</span>
-                    <span>{server.node?.name ?? "—"}</span>
+                    <span>{server.egg?.name ?? "-"}</span>
+                    <span>{server.node?.name ?? "-"}</span>
                     <span>
                       {new Date(server.createdAt).toLocaleDateString()}
                     </span>
                   </div>
 
-                  {/* Open in dashboard */}
                   <Button
                     asChild
                     size="icon"
@@ -312,7 +306,6 @@ export const ServersTable = () => {
                     </Link>
                   </Button>
 
-                  {/* Delete */}
                   <Button
                     size="icon"
                     variant="ghost"
@@ -329,7 +322,6 @@ export const ServersTable = () => {
         )}
       </div>
 
-      {/* Pagination */}
       {data && data.totalPages > 1 && (
         <div className="text-muted-foreground flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
           <span>

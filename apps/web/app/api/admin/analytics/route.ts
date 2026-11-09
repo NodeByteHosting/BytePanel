@@ -6,13 +6,11 @@ import { requireAdmin } from "@/lib/session";
 
 export const GET = async (request: NextRequest): Promise<NextResponse> => {
   try {
-    // Verify admin access
     await requireAdmin();
 
     const { searchParams } = request.nextUrl;
     const range = Math.trunc(Number(searchParams.get("range") || "30"));
 
-    // Calculate date range
     const endDate = new Date();
     endDate.setHours(23, 59, 59, 999);
 
@@ -20,14 +18,6 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
     startDate.setDate(startDate.getDate() - range);
     startDate.setHours(0, 0, 0, 0);
 
-    // 1. Monthly Recurring Revenue (MRR) in GBP
-    const mrrResult = await prisma.subscription.aggregate({
-      _sum: { pricePerMonthCents: true },
-      where: { status: "active" },
-    });
-    const mrr = (mrrResult._sum.pricePerMonthCents ?? 0) / 100;
-
-    // 2. Active Servers (installed on a node and not suspended/failed)
     const activeServersCount = await prisma.server.count({
       where: {
         deletedAt: null,
@@ -36,18 +26,15 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
       },
     });
 
-    // 3. Total Servers (not deleted)
     const totalServersCount = await prisma.server.count({
       where: { deletedAt: null },
     });
 
-    // 4. Server Uptime %
     const serverUptime =
       totalServersCount > 0
         ? (activeServersCount / totalServersCount) * 100
         : 0;
 
-    // 5. New Users This Month
     const firstDayOfMonth = new Date();
     firstDayOfMonth.setDate(1);
     firstDayOfMonth.setHours(0, 0, 0, 0);
@@ -64,50 +51,6 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
       },
     });
 
-    // 6. Revenue Trend - daily breakdown
-    const revenueTrendRaw = await prisma.subscription.findMany({
-      orderBy: { createdAt: "asc" },
-      select: {
-        createdAt: true,
-        pricePerMonthCents: true,
-      },
-      where: {
-        createdAt: { gte: startDate, lte: endDate },
-        status: "active",
-      },
-    });
-
-    // Group by date and sum revenues
-    const revenueTrendMap = new Map<string, number>();
-
-    // Initialize all dates in range with 0
-    for (let i = 0; i <= range; i += 1) {
-      const d = new Date(startDate);
-      d.setDate(d.getDate() + i);
-      const [dateKey = ""] = d.toISOString().split("T");
-      if (!revenueTrendMap.has(dateKey)) {
-        revenueTrendMap.set(dateKey, 0);
-      }
-    }
-
-    // Add actual revenues
-    for (const { createdAt, pricePerMonthCents } of revenueTrendRaw) {
-      const [dateKey = ""] = createdAt.toISOString().split("T");
-      revenueTrendMap.set(
-        dateKey,
-        (revenueTrendMap.get(dateKey) ?? 0) + (pricePerMonthCents ?? 0) / 100
-      );
-    }
-
-    const revenueTrend = [...revenueTrendMap]
-      .toSorted((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, revenue]) => ({
-        date,
-        revenue: Number(revenue.toFixed(2)),
-      }));
-
-    // 7. Server Count by Game
-    // Top 10 games
     const [serversByGameRaw, eggList] = await Promise.all([
       prisma.server.groupBy({
         _count: true,
@@ -125,7 +68,6 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
       game: eggNames.get(item.eggId ?? "") ?? "Unknown",
     }));
 
-    // 8. Server Status Breakdown
     const [serverStatusRaw, undeployed] = await Promise.all([
       prisma.server.groupBy({
         _count: true,
@@ -148,7 +90,6 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
         : []),
     ];
 
-    // 9. New Signups Trend
     const signupsTrendRaw = await prisma.user.findMany({
       orderBy: { createdAt: "asc" },
       select: { createdAt: true },
@@ -159,7 +100,6 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
 
     const signupsTrendMap = new Map<string, number>();
 
-    // Initialize all dates in range with 0
     for (let i = 0; i <= range; i += 1) {
       const d = new Date(startDate);
       d.setDate(d.getDate() + i);
@@ -169,7 +109,6 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
       }
     }
 
-    // Add actual signups
     for (const { createdAt } of signupsTrendRaw) {
       const [dateKey = ""] = createdAt.toISOString().split("T");
       signupsTrendMap.set(dateKey, (signupsTrendMap.get(dateKey) ?? 0) + 1);
@@ -182,30 +121,13 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
         signups,
       }));
 
-    // 10. Subscription Status Distribution
-    const subscriptionStatusRaw = await prisma.subscription.groupBy({
-      _count: true,
-      by: ["status"],
-      orderBy: { _count: { id: "desc" } },
-    });
-
-    const subscriptionStatus = subscriptionStatusRaw.map((item) => ({
-      count: item._count,
-      status:
-        item.status.charAt(0).toUpperCase() +
-        item.status.slice(1).replaceAll("_", " ").toLowerCase(),
-    }));
-
     return NextResponse.json({
       activeServers: activeServersCount,
-      mrr,
       newUsersThisMonth,
-      revenueTrend,
       serverStatus,
       serverUptime,
       serversByGame,
       signupsTrend,
-      subscriptionStatus,
       totalServers: totalServersCount,
     });
   } catch (error) {

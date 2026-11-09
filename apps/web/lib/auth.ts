@@ -7,20 +7,26 @@ import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins";
 
 import { env } from "@/lib/env";
+import { loginLinks } from "@/lib/login-link-plugin";
 import { sendPasswordResetEmail, sendWelcomeEmail } from "@/lib/mail";
-import { isExternalBilling, readPanelSettings } from "@/lib/settings";
 
 import { prisma } from "./db";
 
 export const auth = betterAuth({
   baseURL: {
-    allowedHosts: [new URL(env.BETTER_AUTH_URL).host, "*.vercel.app"],
+    allowedHosts: [new URL(env.BETTER_AUTH_URL).host],
   },
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   databaseHooks: {
     user: {
       create: {
         after: async (user) => {
+          if ((await prisma.user.count()) === 1) {
+            await prisma.user.update({
+              data: { role: "admin", superAdmin: true },
+              where: { id: user.id },
+            });
+          }
           await sendWelcomeEmail(user.email, user.name);
         },
       },
@@ -34,14 +40,11 @@ export const auth = betterAuth({
     },
   },
   hooks: {
-    // With external billing, accounts are created by the billing system via
-    // the application API (auth.api.createUser), so public sign-up is closed.
     before: createAuthMiddleware(async (ctx) => {
       if (ctx.path !== "/sign-up/email") {
         return;
       }
-      const { billingMode } = await readPanelSettings();
-      if (isExternalBilling(billingMode)) {
+      if ((await prisma.user.count()) > 0) {
         throw new APIError("FORBIDDEN", {
           message: "Sign up is disabled. Create an account through the store.",
         });
@@ -49,10 +52,9 @@ export const auth = betterAuth({
     }),
   },
   plugins: [
-    passkey({ rpName: "NodeByte" }),
+    passkey({ rpName: "BytePanel" }),
+    loginLinks(),
     nextCookies(),
-    // Adds `role` ("user"|"admin"), `banned`, `banReason`, `banExpires` to User.
-    // Also exposes server-side admin.* API methods for user management.
     admin({
       defaultRole: "user",
     }),
@@ -64,10 +66,8 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      // True = NodeByte super-admin. Can manage admins, view all billing, etc.
       superAdmin: {
         defaultValue: false,
-        // Not settable by the user themselves
         input: false,
         type: "boolean",
       },

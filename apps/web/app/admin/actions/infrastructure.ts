@@ -35,8 +35,6 @@ const audit = (
     targetType: action.split(".")[1],
   });
 
-// ─── Locations ───────────────────────────────────────────────────────────────
-
 const locationSchema = z.object({
   long: z.string().trim().max(100).optional(),
   short: z
@@ -79,8 +77,6 @@ export const deleteLocation = async (id: string): Promise<ActionResult> => {
   revalidatePath("/admin/locations");
   return { ok: true };
 };
-
-// ─── Nodes ───────────────────────────────────────────────────────────────────
 
 const nodeSchema = z.object({
   behindProxy: z.boolean().default(false),
@@ -162,7 +158,6 @@ export const updateNode = async (
   return { ok: true };
 };
 
-// Issues a new daemon token; the node must be reconfigured afterwards.
 export const resetNodeToken = async (id: string): Promise<ActionResult> => {
   const user = await requireAdmin();
   const { daemonToken, daemonTokenId } = generateDaemonToken();
@@ -180,7 +175,6 @@ export const deleteNode = async (id: string): Promise<ActionResult> => {
   if (await prisma.server.count({ where: { deletedAt: null, nodeId: id } })) {
     return fail("This node still has servers. Delete or move them first.");
   }
-  // Soft-deleted servers keep a reference; detach them so the FK allows deletion.
   await prisma.server.updateMany({
     data: { nodeId: null },
     where: { nodeId: id },
@@ -190,8 +184,6 @@ export const deleteNode = async (id: string): Promise<ActionResult> => {
   revalidatePath("/admin/nodes");
   return { ok: true };
 };
-
-// ─── Allocations ─────────────────────────────────────────────────────────────
 
 const allocationSchema = z.object({
   alias: z.string().trim().max(255).optional(),

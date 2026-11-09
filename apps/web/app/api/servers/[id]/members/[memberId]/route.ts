@@ -9,7 +9,6 @@ const patchSchema = z.object({
   role: z.enum(["viewer", "member", "admin"]),
 });
 
-// PATCH /api/servers/[id]/members/[memberId] — change role
 export const PATCH = async (
   req: Request,
   { params }: { params: Promise<{ id: string; memberId: string }> }
@@ -45,7 +44,6 @@ export const PATCH = async (
   return NextResponse.json({ member: updated });
 };
 
-// DELETE /api/servers/[id]/members/[memberId] — remove member
 export const DELETE = async (
   _req: Request,
   { params }: { params: Promise<{ id: string; memberId: string }> }
@@ -64,7 +62,6 @@ export const DELETE = async (
     return NextResponse.json({ error: "Member not found" }, { status: 404 });
   }
 
-  // A user can also remove themselves (leave)
   await prisma.serverMember.delete({ where: { id: memberId } });
 
   return new NextResponse(null, { status: 204 });

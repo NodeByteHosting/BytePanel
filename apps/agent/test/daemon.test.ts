@@ -1,16 +1,18 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, rm, symlink } from "node:fs/promises";
+import { constants } from "node:fs";
+import { lstat, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { SignJWT } from "jose";
 
-import { websocketClaimsSchema } from "@nodebyte/protocol";
+import { websocketClaimsSchema } from "@bytepanel/protocol";
 import { configSchema } from "../src/config";
 import { computeCpuPercent, computeMemoryBytes, splitImage } from "../src/docker";
 import { checkBearer, TokenError, verifyPanelJwt } from "../src/http/auth";
-import { Filesystem, FilesystemError } from "../src/server/filesystem";
-import { splitArgs } from "../src/server/server";
+import { Filesystem, FilesystemError, parseTarListing, parseZipSummary } from "../src/server/filesystem";
+import { splitArgs, splitConsoleChunk } from "../src/server/server";
+import { openFlags } from "../src/sftp";
 
 describe("splitArgs", () => {
   test("splits on whitespace and honours quotes", () => {
@@ -124,6 +126,51 @@ describe("Filesystem.safePath", () => {
     }
   });
 
+  test.skipIf(process.platform === "win32")("refuses dangling symlinks", async () => {
+    const root = await mkdtemp(join(tmpdir(), "nb-fs-"));
+    const outside = await mkdtemp(join(tmpdir(), "nb-out-"));
+    try {
+      await symlink(join(outside, "created-by-agent"), join(root, "planted"));
+      const fs = new Filesystem(root, () => null, () => 0);
+      await expect(fs.safePath("planted")).rejects.toBeInstanceOf(FilesystemError);
+      await expect(fs.write("planted", "owned")).rejects.toBeInstanceOf(FilesystemError);
+      expect(await Bun.file(join(outside, "created-by-agent")).exists()).toBe(false);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+      await rm(outside, { force: true, recursive: true });
+    }
+  });
+
+  test.skipIf(process.platform === "win32")("can still delete an escaping symlink", async () => {
+    const root = await mkdtemp(join(tmpdir(), "nb-fs-"));
+    const outside = await mkdtemp(join(tmpdir(), "nb-out-"));
+    try {
+      await writeFile(join(outside, "keep"), "safe");
+      await symlink(join(outside, "keep"), join(root, "planted"));
+      const fs = new Filesystem(root, () => null, () => 0);
+      await fs.delete("/", ["planted"]);
+      await expect(lstat(join(root, "planted"))).rejects.toBeDefined();
+      expect(await readFile(join(outside, "keep"), "utf8")).toBe("safe");
+    } finally {
+      await rm(root, { force: true, recursive: true });
+      await rm(outside, { force: true, recursive: true });
+    }
+  });
+
+  test.skipIf(process.platform === "win32")("writes replace a link instead of following it", async () => {
+    const root = await mkdtemp(join(tmpdir(), "nb-fs-"));
+    try {
+      await writeFile(join(root, "real.txt"), "old");
+      await symlink(join(root, "real.txt"), join(root, "link.txt"));
+      const fs = new Filesystem(root, () => null, () => 0);
+      await fs.write("link.txt", "new");
+      expect(await readFile(join(root, "real.txt"), "utf8")).toBe("old");
+      expect((await lstat(join(root, "link.txt"))).isSymbolicLink()).toBe(false);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
   test("enforces the disk limit on writes", async () => {
     const root = await mkdtemp(join(tmpdir(), "nb-fs-"));
     try {
@@ -134,5 +181,47 @@ describe("Filesystem.safePath", () => {
     } finally {
       await rm(root, { force: true, recursive: true });
     }
+  });
+});
+
+describe("splitConsoleChunk", () => {
+  test("keeps an incomplete line for the next chunk", () => {
+    expect(splitConsoleChunk("one\ntwo\r\nthr")).toEqual({ lines: ["one", "two"], partial: "thr" });
+  });
+
+  test("flushes output that never contains a newline", () => {
+    expect(splitConsoleChunk("x".repeat(11), 10)).toEqual({ lines: ["x".repeat(11)], partial: "" });
+  });
+});
+
+describe("archive size parsing", () => {
+  test("sums a tar listing", () => {
+    const listing = [
+      "drwxr-xr-x root/root         0 2026-01-01 00:00 ./",
+      "-rw-r--r-- root/root      1024 2026-01-01 00:00 ./a",
+      "-rw-r--r-- root/root      2048 2026-01-01 00:00 ./b c",
+      "",
+    ].join("\n");
+    expect(parseTarListing(listing)).toBe(3072);
+  });
+
+  test("reads the unzip summary", () => {
+    expect(parseZipSummary("2 files, 1,048,576 bytes uncompressed, 512 bytes compressed: 99.9%")).toBe(1_048_576);
+    expect(() => parseZipSummary("not a zip")).toThrow(FilesystemError);
+  });
+});
+
+describe("openFlags", () => {
+  test("never follows a final symlink", () => {
+    for (const mode of ["r", "r+", "w", "w+", "a", "a+", "wx"]) {
+      expect(openFlags(mode) & (constants.O_NOFOLLOW ?? 0)).toBe(constants.O_NOFOLLOW ?? 0);
+    }
+  });
+
+  test("maps create and truncate", () => {
+    expect(openFlags("r") & constants.O_CREAT).toBe(0);
+    expect(openFlags("w") & constants.O_TRUNC).toBe(constants.O_TRUNC);
+    expect(openFlags("wx") & constants.O_EXCL).toBe(constants.O_EXCL);
+    expect(openFlags("a") & constants.O_APPEND).toBe(constants.O_APPEND);
   });
 });

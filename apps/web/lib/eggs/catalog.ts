@@ -1,7 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 
-// Eggs with their variables, shaped for create-server forms.
 export const loadEggCatalog = async (options: { includeDisabled: boolean }) => {
   const eggs = await prisma.egg.findMany({
     include: { nest: true, variables: { orderBy: { sort: "asc" } } },
@@ -17,7 +16,6 @@ export const loadEggCatalog = async (options: { includeDisabled: boolean }) => {
     minMemory: egg.minMemory,
     name: egg.name,
     nest: egg.nest.name,
-    // Allocations the egg needs (one per containerPorts entry, minimum one).
     ports: Math.max(
       1,
       Array.isArray(egg.containerPorts) ? egg.containerPorts.length : 0

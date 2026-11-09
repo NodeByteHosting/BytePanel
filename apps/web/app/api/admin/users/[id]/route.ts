@@ -24,7 +24,6 @@ const patchSchema = z.union([
   }),
 ]);
 
-// PATCH /api/admin/users/[id]
 export const PATCH = async (
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -39,7 +38,6 @@ export const PATCH = async (
 
   const { data } = parsed;
 
-  // Setting superAdmin requires super-admin; everything else needs admin
   const actor = await (data.action === "set-super-admin"
     ? requireSuperAdmin()
     : requireAdmin());

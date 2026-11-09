@@ -19,8 +19,6 @@ export const runtime = "nodejs";
 const createSchema = z.object({
   eggId: z.string().min(1),
   environment: z.record(z.string(), z.string()).default({}),
-  // The billing system's service ID. Repeating a request with the same ID
-  // returns the existing server (and retries placement if it failed).
   externalId: z.string().trim().min(1).max(191),
   locationId: z.string().min(1).nullable().default(null),
   name: z.string().trim().min(3).max(40).optional(),
@@ -29,12 +27,10 @@ const createSchema = z.object({
   user: z.object({
     email: z.email(),
     name: z.string().trim().min(1).max(100),
-    // Optional: without one the customer sets a password via "forgot password".
     password: z.string().min(8).max(128).optional(),
   }),
 });
 
-// Finds the customer's panel account by email, creating it if needed.
 const findOrCreateUser = async (
   input: z.infer<typeof createSchema>["user"]
 ) => {
@@ -55,8 +51,6 @@ const findOrCreateUser = async (
   return user;
 };
 
-// Provisions a server for a paid order: the billing system calls this from
-// its "create account" hook.
 export const POST = applicationHandler(async ({ request }) => {
   const body = await parseJson(request, createSchema);
   if ("response" in body) {
@@ -102,7 +96,6 @@ export const POST = applicationHandler(async ({ request }) => {
     const user = await findOrCreateUser(input.user);
     try {
       const id = await prepareServer({
-        // Billing modules may enable eggs that are hidden from the panel.
         asAdmin: true,
         eggId: input.eggId,
         environment: input.environment,
@@ -122,7 +115,6 @@ export const POST = applicationHandler(async ({ request }) => {
       });
       server = await prisma.server.findUniqueOrThrow({ where: { id } });
     } catch (error) {
-      // A concurrent request with the same externalId won the race.
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"

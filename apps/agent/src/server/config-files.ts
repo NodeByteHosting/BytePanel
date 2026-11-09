@@ -1,4 +1,4 @@
-import type { ConfigFile } from "@nodebyte/protocol";
+import type { ConfigFile } from "@bytepanel/protocol";
 import { logger } from "../log";
 import type { Filesystem } from "./filesystem";
 
@@ -106,7 +106,6 @@ const applyYaml = (content: string, file: ConfigFile): string => {
     }
     return yaml.stringify(data, null, 2);
   }
-  // Fallback: top-level `key: value` lines only.
   const lines = content.split(/\r?\n/u);
   for (const { match, value } of file.replace) {
     const pattern = new RegExp(`^${escapeRegex(match)}\\s*:`, "u");
@@ -131,8 +130,6 @@ const PARSERS: Record<ConfigFile["parser"], (content: string, file: ConfigFile) 
 export const applyParser = (content: string, file: ConfigFile): string =>
   PARSERS[file.parser](content, file);
 
-// Rewrites config files inside the server volume before each start, so
-// values like the allocated port always match what the panel assigned.
 export const applyConfigFiles = async (fs: Filesystem, files: ConfigFile[]): Promise<void> => {
   for (const file of files) {
     try {
