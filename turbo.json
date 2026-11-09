@@ -1,0 +1,43 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "envMode": "loose",
+  "tasks": {
+    "db:generate": {
+      "cache": false
+    },
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "cache": false,
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "dist/**"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {},
+    "fix": {
+      "cache": false
+    },
+    "types": {
+      "dependsOn": [
+        "db:generate"
+      ]
+    },
+    "test": {
+      "dependsOn": [
+        "db:generate"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!coverage/**"
+      ]
+    },
+    "validate": {}
+  }
+}

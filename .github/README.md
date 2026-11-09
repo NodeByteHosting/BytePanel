@@ -12,11 +12,12 @@ It includes:
 
 ## Architecture
 
-- `app/`: Next.js App Router pages and API routes
-- `lib/`: Shared business logic, integrations, and provider abstractions
-- `protocol/`: Shared schemas and signing contracts used by GSM and GSA
-- `games/`: Game-specific settings and compose generators
-- `agent/`: GSA submodule (runtime agent for server hosts)
+A [Turborepo](https://turbo.build) monorepo using Bun workspaces:
+
+- `apps/web`: The panel, with Next.js App Router pages, API routes and Prisma
+- `apps/agent`: The NodeByte Game Server Agent (GSA), which runs on server hosts
+- `packages/games`: Game recipes, settings and compose generators
+- `packages/protocol`: Schemas and constants shared by the panel and the agent
 
 ## Quick Start
 
@@ -30,7 +31,7 @@ Setup:
 
 ```bash
 bun install
-cp .env.example .env.local
+cp apps/web/.env.example apps/web/.env.local
 bun run migrate
 bun run dev
 ```
@@ -47,61 +48,9 @@ bun run build      # production build
 Agent-related:
 
 ```bash
-bun run agent:dev
-bun run agent:build
+bun run dev:agent
+bun run build:agent
 ```
-
-## Submodules
-
-This repository uses submodules for independently versioned components.
-
-```bash
-git submodule update --init --recursive
-```
-
-If submodule pointers change in a PR, ensure those pointer updates are committed.
-
-### Submodule Push Order
-
-When you edit code inside a submodule, push in this order:
-
-1. Commit and push inside each changed submodule repo first.
-2. Return to the parent GSM repo.
-3. Commit the updated submodule pointers.
-4. Push the parent repo.
-
-Example:
-
-```bash
-# 1) Push submodule commits first
-cd games
-git add -A
-git commit -m "your games change"
-git push origin main
-
-cd ../lib/providers
-git add -A
-git commit -m "your providers change"
-git push origin main
-
-# 2) Then update parent pointers
-cd ../..
-git add games lib/providers
-git commit -m "chore: bump submodule pointers"
-git push origin main
-```
-
-### Notes
-
-- If parent status shows `m games` or `m lib/providers`, that means the submodule working tree has local changes.
-- If a submodule is in detached HEAD, switch back to `main` before normal pushes:
-
-```bash
-cd games
-git switch main
-```
-
-- CI for private submodules requires a token in workflow env (`GIT_AUTH_TOKEN`, fallbacks supported: `SUBMODULES_TOKEN`, `GITHUB_TOKEN`).
 
 ## Security
 

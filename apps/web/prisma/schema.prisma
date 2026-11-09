@@ -1,0 +1,652 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SystemRole {
+  user
+  admin
+}
+
+enum ServerMemberRole {
+  viewer // read-only access: console, graphs, activity
+  member // + can start / stop the server
+  admin // + settings, backups, files management
+}
+
+model User {
+  id                String           @id
+  name              String
+  email             String           @unique
+  emailVerified     Boolean          @default(false)
+  image             String?
+  // System-level RBAC (Better Auth admin plugin)
+  role              String           @default("user") // "user" | "admin"
+  superAdmin        Boolean          @default(false) // NodeByte super-admin
+  banned            Boolean          @default(false)
+  banReason         String?
+  banExpires        DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  sessions          Session[]
+  accounts          Account[]
+  passkeys          Passkey[]
+  servers           Server[]
+  billingCustomer   BillingCustomer?
+  // Server sub-user relations
+  serverMemberships ServerMember[]   @relation("MemberUser")
+  sentInvites       ServerInvite[]   @relation("InviteBy")
+  membersInvited    ServerMember[]   @relation("MemberInviteBy")
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+// System-level golden image, scoped by deployment environment. Unused by the
+// node model.
+model SystemSnapshot {
+  id              String   @id
+  environment     String   @unique
+  provider        String   @default("hetzner")
+  providerImageId String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("system_snapshots")
+}
+
+model Session {
+  id             String   @id
+  userId         String
+  token          String   @unique
+  expiresAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy String?
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+model Passkey {
+  id           String    @id
+  name         String?
+  publicKey    String
+  userId       String
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime? @default(now())
+  aaguid       String?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([credentialID])
+  @@map("passkeys")
+}
+
+// Panel-side lifecycle of a server. NULL = installed and usable; the live
+// power state (offline/starting/running/stopping) is owned by the daemon.
+enum ServerStatus {
+  installing
+  install_failed
+  reinstall_failed
+  suspended
+  restoring_backup
+}
+
+// ─── Infrastructure (Pterodactyl-style locations → nodes → allocations) ──────
+
+model Location {
+  id        String   @id
+  short     String   @unique // e.g. "uk-lon"
+  long      String? // e.g. "London, United Kingdom"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  nodes     Node[]
+  plans     Plan[]
+
+  @@map("locations")
+}
+
+// A host running the NodeByte daemon. Many servers share one node.
+model Node {
+  id                 String       @id
+  uuid               String       @unique
+  name               String
+  description        String?
+  locationId         String
+  public             Boolean      @default(true) // eligible for automatic deployment
+  fqdn               String
+  scheme             String       @default("https") // "https" | "http"
+  behindProxy        Boolean      @default(false)
+  daemonListen       Int          @default(8080)
+  daemonSftp         Int          @default(2022)
+  daemonBase         String       @default("/var/lib/bytepanel/volumes")
+  memory             Int // MiB
+  memoryOverallocate Int          @default(0) // percent; -1 = unlimited
+  disk               Int // MiB
+  diskOverallocate   Int          @default(0) // percent; -1 = unlimited
+  uploadSize         Int          @default(100) // MiB
+  maintenanceMode    Boolean      @default(false)
+  daemonTokenId      String       @unique
+  daemonToken        String // AES-GCM encrypted (lib/crypto.ts)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  location           Location     @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  allocations        Allocation[]
+  servers            Server[]
+
+  @@index([locationId])
+  @@map("nodes")
+}
+
+// An ip:port on a node. `serverId` set = assigned to that server.
+model Allocation {
+  id        String   @id
+  nodeId    String
+  ip        String
+  ipAlias   String?
+  port      Int
+  notes     String?
+  serverId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  node      Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  server    Server?  @relation("ServerAllocations", fields: [serverId], references: [id], onDelete: SetNull)
+  primaryOf Server?  @relation("ServerPrimaryAllocation")
+
+  @@unique([nodeId, ip, port])
+  @@index([serverId])
+  @@map("allocations")
+}
+
+// ─── Game definitions (Nests → Eggs → Variables) ─────────────────────────────
+
+model Nest {
+  id          String   @id
+  name        String   @unique
+  description String?
+  author      String   @default("support@nodebyte.co.uk")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  eggs        Egg[]
+
+  @@map("nests")
+}
+
+model Egg {
+  id                String        @id
+  nestId            String
+  // Stable identifier for built-in eggs (e.g. "minecraft"); NULL for imports.
+  slug              String?       @unique
+  name              String
+  description       String?
+  author            String        @default("support@nodebyte.co.uk")
+  image             String? // card artwork shown in the dashboard
+  dockerImages      Json // { "Label": "registry/image:tag" }
+  startup           String        @default("") // empty = image entrypoint
+  configStartupDone Json          @default("[]") // string[]
+  configStop        String        @default("^C") // "^C"/"^SIGTERM" = signal, "native" = docker stop, else console command
+  configFiles       Json          @default("[]") // protocol ConfigFile[] with placeholders
+  fileDenylist      Json          @default("[]")
+  features          Json          @default("[]")
+  mountPath         String        @default("/home/container")
+  extraMounts       Json          @default("[]") // { source, target }[]
+  containerUser     String        @default("daemon") // "daemon" | "image"
+  volumeOwner       String? // "uid:gid" the volume is chowned to when containerUser = "image"
+  invocationMode    String        @default("env") // "env" | "args" | "shell" (see protocol)
+  // One entry per allocation the server needs: the container port it maps
+  // to, or 0 for "same as the allocation port". Empty = one allocation.
+  containerPorts    Json          @default("[]")
+  stripAnsi         Boolean       @default(false)
+  scriptContainer   String        @default("ghcr.io/pterodactyl/installers:debian")
+  scriptEntry       String        @default("bash")
+  scriptInstall     String        @default("")
+  // Advisory minimums shown to customers when picking a plan.
+  minMemory         Int           @default(0) // MiB
+  minDisk           Int           @default(0) // MiB
+  enabled           Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  nest              Nest          @relation(fields: [nestId], references: [id], onDelete: Restrict)
+  variables         EggVariable[]
+  servers           Server[]
+
+  @@index([nestId])
+  @@map("eggs")
+}
+
+model EggVariable {
+  id           String           @id
+  eggId        String
+  name         String
+  description  String           @default("")
+  envVariable  String
+  defaultValue String           @default("")
+  userViewable Boolean          @default(true)
+  userEditable Boolean          @default(true)
+  // Laravel-style rule string, e.g. "required|string|max:20" or "in:a,b,c".
+  rules        String           @default("nullable|string")
+  sort         Int              @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  egg          Egg              @relation(fields: [eggId], references: [id], onDelete: Cascade)
+  values       ServerVariable[]
+
+  @@unique([eggId, envVariable])
+  @@map("egg_variables")
+}
+
+model ServerVariable {
+  id         String      @id
+  serverId   String
+  variableId String
+  value      String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  server     Server      @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  variable   EggVariable @relation(fields: [variableId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, variableId])
+  @@map("server_variables")
+}
+
+// A purchasable resource bundle. Replaces the per-VPS server type.
+model Plan {
+  id              String    @id
+  name            String    @unique
+  description     String?
+  memory          Int // MiB
+  disk            Int // MiB
+  cpu             Int // percent of one core (100 = 1 core)
+  swap            Int       @default(0)
+  io              Int       @default(500)
+  backupLimit     Int       @default(2)
+  allocationLimit Int       @default(1)
+  priceMonthCents Int
+  currency        String    @default("GBP")
+  locationId      String? // NULL = any location
+  active          Boolean   @default(true)
+  sort            Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  location        Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  servers         Server[]
+
+  @@map("plans")
+}
+
+model Server {
+  id              String           @id
+  uuid            String           @unique // id used by the daemon (container + volume name)
+  userId          String
+  name            String
+  description     String?
+  status          ServerStatus? // NULL = installed
+  nodeId          String?
+  eggId           String?
+  planId          String?
+  // Service ID in an external billing system (WHMCS/Blesta/Paymenter) that
+  // provisioned this server through the application API.
+  externalId      String?          @unique
+  allocationId    String?          @unique // primary allocation
+  // Build configuration (limits enforced by the daemon)
+  memory          Int // MiB, 0 = unlimited
+  swap            Int              @default(0)
+  disk            Int // MiB, 0 = unlimited
+  io              Int              @default(500)
+  cpu             Int // percent, 0 = unlimited
+  threads         String?
+  oomDisabled     Boolean          @default(true)
+  backupLimit     Int              @default(0)
+  allocationLimit Int              @default(1)
+  // Startup configuration
+  startup         String
+  image           String
+  skipScripts     Boolean          @default(false)
+  installedAt     DateTime?
+  errorReason     String?
+  lastSuspendedAt DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  node            Node?            @relation(fields: [nodeId], references: [id], onDelete: Restrict)
+  egg             Egg?             @relation(fields: [eggId], references: [id], onDelete: Restrict)
+  plan            Plan?            @relation(fields: [planId], references: [id], onDelete: SetNull)
+  allocation      Allocation?      @relation("ServerPrimaryAllocation", fields: [allocationId], references: [id], onDelete: SetNull)
+  allocations     Allocation[]     @relation("ServerAllocations")
+  variables       ServerVariable[]
+  backups         Backup[]
+  activityEvents  ActivityEvent[]
+  subscription    Subscription?
+  members         ServerMember[]
+  invites         ServerInvite[]
+
+  @@index([userId])
+  @@index([nodeId])
+  @@map("servers")
+}
+
+// Local backup stored on the server's node.
+model Backup {
+  id           String    @id
+  uuid         String    @unique
+  serverId     String
+  name         String
+  ignoredFiles String    @default("")
+  isSuccessful Boolean   @default(false)
+  isLocked     Boolean   @default(false)
+  checksum     String?
+  bytes        BigInt    @default(0)
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+  server       Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId])
+  @@map("backups")
+}
+
+// A user who has been invited to co-manage a server.
+model ServerMember {
+  id          String           @id
+  serverId    String
+  userId      String
+  role        ServerMemberRole @default(member)
+  invitedById String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  server      Server           @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  user        User             @relation("MemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy   User?            @relation("MemberInviteBy", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@unique([serverId, userId])
+  @@index([userId])
+  @@index([serverId])
+  @@map("server_members")
+}
+
+// Pending invite sent by email before the invitee accepts.
+model ServerInvite {
+  id          String           @id
+  serverId    String
+  email       String
+  role        ServerMemberRole @default(member)
+  token       String           @unique
+  invitedById String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  server      Server           @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  invitedBy   User             @relation("InviteBy", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([token])
+  @@map("server_invites")
+}
+
+model ActivityEvent {
+  id         String   @id
+  serverId   String
+  seq        Int
+  phase      String
+  message    String
+  metadata   Json?
+  occurredAt DateTime @default(now())
+  source     String   @default("server") // "server" | "daemon"
+  // User who triggered the event (NULL for system events). Not a relation so
+  // history survives user deletion.
+  actorId    String?
+  ip         String?
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, seq])
+  @@index([serverId, occurredAt])
+  @@map("activity_events")
+}
+
+model BillingCustomer {
+  id               String         @id
+  userId           String         @unique
+  stripeCustomerId String         @unique
+  email            String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptions    Subscription[]
+  invoices         Invoice[]
+
+  @@map("billing_customers")
+}
+
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  canceled
+  unpaid
+  incomplete
+  incomplete_expired
+  paused
+}
+
+model Subscription {
+  id                   String             @id
+  serverId             String             @unique
+  billingCustomerId    String
+  stripeSubscriptionId String             @unique
+  stripePriceId        String
+  stripeProductId      String
+  status               SubscriptionStatus @default(incomplete)
+  // NodeByte-facing plan metadata
+  planName             String // Plan.name at checkout
+  pricePerMonthCents   Int
+  currency             String             @default("GBP")
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  canceledAt           DateTime?
+  suspendedAt          DateTime? // set when server is suspended due to non-payment
+  // Promo / discount
+  promoCode            String? // human-readable promo code applied
+  discountAmountCents  Int? // flat GBP pence discount (if any)
+  trialEnd             DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  server               Server             @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  billingCustomer      BillingCustomer    @relation(fields: [billingCustomerId], references: [id])
+  invoices             Invoice[]
+  addons               ServerAddon[]
+
+  @@index([billingCustomerId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+enum InvoiceStatus {
+  draft
+  open
+  paid
+  uncollectible
+  void
+}
+
+model Invoice {
+  id                String          @id // = Stripe invoice ID
+  billingCustomerId String
+  subscriptionId    String?
+  stripeInvoiceId   String          @unique
+  amountDue         Int // GBP pence
+  amountPaid        Int // GBP pence
+  currency          String          @default("GBP")
+  status            InvoiceStatus
+  invoiceUrl        String? // Stripe-hosted invoice URL
+  invoicePdf        String? // PDF download link
+  description       String?
+  periodStart       DateTime?
+  periodEnd         DateTime?
+  paidAt            DateTime?
+  dueDate           DateTime?
+  createdAt         DateTime        @default(now())
+  billingCustomer   BillingCustomer @relation(fields: [billingCustomerId], references: [id])
+  subscription      Subscription?   @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([billingCustomerId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@map("invoices")
+}
+
+enum ServerAddonType {
+  snapshot
+  backup
+  database
+}
+
+model ServerAddon {
+  id                String          @id @default(cuid())
+  subscriptionId    String
+  serverId          String
+  type              ServerAddonType
+  quantity          Int             @default(0) // total slots ordered
+  freeAllowance     Int             @default(0) // slots included in base plan
+  pricePerUnitCents Int             @default(0) // GBP pence per extra unit/month
+  stripeItemId      String? // Stripe subscription item ID
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  subscription      Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, type])
+  @@index([subscriptionId])
+  @@map("server_addons")
+}
+
+// ─── Audit Log ──────────────────────────────────────────────────
+
+// General-purpose audit trail for all user and admin actions.
+// `actorId` is nullable so system-generated events (e.g. agent events) can
+// also be stored without a user reference.
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  // Human-readable snapshot of the actor's email at the time of the event
+  actorEmail String?
+  // Dot-namespaced action code, e.g. "user.ban", "server.create", "admin.impersonate"
+  action     String
+  // Optional reference to the affected resource
+  targetId   String?
+  targetType String? // "user" | "server" | "subscription" | ...
+  // Any extra context for the event (before/after values, reason, etc.)
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([action])
+  @@index([targetId, targetType])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+// Snapshot of servers created under the old one-VPS-per-server model, taken by
+// the nodes/eggs migration. Used to find and clean up leftover provider VMs.
+model LegacyVpsServer {
+  id               String    @id
+  userId           String?
+  name             String?
+  game             String?
+  location         String?
+  serverType       String?
+  provider         String?
+  providerServerId String?
+  ipv4             String?
+  rconPassword     String?
+  joinPassword     String?
+  settings         Json?
+  observedState    String?
+  createdAt        DateTime?
+  deletedAt        DateTime?
+
+  @@map("legacy_vps_servers")
+}
+
+// ─── Panel settings ─────────────────────────────────────────────
+
+// Where customers buy servers: in the panel via Stripe, or in an external
+// billing system that provisions through /api/application.
+enum BillingMode {
+  panel
+  whmcs
+  blesta
+  paymenter
+}
+
+// Singleton row (id = "default") edited from /admin/settings so other hosting
+// providers can rebrand the panel and pick their billing system.
+model PanelSettings {
+  id                String      @id @default("default")
+  panelName         String      @default("BytePanel")
+  // Effective logo URL: an external URL, or /api/branding/logo for an upload
+  logoUrl           String?
+  // Uploaded logo, served by /api/branding/logo
+  logoImage         Bytes?
+  logoMime          String?
+  websiteUrl        String?
+  supportUrl        String?
+  // false = "/" skips the marketing landing page and opens the dashboard
+  landingPage       Boolean     @default(true)
+  billingMode       BillingMode @default(panel)
+  // Store / client area customers are sent to when billing is external
+  storeUrl          String?
+  // SHA-256 of the application API key used by the billing module
+  billingApiKeyHash String?
+  // First characters of the key, shown in the admin UI to identify it
+  billingApiKeyHint String?
+  updatedAt         DateTime    @updatedAt
+
+  @@map("panel_settings")
+}

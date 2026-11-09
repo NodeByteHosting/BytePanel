@@ -1,0 +1,21 @@
+{
+  "name": "@nodebyte/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Schemas and constants shared by the NodeByte panel and agent.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "typescript": "^7.0.2"
+  }
+}

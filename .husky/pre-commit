@@ -1,8 +1,7 @@
 STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
 
-bunx --bun prisma format
-bunx --bun prisma generate
-bun fix
+(cd apps/web && bunx --bun prisma format && bunx --bun prisma generate)
+bun run fix
 
 if [ -n "$STAGED" ]; then
   echo "$STAGED" | xargs git add --
