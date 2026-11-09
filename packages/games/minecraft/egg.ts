@@ -13,7 +13,7 @@ export const minecraftEgg: EggDefinition = {
   invocationMode: "env",
   minDiskMb: minecraft.requirements.disk * GB,
   minMemoryMb: minecraft.requirements.memory * GB,
-  mountPath: "/var/lib/bytepanel/game/data",
+  mountPath: "/var/lib/nodebyte/game/data",
   name: minecraft.name,
   nest: "Minecraft",
   slug: "minecraft",

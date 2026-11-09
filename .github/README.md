@@ -16,7 +16,6 @@ A [Turborepo](https://turbo.build) monorepo using Bun workspaces:
 - `apps/agent`: The BytePanel agent, which runs on server hosts
 - `packages/games`: Game recipes, settings and compose generators
 - `packages/protocol`: Schemas and constants shared by the panel and the agent
-- `recipes`: Docker images for games, runtimes, operating systems and installers, published to GHCR by the `images-*` workflows
 
 ## Quick Start
 
@@ -79,4 +78,4 @@ Read `CONTRIBUTING.md` for contribution workflow and quality expectations.
 
 ## License
 
-The panel, agent and packages are AGPL-3.0-only. Everything in `recipes` is MIT, as stated in `recipes/LICENSE`.
+AGPL-3.0-only.

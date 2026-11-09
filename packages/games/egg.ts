@@ -21,7 +21,7 @@ export interface EggDefinition {
   nest: string;
   name: string;
   description: string;
-  image: string;
+  image?: string;
   dockerImages: Record<string, string>;
   startup: string;
   invocationMode: "env" | "args" | "shell";

@@ -37,12 +37,6 @@ export const fivemSettings = defineSettings({
     maxLength: 100,
     type: "string",
   },
-  steamWebApiKey: {
-    default: "none",
-    help: 'Steam Web API key for player identification. Leave as "none" to disable. Get one at steamcommunity.com/dev/apikey.',
-    label: "Steam Web API key",
-    type: "string",
-  },
 });
 
 export type FivemSettings = SettingsValues<typeof fivemSettings>;

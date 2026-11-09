@@ -1,1 +1,1 @@
-export const dockerImage = "ghcr.io/ptero-eggs/yolks:debian";
+export const dockerImage = "ghcr.io/nodebytehosting/games:redm";

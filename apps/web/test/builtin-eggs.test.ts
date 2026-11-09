@@ -13,6 +13,16 @@ const placeholders = (text: string) =>
   );
 
 describe("built-in GSG eggs", () => {
+  test("the first image listed is the one jsonb keeps first", () => {
+    for (const egg of eggs) {
+      const labels = Object.keys(egg.dockerImages);
+      const sorted = labels.toSorted(
+        (a, b) => a.length - b.length || a.localeCompare(b)
+      );
+      expect(sorted[0]).toBe(labels[0]);
+    }
+  });
+
   test("every enabled game has an egg with a matching slug", () => {
     const slugs = new Set(eggs.map((e) => e.slug));
     for (const game of games.filter((g) => g.enabled)) {

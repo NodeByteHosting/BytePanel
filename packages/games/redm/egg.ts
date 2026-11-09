@@ -1,22 +1,18 @@
 import type { EggDefinition } from "../egg";
 import { GB } from "../egg";
-import { cfxConfigFiles, cfxInstallScript, cfxStartup, cfxVariables } from "../fivem/egg";
 import { redm } from "./index";
 import { dockerImage } from "./install";
+import recipe from "./recipe.json";
 
 export const redmEgg: EggDefinition = {
-  configFiles: cfxConfigFiles,
+  configFiles: recipe.configFiles as EggDefinition["configFiles"],
   containerUser: "daemon",
   containerPorts: [0, 0],
   description: redm.description,
   dockerImages: { Default: dockerImage },
   done: ["succeeded. Welcome!"],
   image: redm.image,
-  install: {
-    container: "ghcr.io/ptero-eggs/installers:alpine",
-    entrypoint: "bash",
-    script: cfxInstallScript("rdr3"),
-  },
+  install: recipe.install,
   invocationMode: "env",
   minDiskMb: redm.requirements.disk * GB,
   minMemoryMb: redm.requirements.memory * GB,
@@ -24,12 +20,7 @@ export const redmEgg: EggDefinition = {
   name: redm.name,
   nest: "Cfx.re",
   slug: "redm",
-  startup: cfxStartup("CFX_LICENSE"),
-  stop: "quit",
-  variables: cfxVariables({
-    defaultVersion: "latest",
-    licenseName: "Cfx.re license key",
-    licenseVar: "CFX_LICENSE",
-    maxPlayers: 32,
-  }),
+  startup: "",
+  stop: "^SIGTERM",
+  variables: recipe.variables,
 };

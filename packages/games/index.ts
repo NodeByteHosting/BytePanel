@@ -61,6 +61,7 @@ import { l4d2Egg } from "./l4d2/egg";
 import { minecraftEgg } from "./minecraft/egg";
 import { palworldEgg } from "./palworld/egg";
 import { redmEgg } from "./redm/egg";
+import { runtimeEggs } from "./runtimes";
 import { rustEgg } from "./rust/egg";
 import { satisfactoryEgg } from "./satisfactory/egg";
 import { terrariaEgg } from "./terraria/egg";
@@ -83,6 +84,7 @@ export const eggs = [
   enshroudedEgg,
   valheimEgg,
   vrisingEgg,
+  ...runtimeEggs,
 ];
 
 export type {

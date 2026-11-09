@@ -171,6 +171,9 @@ const main = () => {
   }
 
   for (const [dirName, symbol] of imports.entries()) {
+    if (isFile(join(ROOT, `${dirName}.ts`))) {
+      continue;
+    }
     if (gameDirs.includes(dirName)) {
       if (!gameSymbols.has(symbol)) {
         fail(

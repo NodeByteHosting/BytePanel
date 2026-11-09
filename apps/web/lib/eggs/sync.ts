@@ -43,7 +43,7 @@ const builtinData = (egg: EggDefinition) => ({
   description: egg.description,
   dockerImages: egg.dockerImages,
   extraMounts: egg.extraMounts ?? [],
-  image: egg.image,
+  image: egg.image ?? null,
   invocationMode: egg.invocationMode,
   minDisk: egg.minDiskMb,
   minMemory: egg.minMemoryMb,
