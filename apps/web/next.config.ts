@@ -31,6 +31,10 @@ const { version } = JSON.parse(readFileSync("./package.json", "utf-8")) as {
 const WORKSPACE_PACKAGES = ["@bytepanel/games", "@bytepanel/protocol"];
 
 const baseConfig: NextConfig = {
+  allowedDevOrigins: env.BYTEPANEL_PUBLIC_URL
+    ? [new URL(env.BYTEPANEL_PUBLIC_URL).hostname]
+    : [],
+
   env: {
     BYTEPANEL_COMMIT_SHA: readCommit(),
     BYTEPANEL_PANEL_VERSION: version,

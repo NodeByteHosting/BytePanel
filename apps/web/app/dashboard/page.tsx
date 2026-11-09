@@ -53,7 +53,7 @@ const DashboardPage = async () => {
 
   const newServerAction = (
     <Button asChild size="sm">
-      <Link href="/dashboard/new">
+      <Link href="/dashboard/new" prefetch={false}>
         <PlusIcon />
         New server
       </Link>
@@ -89,7 +89,7 @@ const DashboardPage = async () => {
             </EmptyHeader>
             <EmptyContent>
               <Button asChild size="lg">
-                <Link href="/dashboard/new">
+                <Link href="/dashboard/new" prefetch={false}>
                   <PlusIcon />
                   Create your first server
                 </Link>

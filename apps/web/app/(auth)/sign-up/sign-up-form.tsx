@@ -35,20 +35,15 @@ export const SignUpForm = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight">
-          <span className="from-primary via-primary to-accent bg-linear-to-r bg-clip-text text-transparent">
-            {panelName}
-          </span>
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">
+          Create the admin account
         </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Create your account
+        <p className="text-muted-foreground">
+          This first account runs your {panelName} panel.
         </p>
       </div>
-      <form
-        onSubmit={handleSubmit}
-        className="border-border/50 bg-card/30 space-y-4 rounded-2xl border p-6 backdrop-blur-sm"
-      >
+      <form method="post" onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
           <Input id="name" name="name" required autoComplete="name" />
@@ -74,13 +69,13 @@ export const SignUpForm = () => {
             autoComplete="new-password"
           />
         </div>
-        <Button type="submit" className="w-full" disabled={pending}>
+        <Button type="submit" className="h-11 w-full" disabled={pending}>
           {pending ? "Creating…" : "Create account"}
         </Button>
         <p className="text-muted-foreground text-center text-sm">
           Already have an account?{" "}
           <Link
-            className="text-primary hover:text-primary/80 underline underline-offset-4"
+            className="text-link hover:text-link/80 underline underline-offset-4"
             href="/sign-in"
           >
             Sign in

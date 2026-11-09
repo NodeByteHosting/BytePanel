@@ -21,34 +21,38 @@ export const PageHeader = ({
   flush,
   children,
 }: PageHeaderProps) => (
-  <header
-    className={cn(
-      "border-border/60 bg-background/80 sticky top-0 z-10 flex shrink-0 flex-col gap-0 border-b backdrop-blur-md",
-      flush && "border-b-0"
-    )}
-  >
-    <div className="flex items-center gap-3 px-4 py-3 md:px-6">
+  <>
+    <header className="border-border/60 bg-background/80 sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur-md md:px-6">
       <SidebarTrigger className="text-muted-foreground hover:text-foreground -ml-1 shrink-0 transition-colors" />
-      <Separator orientation="vertical" className="h-5 opacity-40" />
-      {icon ? (
-        <div className="text-muted-foreground shrink-0">{icon}</div>
-      ) : null}
-      <div className="flex min-w-0 flex-1 items-center gap-2.5">
-        <h1 className="text-foreground truncate text-base font-semibold tracking-tight sm:text-lg">
-          {title}
-        </h1>
-        {meta ? (
-          <div className="flex shrink-0 items-center gap-2">{meta}</div>
+      <Separator className="mr-2 h-4!" orientation="vertical" />
+    </header>
+    <div
+      className={cn(
+        "flex shrink-0 flex-col gap-4 px-4 pt-6 md:px-6",
+        !flush && "pb-1"
+      )}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          {icon ? (
+            <div className="text-muted-foreground shrink-0">{icon}</div>
+          ) : null}
+          <h1 className="text-foreground truncate text-2xl font-bold tracking-tight sm:text-3xl">
+            {title}
+          </h1>
+          {meta ? (
+            <div className="flex shrink-0 items-center gap-2">{meta}</div>
+          ) : null}
+        </div>
+        {actions ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {actions}
+          </div>
         ) : null}
       </div>
-      {actions ? (
-        <div className="flex shrink-0 items-center gap-2">{actions}</div>
-      ) : null}
+      {children}
     </div>
-    {children && (
-      <div className={cn("px-4 md:px-6", !flush && "pb-3")}>{children}</div>
-    )}
-  </header>
+  </>
 );
 
 export const PageBody = ({

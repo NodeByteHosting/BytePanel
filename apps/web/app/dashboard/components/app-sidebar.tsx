@@ -114,18 +114,18 @@ export const AppSidebar = ({
   const issueCount = servers.filter((s) => s.health === "issue").length;
 
   return (
-    <Sidebar collapsible="offcanvas" className="border-none">
-      <SidebarHeader className="border-sidebar-border border-b px-4 py-3.5">
+    <Sidebar collapsible="offcanvas" variant="inset">
+      <SidebarHeader>
         <Link
           href="/"
           className="flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80"
         >
-          <BrandLogo className="text-sidebar-foreground h-5 w-auto" />
+          <BrandLogo className="text-sidebar-foreground h-7 w-auto" />
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="text-sidebar-foreground text-sm font-bold tracking-tight">
+            <span className="text-sidebar-foreground font-bold">
               {panelName}
             </span>
-            <span className="text-muted-foreground text-[11px]">
+            <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
               Game Servers
             </span>
           </div>
@@ -133,7 +133,7 @@ export const AppSidebar = ({
       </SidebarHeader>
 
       <SidebarContent className="gap-0 px-0">
-        <SidebarGroup className="border-sidebar-border border-b px-2 py-2">
+        <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -153,9 +153,9 @@ export const AppSidebar = ({
                   asChild
                   isActive={pathname === "/dashboard/new"}
                   tooltip="New Server"
-                  className="text-primary dark:text-primary"
+                  className="text-link dark:text-link"
                 >
-                  <Link href="/dashboard/new">
+                  <Link href="/dashboard/new" prefetch={false}>
                     <Plus className="h-4 w-4" />
                     <span>New Server</span>
                   </Link>
@@ -196,8 +196,8 @@ export const AppSidebar = ({
                   <p className="text-muted-foreground text-xs">
                     No servers yet
                   </p>
-                  <Link href="/dashboard/new">
-                    <span className="text-primary mt-1.5 inline-block text-xs hover:underline">
+                  <Link href="/dashboard/new" prefetch={false}>
+                    <span className="text-link mt-1.5 inline-block text-xs hover:underline">
                       Create one →
                     </span>
                   </Link>
@@ -282,7 +282,7 @@ export const AppSidebar = ({
                         className="rounded-lg"
                       />
                     )}
-                    <AvatarFallback className="bg-primary/10 text-primary rounded-lg text-sm font-semibold">
+                    <AvatarFallback className="bg-primary/10 text-link rounded-lg text-sm font-semibold">
                       {initial}
                     </AvatarFallback>
                   </Avatar>
@@ -308,7 +308,7 @@ export const AppSidebar = ({
                           className="rounded-lg"
                         />
                       )}
-                      <AvatarFallback className="bg-primary/10 text-primary rounded-lg text-sm font-semibold">
+                      <AvatarFallback className="bg-primary/10 text-link rounded-lg text-sm font-semibold">
                         {initial}
                       </AvatarFallback>
                     </Avatar>

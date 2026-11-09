@@ -16,7 +16,6 @@ const AdminSettingsPage = async () => {
         <div className="flex flex-col gap-8">
           <BrandingForm
             initial={{
-              landingPage: settings.landingPage,
               logoUrl: settings.logoUrl ?? "",
               panelName: settings.panelName,
               supportUrl: settings.supportUrl ?? "",

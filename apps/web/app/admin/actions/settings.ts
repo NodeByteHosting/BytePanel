@@ -55,7 +55,6 @@ const optionalUrl = z
   .pipe(z.url({ protocol: /^https?$/u }).nullable());
 
 const brandingSchema = z.object({
-  landingPage: z.boolean(),
   logoUrl: z
     .string()
     .trim()

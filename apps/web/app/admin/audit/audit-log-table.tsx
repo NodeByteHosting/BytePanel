@@ -45,9 +45,9 @@ const categoryStyle = (
   }
   if (action.startsWith("admin.")) {
     return {
-      bg: "bg-violet-500/10",
-      dot: "bg-violet-500",
-      text: "text-violet-600 dark:text-violet-400",
+      bg: "bg-sky-500/10",
+      dot: "bg-sky-500",
+      text: "text-sky-600 dark:text-sky-400",
     };
   }
   if (action.startsWith("billing.")) {

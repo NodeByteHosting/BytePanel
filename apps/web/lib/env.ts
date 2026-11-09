@@ -11,6 +11,10 @@ export const env = createEnv({
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
     BYTEPANEL_DEBUG: process.env.BYTEPANEL_DEBUG,
     BYTEPANEL_PUBLIC_URL: process.env.BYTEPANEL_PUBLIC_URL,
+    BYTEPAY_API_URL: process.env.BYTEPAY_API_URL,
+    BYTEPAY_CLIENT_ID: process.env.BYTEPAY_CLIENT_ID,
+    BYTEPAY_CLIENT_SECRET: process.env.BYTEPAY_CLIENT_SECRET,
+    BYTEPAY_URL: process.env.BYTEPAY_URL,
     DATABASE_URL: process.env.DATABASE_URL,
     DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_UNPOOLED,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
@@ -41,6 +45,10 @@ export const env = createEnv({
       .optional()
       .transform((v) => v === "true" || v === "1"),
     BYTEPANEL_PUBLIC_URL: z.string().min(1).url().optional(),
+    BYTEPAY_API_URL: z.string().min(1).url().optional(),
+    BYTEPAY_CLIENT_ID: z.string().min(1).optional(),
+    BYTEPAY_CLIENT_SECRET: z.string().min(1).optional(),
+    BYTEPAY_URL: z.string().min(1).url().optional(),
     DATABASE_URL: z.string().min(1).url().optional(),
     DATABASE_URL_UNPOOLED: z.string().min(1).url().optional(),
     GITHUB_TOKEN: z.string().min(1).optional(),
@@ -74,3 +82,10 @@ export const API_URL = (
 ).replace(/\/+$/u, "");
 
 export const SEO_URL = API_URL;
+
+export const bytepayEnabled = Boolean(
+  env.BYTEPAY_URL &&
+  env.BYTEPAY_API_URL &&
+  env.BYTEPAY_CLIENT_ID &&
+  env.BYTEPAY_CLIENT_SECRET
+);

@@ -1,4 +1,9 @@
+import { randomBytes } from "node:crypto";
+
 import { SFTP_SERVER_ID_LENGTH } from "@bytepanel/protocol";
+
+export const generateSftpPassword = (): string =>
+  randomBytes(24).toString("base64url");
 
 export const sftpServerId = (serverUuid: string): string =>
   serverUuid.slice(0, SFTP_SERVER_ID_LENGTH);

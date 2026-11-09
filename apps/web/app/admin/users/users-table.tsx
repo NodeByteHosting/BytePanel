@@ -71,7 +71,7 @@ const RoleBadge = ({
   if (superAdmin) {
     return (
       <Badge
-        className="gap-1 border-violet-500/40 bg-violet-500/10 text-violet-600 dark:text-violet-400"
+        className="gap-1 border-sky-500/40 bg-sky-500/10 text-sky-600 dark:text-sky-400"
         variant="outline"
       >
         <Shield className="size-3" />
@@ -98,7 +98,7 @@ const RoleBadge = ({
 
 const getAvatarClass = (superAdmin: boolean, role: string) => {
   if (superAdmin) {
-    return "bg-violet-500/15 text-violet-600 dark:text-violet-400";
+    return "bg-sky-500/15 text-sky-600 dark:text-sky-400";
   }
   if (role === "admin") {
     return "bg-blue-500/15 text-blue-600 dark:text-blue-400";

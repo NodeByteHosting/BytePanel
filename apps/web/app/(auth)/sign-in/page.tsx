@@ -11,12 +11,29 @@ import { Label } from "@/components/ui/label";
 import { authClient, signIn } from "@/lib/auth-client";
 import { useBranding } from "@/providers/branding";
 
+const nextPath = () => {
+  const next = new URLSearchParams(window.location.search).get("next");
+  return next?.startsWith("/") && !/^\/[/\\]/u.test(next) ? next : "/dashboard";
+};
+
 const SignInPage = () => {
-  const { panelName, signUpEnabled } = useBranding();
+  const { bytepayLogin, panelName, signUpEnabled } = useBranding();
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [passkeyPending, setPasskeyPending] = useState(false);
+  const [bytepayPending, setBytepayPending] = useState(false);
   const autofillStarted = useRef(false);
+
+  useEffect(() => {
+    const error = new URLSearchParams(window.location.search).get("error");
+    if (error === "account_not_linked" || error === "unable_to_link_account") {
+      toast.error(
+        "This account can't use BytePay sign-in. Staff should use Staff sign-in."
+      );
+    } else if (error) {
+      toast.error("Could not sign in with BytePay. Please try again.");
+    }
+  }, []);
 
   useEffect(() => {
     if (autofillStarted.current) {
@@ -37,7 +54,7 @@ const SignInPage = () => {
         if (cancelled || result?.error || !result?.data) {
           return;
         }
-        router.push("/dashboard");
+        router.push(nextPath());
         router.refresh();
       } catch {}
     });
@@ -61,8 +78,21 @@ const SignInPage = () => {
       toast.error(error.message ?? "Sign in failed");
       return;
     }
-    router.push("/dashboard");
+    router.push(nextPath());
     router.refresh();
+  };
+
+  const handleBytepaySignIn = async () => {
+    setBytepayPending(true);
+    const { error } = await authClient.signIn.social({
+      callbackURL: nextPath(),
+      errorCallbackURL: "/sign-in",
+      provider: "bytepay" as never,
+    });
+    if (error) {
+      setBytepayPending(false);
+      toast.error(error.message ?? "Could not sign in with BytePay");
+    }
   };
 
   const handlePasskeySignIn = async () => {
@@ -73,79 +103,96 @@ const SignInPage = () => {
       toast.error(result.error.message ?? "Passkey sign in failed");
       return;
     }
-    router.push("/dashboard");
+    router.push(nextPath());
     router.refresh();
   };
 
+  const passwordForm = (
+    <form method="post" onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autoComplete="username webauthn"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="password">Password</Label>
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          required
+          autoComplete="current-password"
+        />
+      </div>
+      <Button type="submit" className="h-11 w-full" disabled={pending}>
+        {pending ? "Signing in…" : "Sign in"}
+      </Button>
+      <div className="relative py-1">
+        <div className="absolute inset-0 flex items-center">
+          <span className="border-border/50 w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background text-muted-foreground px-2">or</span>
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={handlePasskeySignIn}
+        disabled={passkeyPending}
+      >
+        <FingerprintIcon />
+        {passkeyPending ? "Waiting…" : "Sign in with a passkey"}
+      </Button>
+      {signUpEnabled && (
+        <p className="text-muted-foreground text-center text-sm">
+          No account?{" "}
+          <Link
+            className="text-link hover:text-link/80 underline underline-offset-4"
+            href="/sign-up"
+          >
+            Create one
+          </Link>
+        </p>
+      )}
+    </form>
+  );
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight">
-          <span className="from-primary via-primary to-accent bg-linear-to-r bg-clip-text text-transparent">
-            {panelName}
-          </span>
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Sign in to your account
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">Welcome back</h1>
+        <p className="text-muted-foreground">
+          Sign in to manage your {panelName} servers.
         </p>
       </div>
-      <form
-        onSubmit={handleSubmit}
-        className="border-border/50 bg-card/30 space-y-4 rounded-2xl border p-6 backdrop-blur-sm"
-      >
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            required
-            autoComplete="username webauthn"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-          />
-        </div>
-        <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? "Signing in…" : "Sign in"}
-        </Button>
-        <div className="relative py-1">
-          <div className="absolute inset-0 flex items-center">
-            <span className="border-border/50 w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card/30 text-muted-foreground px-2">or</span>
-          </div>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="border-border/50 bg-card/30 hover:border-primary/30 hover:bg-card/50 w-full"
-          onClick={handlePasskeySignIn}
-          disabled={passkeyPending}
-        >
-          <FingerprintIcon />
-          {passkeyPending ? "Waiting…" : "Sign in with a passkey"}
-        </Button>
-        {signUpEnabled && (
-          <p className="text-muted-foreground text-center text-sm">
-            No account?{" "}
-            <Link
-              className="text-primary hover:text-primary/80 underline underline-offset-4"
-              href="/sign-up"
-            >
-              Create one
-            </Link>
-          </p>
-        )}
-      </form>
+      {bytepayLogin ? (
+        <>
+          <Button
+            className="h-11 w-full"
+            disabled={bytepayPending}
+            onClick={handleBytepaySignIn}
+            size="lg"
+            type="button"
+          >
+            {bytepayPending ? "Redirecting…" : "Sign in with BytePay"}
+          </Button>
+          <details className="text-sm">
+            <summary className="text-muted-foreground cursor-pointer text-center">
+              Staff sign-in
+            </summary>
+            <div className="mt-4">{passwordForm}</div>
+          </details>
+        </>
+      ) : (
+        passwordForm
+      )}
     </div>
   );
 };

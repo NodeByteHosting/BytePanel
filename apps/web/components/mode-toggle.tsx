@@ -1,132 +1,21 @@
 "use client";
 
-import {
-  CheckIcon,
-  MonitorIcon,
-  MoonIcon,
-  PaletteIcon,
-  SunIcon,
-} from "lucide-react";
+import { CheckIcon, MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
+import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { THEME_SECTIONS, THEMES } from "@/lib/themes";
 import { cn } from "@/lib/utils";
-
-const THEME_COLORS: Record<string, [string, string]> = {
-  amber: ["oklch(0.46 0.18 60)", "oklch(0.52 0.16 50)"],
-  "catppuccin-frappe": ["#8caaee", "#ca9ee6"],
-  "catppuccin-latte": ["#1e66f5", "#8839ef"],
-  "catppuccin-macchiato": ["#8aadf4", "#c6a0f6"],
-  "catppuccin-mocha": ["#89b4fa", "#cba6f7"],
-  christmas: ["#c4122e", "#ffd700"],
-  crimson: ["oklch(0.52 0.22 20)", "oklch(0.58 0.20 15)"],
-  dark: ["oklch(0.55 0.16 235)", "oklch(0.55 0.12 200)"],
-  desert: ["oklch(0.43 0.18 44)", "oklch(0.55 0.16 30)"],
-  dracula: ["#bd93f9", "#ff79c6"],
-  emerald: ["oklch(0.42 0.18 160)", "oklch(0.48 0.16 165)"],
-  forest: ["oklch(0.45 0.16 140)", "oklch(0.48 0.14 150)"],
-  gruvbox: ["#fabd2f", "#d65d0e"],
-  lavender: ["oklch(0.56 0.18 290)", "oklch(0.62 0.16 280)"],
-  light: ["oklch(0.28 0.12 230)", "oklch(0.65 0.15 200)"],
-  midnight: ["oklch(0.48 0.18 240)", "oklch(0.6 0.16 210)"],
-  newyear: ["#ffd166", "#ff6b6b"],
-  nord: ["#88c0d0", "#81a1c1"],
-  ocean: ["oklch(0.5 0.16 200)", "oklch(0.62 0.16 190)"],
-  "one-dark": ["#61afef", "#c678dd"],
-  rose: ["oklch(0.55 0.18 340)", "oklch(0.6 0.18 330)"],
-  "rose-pine": ["#c4a7e7", "#ebbcba"],
-  slate: ["oklch(0.50 0.10 240)", "oklch(0.56 0.12 220)"],
-  solarized: ["#268bd2", "#2aa198"],
-  stranger: ["#ff2d55", "#ff4d94"],
-  teal: ["oklch(0.44 0.16 180)", "oklch(0.50 0.14 175)"],
-  "tokyo-night": ["#7aa2f7", "#bb9af7"],
-  violet: ["oklch(0.58 0.20 280)", "oklch(0.64 0.18 270)"],
-};
-
-const THEME_GROUPS = [
-  {
-    label: "System",
-    themes: [
-      { icon: MonitorIcon, label: "System (device)", value: "system" },
-      { icon: SunIcon, label: "Light", value: "light" },
-      { icon: MoonIcon, label: "Dark", value: "dark" },
-    ],
-  },
-  {
-    label: "Palette",
-    themes: [
-      { label: "Midnight", value: "midnight" },
-      { label: "Rose", value: "rose" },
-      { label: "Forest", value: "forest" },
-      { label: "Desert", value: "desert" },
-      { label: "Ocean", value: "ocean" },
-      { label: "Slate", value: "slate" },
-      { label: "Crimson", value: "crimson" },
-      { label: "Emerald", value: "emerald" },
-      { label: "Amber", value: "amber" },
-      { label: "Teal", value: "teal" },
-      { label: "Lavender", value: "lavender" },
-      { label: "Violet", value: "violet" },
-    ],
-  },
-  {
-    label: "Popular",
-    themes: [
-      { label: "Catppuccin Mocha", value: "catppuccin-mocha" },
-      { label: "Catppuccin Macchiato", value: "catppuccin-macchiato" },
-      { label: "Catppuccin Frappé", value: "catppuccin-frappe" },
-      { label: "Catppuccin Latte", value: "catppuccin-latte" },
-      { label: "Dracula", value: "dracula" },
-      { label: "Nord", value: "nord" },
-      { label: "Gruvbox", value: "gruvbox" },
-      { label: "Solarized", value: "solarized" },
-      { label: "Tokyo Night", value: "tokyo-night" },
-      { label: "One Dark", value: "one-dark" },
-      { label: "Rosé Pine", value: "rose-pine" },
-    ],
-  },
-  {
-    label: "Seasonal",
-    themes: [
-      { label: "Stranger Things", value: "stranger" },
-      { label: "Christmas", value: "christmas" },
-      { label: "New Year", value: "newyear" },
-    ],
-  },
-] as const;
-
-const ThemeSwatch = ({ value }: { value: string }) => {
-  const colors = THEME_COLORS[value];
-  if (!colors) {
-    return null;
-  }
-  const [primary, accent] = colors;
-  return (
-    <span className="flex shrink-0 overflow-hidden rounded-full border border-white/10">
-      <span className="block size-3.5" style={{ background: primary }} />
-      <span className="block size-3.5" style={{ background: accent }} />
-    </span>
-  );
-};
-
-const SystemSwatch = () => (
-  <span
-    className="size-3.5 shrink-0 overflow-hidden rounded-full border border-white/10"
-    style={{
-      background:
-        "linear-gradient(to right, oklch(0.98 0.01 260) 50%, oklch(0.155 0.03 235) 50%)",
-    }}
-  />
-);
 
 const subscribeNoop = () => () => false;
 const useMounted = () =>
@@ -136,6 +25,59 @@ const useMounted = () =>
     () => false
   );
 
+const MiniPanel = ({ className }: { className?: string }) => (
+  <span className={cn("bg-background flex h-full w-full", className)}>
+    <span className="bg-sidebar border-border/60 flex w-1/4 flex-col gap-1 border-r p-1.5">
+      <span className="bg-primary h-1 rounded-full" />
+      <span className="bg-muted-foreground/40 h-1 rounded-full" />
+      <span className="bg-muted-foreground/40 h-1 rounded-full" />
+    </span>
+    <span className="flex flex-1 flex-col gap-1.5 p-2">
+      <span className="bg-card border-border/60 flex-1 rounded-sm border" />
+      <span className="bg-primary h-2 w-1/2 rounded-full" />
+    </span>
+  </span>
+);
+
+const ThemeCard = ({
+  active,
+  children,
+  label,
+  onSelect,
+}: {
+  active: boolean;
+  children: ReactNode;
+  label: string;
+  onSelect: () => void;
+}) => (
+  <button
+    aria-pressed={active}
+    className={cn(
+      "hover:bg-accent/20 flex flex-col gap-1.5 rounded-xl p-1.5 text-left transition-colors",
+      active && "bg-accent/10"
+    )}
+    onClick={onSelect}
+    type="button"
+  >
+    <span
+      className={cn(
+        "border-border relative block h-16 w-full overflow-hidden rounded-lg border",
+        active && "ring-link ring-2"
+      )}
+    >
+      {children}
+      {active && (
+        <span className="bg-link text-background absolute top-1 right-1 flex size-4 items-center justify-center rounded-full">
+          <CheckIcon className="size-3" />
+        </span>
+      )}
+    </span>
+    <span className="truncate px-0.5 text-xs font-medium">{label}</span>
+  </button>
+);
+
+const GRID = "grid grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4";
+
 const TriggerIcon = ({ theme }: { theme: string | undefined }) => {
   if (theme === "light") {
     return <SunIcon className="size-[1.1rem]" />;
@@ -143,10 +85,17 @@ const TriggerIcon = ({ theme }: { theme: string | undefined }) => {
   if (theme === "dark") {
     return <MoonIcon className="size-[1.1rem]" />;
   }
-  if (theme === "system") {
+  if (!theme || theme === "system") {
     return <MonitorIcon className="size-[1.1rem]" />;
   }
-  return <PaletteIcon className="size-[1.1rem]" />;
+  return (
+    <span
+      className={cn(
+        theme,
+        "bg-primary border-border size-4 rounded-full border"
+      )}
+    />
+  );
 };
 
 export const ModeToggle = () => {
@@ -154,57 +103,78 @@ export const ModeToggle = () => {
   const mounted = useMounted();
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <Dialog>
+      <DialogTrigger asChild>
         <Button
-          variant="ghost"
-          size="icon"
           className="text-muted-foreground shrink-0"
+          size="icon"
           title="Change theme"
+          variant="ghost"
         >
           <TriggerIcon theme={mounted ? theme : undefined} />
           <span className="sr-only">Change theme</span>
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="max-h-[70vh] w-56 overflow-y-auto"
-      >
-        {THEME_GROUPS.map((group, i) => (
-          <div key={group.label}>
-            {i > 0 && <DropdownMenuSeparator />}
-            <DropdownMenuLabel className="text-muted-foreground text-xs">
-              {group.label}
-            </DropdownMenuLabel>
-            {group.themes.map(({ label, value, ...rest }) => {
-              const Icon = "icon" in rest ? rest.icon : null;
-              const active = theme === value;
-              return (
-                <DropdownMenuItem
-                  key={value}
-                  onClick={() => setTheme(value)}
-                  className={cn(
-                    "cursor-pointer gap-2",
-                    active && "bg-accent/20 text-foreground font-medium"
-                  )}
-                >
-                  {value === "system" && <SystemSwatch />}
-                  {value !== "system" && Icon && (
-                    <Icon className="text-muted-foreground size-3.5 shrink-0" />
-                  )}
-                  {value !== "system" && !Icon && <ThemeSwatch value={value} />}
-
-                  <span className="flex-1 truncate text-sm">{label}</span>
-
-                  {active && (
-                    <CheckIcon className="text-foreground size-3.5 shrink-0" />
-                  )}
-                </DropdownMenuItem>
-              );
-            })}
+      </DialogTrigger>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Appearance</DialogTitle>
+          <DialogDescription>
+            Pick a theme. It changes straight away and is saved on this device.
+          </DialogDescription>
+        </DialogHeader>
+        <section className="flex flex-col gap-2">
+          <h3 className="text-muted-foreground text-xs font-medium">Mode</h3>
+          <div className={GRID}>
+            <ThemeCard
+              active={theme === "system"}
+              label="System"
+              onSelect={() => setTheme("system")}
+            >
+              <span className="flex h-full">
+                <span className="w-1/2 overflow-hidden">
+                  <MiniPanel className="light w-[200%]" />
+                </span>
+                <span className="w-1/2 overflow-hidden">
+                  <MiniPanel className="dark w-[200%]" />
+                </span>
+              </span>
+            </ThemeCard>
+            <ThemeCard
+              active={theme === "light"}
+              label="Light"
+              onSelect={() => setTheme("light")}
+            >
+              <MiniPanel className="light" />
+            </ThemeCard>
+            <ThemeCard
+              active={theme === "dark"}
+              label="Dark"
+              onSelect={() => setTheme("dark")}
+            >
+              <MiniPanel className="dark" />
+            </ThemeCard>
           </div>
+        </section>
+        {THEME_SECTIONS.map((section) => (
+          <section className="flex flex-col gap-2" key={section.key}>
+            <h3 className="text-muted-foreground text-xs font-medium">
+              {section.label}
+            </h3>
+            <div className={GRID}>
+              {THEMES[section.key].map((entry) => (
+                <ThemeCard
+                  active={theme === entry.value}
+                  key={entry.value}
+                  label={entry.label}
+                  onSelect={() => setTheme(entry.value)}
+                >
+                  <MiniPanel className={entry.value} />
+                </ThemeCard>
+              ))}
+            </div>
+          </section>
         ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </DialogContent>
+    </Dialog>
   );
 };

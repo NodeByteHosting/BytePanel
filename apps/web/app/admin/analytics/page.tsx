@@ -58,7 +58,7 @@ const StatCard = ({
   description?: string;
   isLoading?: boolean;
 }) => (
-  <div className="border-border/50 bg-card/30 rounded-2xl border p-4 backdrop-blur-sm md:p-5">
+  <div className="border-border/50 bg-card/30 rounded-xl border p-4 backdrop-blur-sm md:p-5">
     <div className="mb-3 flex items-center justify-between">
       <p className="text-muted-foreground text-sm font-medium">{title}</p>
       <div className="border-border/50 bg-card/50 rounded-lg border p-1.5">

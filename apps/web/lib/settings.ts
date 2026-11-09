@@ -5,6 +5,7 @@ import { connection } from "next/server";
 import { cache } from "react";
 
 import { prisma } from "./db";
+import { bytepayEnabled } from "./env";
 
 export const SETTINGS_ID = "default";
 
@@ -16,17 +17,19 @@ export interface Branding {
   websiteUrl: string | null;
   supportUrl: string | null;
   signUpEnabled: boolean;
+  bytepayLogin: boolean;
 }
 
-export interface PanelSettings extends Omit<Branding, "signUpEnabled"> {
-  landingPage: boolean;
+export interface PanelSettings extends Omit<
+  Branding,
+  "bytepayLogin" | "signUpEnabled"
+> {
   storeUrl: string | null;
   billingApiKeyHint: string | null;
 }
 
 const DEFAULTS: PanelSettings = {
   billingApiKeyHint: null,
-  landingPage: true,
   logoUrl: null,
   panelName: DEFAULT_PANEL_NAME,
   storeUrl: null,
@@ -44,7 +47,6 @@ export const readPanelSettings = async (): Promise<PanelSettings> => {
   }
   return {
     billingApiKeyHint: row.billingApiKeyHint,
-    landingPage: row.landingPage,
     logoUrl: row.logoUrl,
     panelName: row.panelName,
     storeUrl: row.storeUrl,
@@ -62,6 +64,7 @@ export const getBranding = async (): Promise<Branding> => {
   const { panelName, logoUrl, websiteUrl, supportUrl } =
     await getPanelSettings();
   return {
+    bytepayLogin: bytepayEnabled,
     logoUrl,
     panelName,
     signUpEnabled: (await prisma.user.count()) === 0,

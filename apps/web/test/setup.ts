@@ -12,9 +12,7 @@ plugin({
 });
 
 const seed = (key: string, value: string) => {
-  if (!process.env[key]) {
-    process.env[key] = value;
-  }
+  process.env[key] = value;
 };
 
 seed("BETTER_AUTH_SECRET", "0123456789abcdef0123456789abcdef0123");

@@ -12,12 +12,9 @@ export const noseconeOptions: NoseconeOptions = {
 const securityHeaders = createMiddleware(noseconeOptions);
 
 const PUBLIC_PATHS = [
-  "/",
-  "/how-it-works",
   "/sign-in",
   "/sign-up",
   "/robots.txt",
-  "/sitemap.xml",
   "/api/auth",
   "/api/remote",
   "/api/application",
@@ -40,6 +37,10 @@ const proxy = (request: NextRequest) => {
   if (!sessionCookie) {
     const url = request.nextUrl.clone();
     url.pathname = "/sign-in";
+    url.search = "";
+    if (pathname !== "/") {
+      url.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+    }
     return NextResponse.redirect(url);
   }
 

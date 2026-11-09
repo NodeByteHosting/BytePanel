@@ -62,7 +62,7 @@ const TestEmailTab = () => {
   };
 
   return (
-    <div className="border-border/50 bg-card/20 rounded-2xl border backdrop-blur-sm">
+    <div className="border-border/50 bg-card/20 rounded-xl border backdrop-blur-sm">
       <div className="border-border/50 border-b px-5 py-4">
         <h3 className="text-sm font-semibold">Send test email</h3>
         <p className="text-muted-foreground mt-0.5 text-xs">
@@ -147,7 +147,7 @@ const BroadcastTab = () => {
   };
 
   return (
-    <div className="border-border/50 bg-card/20 rounded-2xl border backdrop-blur-sm">
+    <div className="border-border/50 bg-card/20 rounded-xl border backdrop-blur-sm">
       <div className="border-border/50 border-b px-5 py-4">
         <h3 className="text-sm font-semibold">Broadcast email</h3>
         <p className="text-muted-foreground mt-0.5 text-xs">
@@ -260,7 +260,7 @@ const EmailLogsTab = () => {
   }, [fetchLogs]);
 
   return (
-    <div className="border-border/50 bg-card/20 rounded-2xl border backdrop-blur-sm">
+    <div className="border-border/50 bg-card/20 rounded-xl border backdrop-blur-sm">
       <div className="border-border/50 border-b px-5 py-4">
         <h3 className="text-sm font-semibold">Email send history</h3>
         <p className="text-muted-foreground mt-0.5 text-xs">
@@ -292,7 +292,7 @@ const EmailLogsTab = () => {
                     className={cn(
                       "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg",
                       isBroadcast
-                        ? "bg-violet-500/10 text-violet-500"
+                        ? "bg-sky-500/10 text-sky-500"
                         : "bg-emerald-500/10 text-emerald-500"
                     )}
                   >
@@ -308,7 +308,7 @@ const EmailLogsTab = () => {
                         className={cn(
                           "text-xs",
                           isBroadcast
-                            ? "border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400"
+                            ? "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400"
                             : "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                         )}
                         variant="outline"

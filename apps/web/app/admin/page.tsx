@@ -1,4 +1,10 @@
-import { ServerIcon, UsersIcon, ZapIcon } from "lucide-react";
+import {
+  AlertTriangleIcon,
+  HardDriveIcon,
+  ServerIcon,
+  UsersIcon,
+  ZapIcon,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -46,6 +52,8 @@ const AdminOverviewPage = async () => {
     recentServers,
     serversByGame,
     eggList,
+    nodeCount,
+    maintenanceNodes,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({
@@ -110,6 +118,8 @@ const AdminOverviewPage = async () => {
       where: { deletedAt: null, eggId: { not: null } },
     }),
     prisma.egg.findMany({ select: { id: true, name: true } }),
+    prisma.node.count(),
+    prisma.node.count({ where: { maintenanceMode: true } }),
   ]);
 
   const userChange =
@@ -172,6 +182,7 @@ const AdminOverviewPage = async () => {
                       }
                     : undefined,
                 description: `${newUsersThisMonth} joined this month`,
+                href: "/admin/users",
                 icon: <UsersIcon className="size-4" />,
                 title: "Total users",
                 value: totalUsers.toLocaleString(),
@@ -179,9 +190,29 @@ const AdminOverviewPage = async () => {
               {
                 accent: "emerald",
                 description: `${totalServers} total · ${failedServers} failed`,
+                href: "/admin/servers",
                 icon: <ZapIcon className="size-4" />,
                 title: "Active servers",
                 value: activeServers,
+              },
+              {
+                accent: "blue",
+                description:
+                  maintenanceNodes > 0
+                    ? `${maintenanceNodes} in maintenance`
+                    : "All accepting servers",
+                href: "/admin/nodes",
+                icon: <HardDriveIcon className="size-4" />,
+                title: "Nodes",
+                value: nodeCount,
+              },
+              {
+                accent: failedServers > 0 ? "red" : "zinc",
+                description: "Install failed or suspended",
+                href: "/admin/servers",
+                icon: <AlertTriangleIcon className="size-4" />,
+                title: "Needs attention",
+                value: failedServers,
               },
             ]}
           />
@@ -198,10 +229,12 @@ const AdminOverviewPage = async () => {
                 <span
                   className={cn(
                     "text-2xl font-bold tabular-nums",
-                    getHealthClass(healthPct)
+                    totalServers > 0
+                      ? getHealthClass(healthPct)
+                      : "text-muted-foreground"
                   )}
                 >
-                  {healthPct}%
+                  {totalServers > 0 ? `${healthPct}%` : "-"}
                 </span>
               </div>
 
@@ -269,13 +302,20 @@ const AdminOverviewPage = async () => {
               </div>
             </div>
 
-            {gameData.length > 0 && (
+            {gameData.length > 0 ? (
               <SimpleBarChart
                 title="Servers by game"
                 description="Active server distribution"
                 data={gameData}
                 height={160}
               />
+            ) : (
+              <div className="border-border/60 bg-card flex flex-col items-center justify-center gap-1 rounded-xl border p-5 text-center">
+                <p className="text-sm font-semibold">Servers by game</p>
+                <p className="text-muted-foreground text-xs">
+                  This fills in once servers are running.
+                </p>
+              </div>
             )}
           </div>
 

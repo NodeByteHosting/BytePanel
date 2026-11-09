@@ -25,18 +25,18 @@ const checkPassword = async (
   userId: string | null,
   password: string
 ): Promise<boolean> => {
-  const account = userId
-    ? await prisma.account.findFirst({
-        select: { password: true },
-        where: { providerId: "credential", userId },
+  const credential = userId
+    ? await prisma.sftpCredential.findUnique({
+        select: { passwordHash: true },
+        where: { userId },
       })
     : null;
-  if (!account?.password) {
+  if (!credential) {
     dummyHash ??= hashPassword("bytepanel-sftp-dummy");
     await verifyPassword({ hash: await dummyHash, password });
     return false;
   }
-  return verifyPassword({ hash: account.password, password });
+  return verifyPassword({ hash: credential.passwordHash, password });
 };
 
 interface SftpUser {

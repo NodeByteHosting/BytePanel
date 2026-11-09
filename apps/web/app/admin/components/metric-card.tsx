@@ -42,7 +42,7 @@ const ACCENT: Record<
     ring: "hover:border-red-500/30",
   },
   violet: {
-    icon: "bg-primary/15 text-primary",
+    icon: "bg-primary/15 text-link",
     ring: "hover:border-primary/30",
   },
   zinc: {
@@ -126,12 +126,15 @@ export const MetricCard = ({
     );
   }
 
+  if (!onClick) {
+    return <div className={baseClassName}>{content}</div>;
+  }
+
   return (
     <button
-      type="button"
+      className={cn(baseClassName, "text-left")}
       onClick={onClick}
-      className={baseClassName}
-      disabled={!onClick}
+      type="button"
     >
       {content}
     </button>

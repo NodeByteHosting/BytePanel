@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 
 import {
   generateApiKey,
@@ -175,24 +174,6 @@ export const BrandingForm = ({ initial }: { initial: BrandingValues }) => {
             />
           </Field>
         </div>
-
-        <Label
-          className="flex items-start gap-3 text-sm font-normal"
-          htmlFor="landing-page"
-        >
-          <Switch
-            checked={v.landingPage}
-            id="landing-page"
-            onCheckedChange={(c) => set("landingPage", c)}
-          />
-          <span className="flex flex-col gap-0.5">
-            Show the landing page
-            <span className="text-muted-foreground text-xs">
-              When off, visiting the panel goes straight to the dashboard (or
-              sign-in).
-            </span>
-          </span>
-        </Label>
 
         <div className="flex justify-end">
           <Button

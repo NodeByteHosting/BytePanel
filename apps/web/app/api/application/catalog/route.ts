@@ -27,7 +27,13 @@ export const GET = applicationHandler(async () => {
   return NextResponse.json({
     eggs: eggs.map((egg) => ({
       id: egg.id,
+      minDisk: egg.minDisk,
+      minMemory: egg.minMemory,
       name: egg.name,
+      ports: Math.max(
+        1,
+        Array.isArray(egg.containerPorts) ? egg.containerPorts.length : 0
+      ),
       slug: egg.slug,
       variables: egg.variables.map((v) => ({
         default: v.defaultValue,

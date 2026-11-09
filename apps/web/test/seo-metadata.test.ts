@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { SEO_URL } from "@/lib/env";
 import { createMetadata } from "@/lib/seo/metadata";
 
 describe("createMetadata", () => {
@@ -50,7 +51,7 @@ describe("createMetadata", () => {
   test("metadataBase uses the panel URL", () => {
     const meta = createMetadata({ description: "d", title: "Page" });
     expect(meta.metadataBase).toBeInstanceOf(URL);
-    expect((meta.metadataBase as URL).origin).toBe("http://localhost:3000");
+    expect((meta.metadataBase as URL).origin).toBe(new URL(SEO_URL).origin);
   });
 
   test("merges caller-provided metadata over defaults", () => {

@@ -75,7 +75,7 @@ export const InviteAcceptCard = ({ state, message, invite }: Props) => {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="bg-primary/10 mx-auto mb-4 flex size-14 items-center justify-center rounded-full">
-              <Mail className="text-primary size-7" />
+              <Mail className="text-link size-7" />
             </div>
             <CardTitle>Server Invite</CardTitle>
             <CardDescription>

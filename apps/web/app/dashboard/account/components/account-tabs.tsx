@@ -12,15 +12,20 @@ const TABS = [
   { href: "/dashboard/account/billing", label: "Billing", value: "billing" },
 ] as const;
 
-export const AccountTabs = () => {
+const SECURITY_TABS = new Set<string>(["password", "passkeys"]);
+
+export const AccountTabs = ({ showSecurity }: { showSecurity: boolean }) => {
+  const tabs = TABS.filter(
+    (tab) => showSecurity || !SECURITY_TABS.has(tab.value)
+  );
   const segment = useSelectedLayoutSegment();
   const activeTab =
-    segment && TABS.some((tab) => tab.value === segment) ? segment : "profile";
+    segment && tabs.some((tab) => tab.value === segment) ? segment : "profile";
 
   return (
     <Tabs className="[&_[data-slot=tabs-trigger]]:flex-none" value={activeTab}>
       <TabsList variant="line">
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <TabsTrigger asChild key={tab.value} value={tab.value}>
             <Link href={tab.href}>{tab.label}</Link>
           </TabsTrigger>

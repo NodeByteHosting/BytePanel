@@ -276,7 +276,7 @@ export const ServerCard = ({ server }: Props) => {
           />
         ) : (
           <div className="from-primary/5 to-primary/20 flex h-full items-center justify-center bg-linear-to-br">
-            <ServerIcon className="text-primary/30 h-12 w-12" />
+            <ServerIcon className="text-link/30 h-12 w-12" />
           </div>
         )}
         <div className="from-card/90 via-card/20 absolute inset-0 bg-linear-to-t to-transparent" />
@@ -404,7 +404,7 @@ export const ServerCard = ({ server }: Props) => {
                     disabled={actionPending !== null}
                     className="cursor-pointer gap-2"
                   >
-                    <RotateCcwIcon className="text-primary h-3.5 w-3.5" />
+                    <RotateCcwIcon className="text-link h-3.5 w-3.5" />
                     Restart
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

@@ -131,7 +131,7 @@ export const ProfilePanel = ({ user }: Props) => {
                 src={imageSrc}
               />
             ) : null}
-            <AvatarFallback className="bg-primary/10 text-primary rounded-xl text-lg font-semibold">
+            <AvatarFallback className="bg-primary/10 text-link rounded-xl text-lg font-semibold">
               {getInitials(name, user.email)}
             </AvatarFallback>
           </Avatar>

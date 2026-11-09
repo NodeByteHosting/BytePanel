@@ -37,7 +37,11 @@ export const PasswordPanel = () => {
   return (
     <div className="border-border/60 bg-card max-w-xl rounded-xl border p-5">
       <h2 className="mb-4 text-sm font-semibold">Change password</h2>
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+      <form
+        method="post"
+        className="flex flex-col gap-4"
+        onSubmit={handleSubmit}
+      >
         <div className="space-y-2">
           <Label htmlFor="current-password">Current password</Label>
           <Input

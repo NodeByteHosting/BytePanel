@@ -1,6 +1,18 @@
 import { describe, expect, test } from "bun:test";
 
-import { parseSftpUsername, sftpUsername } from "@/lib/sftp";
+import {
+  generateSftpPassword,
+  parseSftpUsername,
+  sftpUsername,
+} from "@/lib/sftp";
+
+describe("generateSftpPassword", () => {
+  test("is long, url-safe and different each time", () => {
+    const first = generateSftpPassword();
+    expect(first).toMatch(/^[\w-]{32}$/u);
+    expect(generateSftpPassword()).not.toBe(first);
+  });
+});
 
 describe("sftp usernames", () => {
   test("builds email.serverid", () => {

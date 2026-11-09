@@ -8,6 +8,7 @@ export type AuditAction =
   | "account.signin"
   | "account.signout"
   | "account.password_changed"
+  | "account.sftp_password_changed"
   | "account.email_changed"
   | "account.passkey_added"
   | "account.passkey_removed"
