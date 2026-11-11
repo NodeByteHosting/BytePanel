@@ -1,15 +1,17 @@
 import { Panel, PanelCard } from "@/components/panel";
 import { Badge } from "@/components/ui/badge";
+import { centsToInput, formatMoney } from "@/lib/billing/money";
 import { prisma } from "@/lib/db";
 import { formatMib } from "@/lib/format";
 import { requireAdmin } from "@/lib/session";
+import { getPanelSettings } from "@/lib/settings";
 
 import { PageBody, PageHeader } from "../../dashboard/components/page-header";
 import { PlanDialog } from "./plan-dialog";
 
 const AdminPlansPage = async () => {
   await requireAdmin();
-  const [plans, locations] = await Promise.all([
+  const [plans, locations, settings] = await Promise.all([
     prisma.plan.findMany({
       include: {
         _count: { select: { servers: { where: { deletedAt: null } } } },
@@ -18,6 +20,7 @@ const AdminPlansPage = async () => {
       orderBy: [{ sort: "asc" }, { name: "asc" }],
     }),
     prisma.location.findMany({ orderBy: { short: "asc" } }),
+    getPanelSettings(),
   ]);
   const locationOptions = locations.map((l) => ({
     id: l.id,
@@ -48,6 +51,12 @@ const AdminPlansPage = async () => {
                   <span className="flex items-center gap-2 text-sm font-medium">
                     {plan.name}
                     {!plan.active && <Badge variant="outline">inactive</Badge>}
+                    {plan.priceMonthCents !== null && (
+                      <Badge variant="secondary">
+                        {formatMoney(plan.priceMonthCents, settings.currency)}
+                        /mo
+                      </Badge>
+                    )}
                   </span>
                   <span className="text-muted-foreground text-xs">
                     {formatMib(plan.memory)} RAM ·{" "}
@@ -73,6 +82,7 @@ const AdminPlansPage = async () => {
                       locationId: plan.locationId,
                       memory: plan.memory,
                       name: plan.name,
+                      price: centsToInput(plan.priceMonthCents),
                       sort: plan.sort,
                       swap: plan.swap,
                     }}

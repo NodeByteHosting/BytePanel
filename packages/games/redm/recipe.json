@@ -17,10 +17,6 @@
           "value": "sv_hostname \"{{SERVER_HOSTNAME}}\""
         },
         {
-          "match": "sv_licenseKey",
-          "value": "sv_licenseKey {{REDM_LICENSE}}"
-        },
-        {
           "match": "sv_maxclients",
           "value": "sv_maxclients {{MAX_PLAYERS}}"
         }

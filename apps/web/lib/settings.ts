@@ -4,6 +4,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { connection } from "next/server";
 import { cache } from "react";
 
+import type { BillingProvider } from "./billing-providers";
 import { prisma } from "./db";
 import { bytepayEnabled } from "./env";
 
@@ -24,12 +25,16 @@ export interface PanelSettings extends Omit<
   Branding,
   "bytepayLogin" | "signUpEnabled"
 > {
+  billingProvider: BillingProvider;
+  currency: string;
   storeUrl: string | null;
   billingApiKeyHint: string | null;
 }
 
 const DEFAULTS: PanelSettings = {
   billingApiKeyHint: null,
+  billingProvider: "bytepay",
+  currency: "GBP",
   logoUrl: null,
   panelName: DEFAULT_PANEL_NAME,
   storeUrl: null,
@@ -47,6 +52,8 @@ export const readPanelSettings = async (): Promise<PanelSettings> => {
   }
   return {
     billingApiKeyHint: row.billingApiKeyHint,
+    billingProvider: row.billingProvider,
+    currency: row.currency,
     logoUrl: row.logoUrl,
     panelName: row.panelName,
     storeUrl: row.storeUrl,
@@ -60,14 +67,25 @@ export const getPanelSettings = cache(async (): Promise<PanelSettings> => {
   return readPanelSettings();
 });
 
+export const getBillingProvider = async (): Promise<BillingProvider> => {
+  const settings = await readPanelSettings();
+  return settings.billingProvider;
+};
+
+export const customersUseBytepay = (provider: BillingProvider): boolean =>
+  bytepayEnabled && provider === "bytepay";
+
+export const signUpOpen = async (provider: BillingProvider): Promise<boolean> =>
+  provider === "builtin" || (await prisma.user.count()) === 0;
+
 export const getBranding = async (): Promise<Branding> => {
-  const { panelName, logoUrl, websiteUrl, supportUrl } =
+  const { billingProvider, panelName, logoUrl, websiteUrl, supportUrl } =
     await getPanelSettings();
   return {
-    bytepayLogin: bytepayEnabled,
+    bytepayLogin: customersUseBytepay(billingProvider),
     logoUrl,
     panelName,
-    signUpEnabled: (await prisma.user.count()) === 0,
+    signUpEnabled: await signUpOpen(billingProvider),
     supportUrl,
     websiteUrl,
   };

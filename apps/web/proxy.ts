@@ -14,11 +14,14 @@ const securityHeaders = createMiddleware(noseconeOptions);
 const PUBLIC_PATHS = [
   "/sign-in",
   "/sign-up",
+  "/forgot-password",
+  "/reset-password",
   "/robots.txt",
   "/api/auth",
   "/api/remote",
   "/api/application",
   "/api/branding",
+  "/api/webhooks",
   "/monitoring",
 ];
 

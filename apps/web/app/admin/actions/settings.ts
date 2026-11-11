@@ -5,9 +5,15 @@ import { z } from "zod";
 
 import { logEvent } from "@/lib/audit";
 import type { AuditAction } from "@/lib/audit";
+import { BILLING_PROVIDERS } from "@/lib/billing-providers";
+import { CURRENCIES } from "@/lib/billing/money";
 import { prisma } from "@/lib/db";
 import { requireSuperAdmin } from "@/lib/session";
-import { generateBillingApiKey, SETTINGS_ID } from "@/lib/settings";
+import {
+  generateBillingApiKey,
+  readPanelSettings,
+  SETTINGS_ID,
+} from "@/lib/settings";
 
 import type { ActionResult } from "./infrastructure";
 
@@ -130,6 +136,8 @@ export const removeLogo = async (): Promise<ActionResult> => {
 };
 
 const billingSchema = z.object({
+  billingProvider: z.enum(BILLING_PROVIDERS),
+  currency: z.enum(CURRENCIES),
   storeUrl: optionalUrl,
 });
 
@@ -143,7 +151,11 @@ export const saveBilling = async (
   if (!parsed.success) {
     return fail(parsed.error.issues[0]?.message ?? "Invalid input");
   }
+  const previous = await readPanelSettings();
   await upsert(parsed.data);
+  if (previous.currency !== parsed.data.currency) {
+    await prisma.plan.updateMany({ data: { paypalPlanId: null } });
+  }
   await audit(user, "admin.settings.billing_changed", parsed.data);
   refresh();
   return { ok: true };

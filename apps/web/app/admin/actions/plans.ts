@@ -21,6 +21,7 @@ const planSchema = z.object({
   locationId: z.string().nullable(),
   memory: z.coerce.number().int().min(128),
   name: z.string().trim().min(1).max(60),
+  priceMonthCents: z.number().int().min(1).max(10_000_000).nullable(),
   sort: z.coerce.number().int().default(0),
   swap: z.coerce.number().int().min(-1).default(0),
 });
@@ -45,8 +46,18 @@ export const savePlan = async (
     return { error: "A plan with that name already exists", ok: false };
   }
   const planId = id ?? ulid();
+  const previous = id
+    ? await prisma.plan.findUnique({
+        select: { priceMonthCents: true },
+        where: { id },
+      })
+    : null;
+  const resetPaypal =
+    previous && previous.priceMonthCents !== data.priceMonthCents
+      ? { paypalPlanId: null }
+      : {};
   await (id
-    ? prisma.plan.update({ data, where: { id } })
+    ? prisma.plan.update({ data: { ...data, ...resetPaypal }, where: { id } })
     : prisma.plan.create({ data: { ...data, id: planId } }));
   await logEvent({
     action: id ? "admin.plan.update" : "admin.plan.create",

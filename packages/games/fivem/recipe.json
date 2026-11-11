@@ -231,10 +231,6 @@
           "value": "sv_hostname \"{{SERVER_HOSTNAME}}\""
         },
         {
-          "match": "set sv_licenseKey",
-          "value": "set sv_licenseKey {{FIVEM_LICENSE}}"
-        },
-        {
           "match": "sv_maxclients",
           "value": "sv_maxclients {{MAX_PLAYERS}}"
         },

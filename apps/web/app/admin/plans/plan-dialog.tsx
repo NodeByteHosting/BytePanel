@@ -1,6 +1,7 @@
 "use client";
 import { PencilIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { inputToCents } from "@/lib/billing/money";
 
 import { deletePlan, savePlan } from "../actions/plans";
 import { useAction } from "../components/use-action";
@@ -37,6 +39,7 @@ interface PlanValues {
   allocationLimit: number;
   locationId: string | null;
   active: boolean;
+  price: string;
   sort: number;
 }
 
@@ -51,6 +54,7 @@ const DEFAULT_PLAN: PlanValues = {
   locationId: null,
   memory: 4096,
   name: "",
+  price: "",
   sort: 0,
   swap: 0,
 };
@@ -147,6 +151,20 @@ export const PlanDialog = ({
           {num("swap", "Swap (MiB)", "-1 = unlimited")}
           {num("backupLimit", "Backups")}
           {num("allocationLimit", "Ports")}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="plan-price">Monthly price</Label>
+            <Input
+              id="plan-price"
+              inputMode="decimal"
+              placeholder="Not sold in the panel"
+              value={v.price}
+              onChange={(e) => set("price", e.target.value)}
+            />
+            <span className="text-muted-foreground text-xs">
+              Used by built-in billing. Leave empty to hide the plan from
+              checkout.
+            </span>
+          </div>
           {num("sort", "Sort order")}
           <Label
             htmlFor="plan-active"
@@ -181,7 +199,16 @@ export const PlanDialog = ({
           <Button
             disabled={pending || !v.name.trim()}
             onClick={async () => {
-              const result = await run(() => savePlan(v, planId), "Plan saved");
+              const { price, ...rest } = v;
+              const priceMonthCents = inputToCents(price);
+              if (Number.isNaN(priceMonthCents)) {
+                toast.error("Enter a price like 9.99, or leave it empty");
+                return;
+              }
+              const result = await run(
+                () => savePlan({ ...rest, priceMonthCents }, planId),
+                "Plan saved"
+              );
               if (result?.ok) {
                 setOpen(false);
               }

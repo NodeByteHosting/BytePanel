@@ -8,6 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  BILLING_PROVIDER_INFO,
+  BILLING_PROVIDERS,
+} from "@/lib/billing-providers";
+import type { BillingProvider } from "@/lib/billing-providers";
+import { CURRENCIES } from "@/lib/billing/money";
+import type { Currency } from "@/lib/billing/money";
 
 import {
   generateApiKey,
@@ -188,38 +203,155 @@ export const BrandingForm = ({ initial }: { initial: BrandingValues }) => {
   );
 };
 
-type BillingValues = Required<BillingInput>;
+export type BillingValues = Required<BillingInput>;
+
+interface PaymentSetup {
+  enabled: boolean;
+  webhookUrl: string;
+}
+
+const PAYMENT_SETUP = {
+  paypal: {
+    env: "PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID (and PAYPAL_SANDBOX=true for testing)",
+    events:
+      "BILLING.SUBSCRIPTION.ACTIVATED, .CANCELLED, .EXPIRED, .SUSPENDED, .RE-ACTIVATED, .PAYMENT.FAILED and PAYMENT.SALE.COMPLETED",
+    label: "PayPal",
+  },
+  stripe: {
+    env: "STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET",
+    events:
+      "checkout.session.completed, invoice.paid, invoice.payment_failed, customer.subscription.updated and customer.subscription.deleted",
+    label: "Stripe",
+  },
+} as const;
+
+const PaymentStatus = ({
+  provider,
+  setup,
+}: {
+  provider: keyof typeof PAYMENT_SETUP;
+  setup: PaymentSetup;
+}) => (
+  <div className="border-border/60 flex flex-col gap-2 rounded-xl border p-3">
+    <span className="flex items-center gap-2 text-sm font-medium">
+      {PAYMENT_SETUP[provider].label}
+      {setup.enabled ? (
+        <Badge variant="outline">ready</Badge>
+      ) : (
+        <Badge variant="secondary">not set up</Badge>
+      )}
+    </span>
+    <p className="text-muted-foreground text-xs">
+      Set {PAYMENT_SETUP[provider].env}. Add this webhook and subscribe to{" "}
+      {PAYMENT_SETUP[provider].events}.
+    </p>
+    <CopyBlock value={setup.webhookUrl} />
+  </div>
+);
 
 export const BillingForm = ({
   apiBaseUrl,
   apiKeyHint,
   initial,
+  payments,
 }: {
   apiBaseUrl: string;
   apiKeyHint: string | null;
   initial: BillingValues;
+  payments: { paypal: PaymentSetup; stripe: PaymentSetup };
 }) => {
   const { pending, run } = useAction();
   const [v, setV] = useState(initial);
   const [newKey, setNewKey] = useState<string | null>(null);
 
   return (
-    <Panel title="BytePay">
+    <Panel title="Billing">
       <PanelCard className="flex flex-col gap-4 p-4">
-        <Field
-          hint="Customers are sent here from “New server” and “Billing” in the dashboard."
-          id="store-url"
-          label="Store URL"
+        <RadioGroup
+          className="grid gap-2 md:grid-cols-2"
+          onValueChange={(value) =>
+            setV((prev) => ({
+              ...prev,
+              billingProvider: value as BillingProvider,
+            }))
+          }
+          value={v.billingProvider}
         >
-          <Input
+          {BILLING_PROVIDERS.map((provider) => (
+            <Label
+              className="border-border/60 has-data-[state=checked]:border-link flex cursor-pointer items-start gap-3 rounded-xl border p-3 font-normal"
+              htmlFor={`billing-${provider}`}
+              key={provider}
+            >
+              <RadioGroupItem
+                className="mt-0.5"
+                id={`billing-${provider}`}
+                value={provider}
+              />
+              <span className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium">
+                  {BILLING_PROVIDER_INFO[provider].label}
+                </span>
+                <span className="text-muted-foreground text-xs">
+                  {BILLING_PROVIDER_INFO[provider].description}
+                </span>
+              </span>
+            </Label>
+          ))}
+        </RadioGroup>
+
+        <p className="text-muted-foreground text-xs">
+          {BILLING_PROVIDER_INFO[v.billingProvider].setup}
+        </p>
+
+        {BILLING_PROVIDER_INFO[v.billingProvider].external && (
+          <Field
+            hint="Customers are sent here from “New server” and “Billing” in the dashboard."
             id="store-url"
-            placeholder="https://billing.example.com/store"
-            value={v.storeUrl}
-            onChange={(e) =>
-              setV((prev) => ({ ...prev, storeUrl: e.target.value }))
-            }
-          />
-        </Field>
+            label="Store URL"
+          >
+            <Input
+              id="store-url"
+              placeholder="https://billing.example.com/store"
+              value={v.storeUrl}
+              onChange={(e) =>
+                setV((prev) => ({ ...prev, storeUrl: e.target.value }))
+              }
+            />
+          </Field>
+        )}
+
+        {v.billingProvider === "builtin" && (
+          <>
+            <Field
+              hint="Plan prices are charged in this currency. Changing it applies to new orders only."
+              id="currency"
+              label="Currency"
+            >
+              <Select
+                onValueChange={(value) =>
+                  setV((prev) => ({ ...prev, currency: value as Currency }))
+                }
+                value={v.currency}
+              >
+                <SelectTrigger className="w-40" id="currency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRENCIES.map((currency) => (
+                    <SelectItem key={currency} value={currency}>
+                      {currency}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <div className="grid gap-2 md:grid-cols-2">
+              <PaymentStatus provider="stripe" setup={payments.stripe} />
+              <PaymentStatus provider="paypal" setup={payments.paypal} />
+            </div>
+          </>
+        )}
 
         <div className="flex justify-end">
           <Button
@@ -245,10 +377,9 @@ export const BillingForm = ({
             )}
           </h3>
           <p className="text-muted-foreground text-xs">
-            BytePay creates, suspends, upgrades and terminates servers through
-            this API. Enter the URL and key in the BytePanel server extension.
-            Use plan and game IDs from <code>GET /catalog</code> when
-            configuring products.
+            Your billing system creates, suspends, upgrades and terminates
+            servers through this API. Use plan and game IDs from{" "}
+            <code>GET /catalog</code> when configuring products.
           </p>
         </div>
         <Field id="api-url" label="API URL">

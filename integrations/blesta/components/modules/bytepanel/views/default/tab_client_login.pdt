@@ -1,0 +1,10 @@
+<h4><?php $this->_('Bytepanel.tab.login'); ?></h4>
+<?php if (!empty($error)) { ?>
+<div class="alert alert-danger"><?php $this->Html->_($error); ?></div>
+<?php } ?>
+<p><?php $this->_('Bytepanel.tab.intro'); ?></p>
+<?php
+$this->Form->create($base_uri . 'services/manage/' . (int) $service_id . '/tabClientLogin/');
+$this->Form->fieldHidden('open_panel', '1');
+$this->Form->fieldSubmit('open', $this->_('Bytepanel.tab.open', true), ['class' => 'btn btn-light']);
+$this->Form->end();

@@ -63,7 +63,14 @@ export type AuditAction =
   | "application.server.unsuspend"
   | "application.server.change_plan"
   | "application.server.login_link"
-  | "application.server.terminate";
+  | "application.server.terminate"
+  | "billing.provision_failed"
+  | "billing.server.create"
+  | "billing.server.deploy_failed"
+  | "billing.server.suspend"
+  | "billing.server.unsuspend"
+  | "billing.subscription.cancel"
+  | "billing.subscription.resume";
 
 export interface LogEventOptions {
   actorId?: string | null;

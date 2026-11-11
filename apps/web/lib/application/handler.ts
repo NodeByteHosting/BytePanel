@@ -6,7 +6,7 @@ import { DaemonError } from "@/lib/daemon/client";
 import { prisma } from "@/lib/db";
 import { API_URL } from "@/lib/env";
 import { ServiceError } from "@/lib/servers/service";
-import { verifyBillingApiKey } from "@/lib/settings";
+import { getBillingProvider, verifyBillingApiKey } from "@/lib/settings";
 
 export { parseJson } from "@/lib/remote/handler";
 
@@ -57,4 +57,4 @@ export const serializeServer = (server: Server) => ({
   uuid: server.uuid,
 });
 
-export const billingActor = () => Promise.resolve("billing:bytepay");
+export const billingActor = async () => `billing:${await getBillingProvider()}`;

@@ -1,0 +1,37 @@
+<?php
+$this->Widget->clear();
+$this->Widget->create($this->Html->safe($title));
+?>
+<div class="inner">
+    <?php $this->Form->create(); ?>
+    <div class="pad">
+        <ul>
+            <li>
+                <?php
+                $this->Form->label($this->_('Bytepanel.row.panel_name', true), 'panel_name');
+                $this->Form->fieldText('panel_name', $vars->panel_name ?? null, ['id' => 'panel_name']);
+                ?>
+            </li>
+            <li>
+                <?php
+                $this->Form->label($this->_('Bytepanel.row.url', true), 'url');
+                $this->Form->fieldText('url', $vars->url ?? null, ['id' => 'url', 'placeholder' => 'https://panel.example.com']);
+                ?>
+                <span class="tooltip"><?php $this->_('AppController.tooltip.text'); ?><div><?php $this->_('Bytepanel.row.url_tooltip'); ?></div></span>
+            </li>
+            <li>
+                <?php
+                $this->Form->label($this->_('Bytepanel.row.api_key', true), 'api_key');
+                $this->Form->fieldPassword('api_key', ['id' => 'api_key', 'value' => $vars->api_key ?? null]);
+                ?>
+                <span class="tooltip"><?php $this->_('AppController.tooltip.text'); ?><div><?php $this->_('Bytepanel.row.api_key_tooltip'); ?></div></span>
+            </li>
+        </ul>
+    </div>
+    <div class="button_row">
+        <?php $this->Form->fieldSubmit('save', $this->_('Bytepanel.row.save', true), ['class' => 'btn btn-primary float-right']); ?>
+    </div>
+    <?php $this->Form->end(); ?>
+</div>
+<?php
+$this->Widget->end();

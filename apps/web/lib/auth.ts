@@ -9,6 +9,11 @@ import { admin, genericOAuth } from "better-auth/plugins";
 import { bytepayEnabled, env } from "@/lib/env";
 import { loginLinks } from "@/lib/login-link-plugin";
 import { sendPasswordResetEmail, sendWelcomeEmail } from "@/lib/mail";
+import {
+  customersUseBytepay,
+  getBillingProvider,
+  signUpOpen,
+} from "@/lib/settings";
 
 import { prisma } from "./db";
 
@@ -94,6 +99,11 @@ export const auth = betterAuth({
           if (account.providerId !== BYTEPAY) {
             return;
           }
+          if (!customersUseBytepay(await getBillingProvider())) {
+            throw new APIError("FORBIDDEN", {
+              message: "BytePay sign-in is turned off.",
+            });
+          }
           const owner = await findRole({ id: account.userId });
           if (owner && isStaffAccount(owner)) {
             throw new APIError("FORBIDDEN", {
@@ -126,7 +136,10 @@ export const auth = betterAuth({
   },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
-      if (ctx.path === "/sign-in/email" && bytepayEnabled) {
+      if (
+        ctx.path === "/sign-in/email" &&
+        customersUseBytepay(await getBillingProvider())
+      ) {
         const email = String(ctx.body?.email ?? "").toLowerCase();
         const owner = await findRole({ email });
         if (owner && !isStaffAccount(owner)) {
@@ -139,7 +152,7 @@ export const auth = betterAuth({
       if (ctx.path !== "/sign-up/email") {
         return;
       }
-      if ((await prisma.user.count()) > 0) {
+      if (!(await signUpOpen(await getBillingProvider()))) {
         throw new APIError("FORBIDDEN", {
           message: "Sign up is disabled. Create an account through the store.",
         });
