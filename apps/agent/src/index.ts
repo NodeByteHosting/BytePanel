@@ -10,6 +10,7 @@ import { ActivityBuffer, PanelClient } from "./panel";
 import { Backups } from "./server/backups";
 import { ServerManager } from "./server/manager";
 import { loadHostKey, SftpServer } from "./sftp";
+import { importWings } from "./wings";
 
 const log = logger("daemon");
 
@@ -97,6 +98,10 @@ try {
       await configure(rest);
       break;
     }
+    case "import-wings": {
+      await importWings(rest);
+      break;
+    }
     case "version":
     case "--version": {
       console.log(VERSION);
@@ -107,7 +112,7 @@ try {
       break;
     }
     default: {
-      console.error(`unknown command ${command}. Commands: run, configure, version`);
+      console.error(`unknown command ${command}. Commands: run, configure, import-wings, version`);
       process.exit(2);
     }
   }

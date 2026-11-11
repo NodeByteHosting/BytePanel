@@ -1,8 +1,10 @@
 import "server-only";
 import { passkey } from "@better-auth/passkey";
+import { compare } from "bcryptjs";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError, createAuthMiddleware } from "better-auth/api";
+import { hashPassword, verifyPassword } from "better-auth/crypto";
 import { nextCookies } from "better-auth/next-js";
 import { admin, genericOAuth } from "better-auth/plugins";
 
@@ -129,6 +131,14 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
+    // Accounts imported from Pterodactyl keep their bcrypt ($2y$) hashes.
+    password: {
+      hash: hashPassword,
+      verify: ({ hash, password }) =>
+        hash.startsWith("$2")
+          ? compare(password, hash.replace(/^\$2y\$/u, "$2b$"))
+          : verifyPassword({ hash, password }),
+    },
     requireEmailVerification: false,
     sendResetPassword: async ({ user, url }) => {
       await sendPasswordResetEmail(user.email, url);

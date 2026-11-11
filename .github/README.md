@@ -49,6 +49,8 @@ Set `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and the `S3_*` values in `apps/web/.
 
 Customers sign in through BytePay. Set the `BYTEPAY_*` values to enable it, and create a confidential OAuth client in BytePay with the redirect URI `<BETTER_AUTH_URL>/api/auth/callback/bytepay`.
 
+Coming from Pterodactyl? See [MIGRATION.md](MIGRATION.md).
+
 ## Development Commands
 
 ```bash

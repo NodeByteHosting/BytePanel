@@ -21,6 +21,7 @@
     "test": "turbo run test",
     "validate": "turbo run validate",
     "db:deploy": "bun --filter @bytepanel/web db:deploy",
+    "migrate:pterodactyl": "bun --filter @bytepanel/web migrate:pterodactyl",
     "db:generate": "bun --filter @bytepanel/web db:generate",
     "db:studio": "bun --filter @bytepanel/web db:studio",
     "migrate": "bun --filter @bytepanel/web migrate",
