@@ -1,6 +1,6 @@
 {
   "name": "@bytepanel/agent",
-  "version": "0.0.1-dev2",
+  "version": "0.0.1-dev3",
   "description": "BytePanel daemon: runs on every node and manages the game server containers placed there (power, console, files, backups), like Pterodactyl Wings. Built with Bun and TypeScript.",
   "license": "AGPL-3.0-only",
   "type": "module",
@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@bytepanel/protocol": "workspace:*",
-    "jose": "6.2.13",
+    "jose": "6.2.17",
     "ssh2": "1.17.0",
     "zod": "4.6.7"
   },
