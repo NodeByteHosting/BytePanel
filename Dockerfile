@@ -2,7 +2,7 @@ FROM node:24-bookworm-slim AS base
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates openssl \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g bun@1.3.14
+  && npm install -g bun@1.4.4
 WORKDIR /app
 
 FROM base AS build
