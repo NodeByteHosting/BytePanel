@@ -4,7 +4,7 @@
 
 | Version | New Features | Bug Fixes | Security Fixes |
 | -------- | ------- | ------- | ------- |
-| v0.1.0 | ✅ | ✅ | ✅ | 
+| v0.1.x (Beta) | ✅ | ✅ | ✅ | 
 
 
 Security fixes are prioritized for active development branches:
