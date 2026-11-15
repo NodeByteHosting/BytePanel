@@ -1,6 +1,6 @@
-# Contributing to NodeByte GSM
+# Contributing to BytePanel
 
-Thanks for contributing to NodeByte Game Server Manager (GSM). This repository contains the web control plane plus shared platform logic for managing dedicated game servers.
+Thanks for contributing to BytePanel. This repository contains the web control plane plus shared platform logic for managing dedicated game servers.
 
 ## Ways to contribute
 
@@ -21,7 +21,7 @@ Setup:
 
 ```bash
 bun install
-cp .env.example .env.local
+cp apps/web/.env.example apps/web/.env.local
 bun migrate
 bun dev
 ```
@@ -35,22 +35,6 @@ bun run check
 bun run types
 bun run test
 ```
-
-If your changes affect generated provider schemas:
-
-```bash
-bun run codegen
-```
-
-## Working with submodules
-
-This repo uses git submodules for independently versioned components such as GSA.
-
-```bash
-git submodule update --init --recursive
-```
-
-When a submodule commit changes, include the submodule pointer update in your PR.
 
 ## Pull request guidelines
 

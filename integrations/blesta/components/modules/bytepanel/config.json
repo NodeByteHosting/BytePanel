@@ -1,0 +1,28 @@
+{
+    "version": "1.0.0",
+    "name": "Bytepanel.name",
+    "description": "Bytepanel.description",
+    "authors": [
+        {
+            "name": "NodeByte",
+            "url": "https://nodebyte.host"
+        }
+    ],
+    "module": {
+        "row": "Bytepanel.module_row",
+        "rows": "Bytepanel.module_row_plural",
+        "group": "Bytepanel.module_group",
+        "row_key": "panel_name"
+    },
+    "package": {
+        "name_key": "plan"
+    },
+    "service": {
+        "name_key": "bytepanel_name"
+    },
+    "email_tags": {
+        "module": ["panel_name", "url"],
+        "package": ["plan"],
+        "service": ["bytepanel_name", "bytepanel_server_id"]
+    }
+}

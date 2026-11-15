@@ -1,0 +1,530 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SystemRole {
+  user
+  admin
+}
+
+model SftpCredential {
+  userId       String   @id
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sftp_credentials")
+}
+
+enum ServerMemberRole {
+  viewer
+  member
+  admin
+}
+
+model User {
+  id                String         @id
+  name              String
+  email             String         @unique
+  emailVerified     Boolean        @default(false)
+  image             String?
+  role              String         @default("user")
+  superAdmin        Boolean        @default(false)
+  banned            Boolean        @default(false)
+  banReason         String?
+  banExpires        DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  sessions          Session[]
+  accounts          Account[]
+  passkeys          Passkey[]
+  servers           Server[]
+  serverMemberships ServerMember[] @relation("MemberUser")
+  sentInvites       ServerInvite[] @relation("InviteBy")
+  membersInvited    ServerMember[] @relation("MemberInviteBy")
+  auditLogs         AuditLog[]
+
+  sftpCredential SftpCredential?
+  subscriptions  Subscription[]
+
+  @@map("users")
+}
+
+model Session {
+  id             String   @id
+  userId         String
+  token          String   @unique
+  expiresAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy String?
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+model Passkey {
+  id           String    @id
+  name         String?
+  publicKey    String
+  userId       String
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime? @default(now())
+  aaguid       String?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([credentialID])
+  @@map("passkeys")
+}
+
+enum ServerStatus {
+  installing
+  install_failed
+  reinstall_failed
+  suspended
+  restoring_backup
+}
+
+model Location {
+  id        String   @id
+  short     String   @unique
+  long      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  nodes     Node[]
+  plans     Plan[]
+
+  @@map("locations")
+}
+
+model Node {
+  id                 String       @id
+  uuid               String       @unique
+  name               String
+  description        String?
+  locationId         String
+  public             Boolean      @default(true)
+  fqdn               String
+  scheme             String       @default("https")
+  behindProxy        Boolean      @default(false)
+  daemonListen       Int          @default(8080)
+  daemonSftp         Int          @default(2022)
+  daemonBase         String       @default("/var/lib/bytepanel/volumes")
+  memory             Int
+  memoryOverallocate Int          @default(0)
+  disk               Int
+  diskOverallocate   Int          @default(0)
+  uploadSize         Int          @default(100)
+  maintenanceMode    Boolean      @default(false)
+  daemonTokenId      String       @unique
+  daemonToken        String
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  location           Location     @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  allocations        Allocation[]
+  servers            Server[]
+
+  @@index([locationId])
+  @@map("nodes")
+}
+
+model Allocation {
+  id        String   @id
+  nodeId    String
+  ip        String
+  ipAlias   String?
+  port      Int
+  notes     String?
+  serverId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  node      Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  server    Server?  @relation("ServerAllocations", fields: [serverId], references: [id], onDelete: SetNull)
+  primaryOf Server?  @relation("ServerPrimaryAllocation")
+
+  @@unique([nodeId, ip, port])
+  @@index([serverId])
+  @@map("allocations")
+}
+
+model Nest {
+  id          String   @id
+  name        String   @unique
+  description String?
+  author      String   @default("support@nodebyte.co.uk")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  eggs        Egg[]
+
+  @@map("nests")
+}
+
+model Egg {
+  id                String        @id
+  nestId            String
+  slug              String?       @unique
+  name              String
+  description       String?
+  author            String        @default("support@nodebyte.co.uk")
+  image             String?
+  dockerImages      Json
+  startup           String        @default("")
+  configStartupDone Json          @default("[]")
+  configStop        String        @default("^C")
+  configFiles       Json          @default("[]")
+  fileDenylist      Json          @default("[]")
+  features          Json          @default("[]")
+  mountPath         String        @default("/home/container")
+  extraMounts       Json          @default("[]")
+  containerUser     String        @default("daemon")
+  volumeOwner       String?
+  invocationMode    String        @default("env")
+  containerPorts    Json          @default("[]")
+  stripAnsi         Boolean       @default(false)
+  scriptContainer   String        @default("ghcr.io/pterodactyl/installers:debian")
+  scriptEntry       String        @default("bash")
+  scriptInstall     String        @default("")
+  minMemory         Int           @default(0)
+  minDisk           Int           @default(0)
+  enabled           Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  nest              Nest          @relation(fields: [nestId], references: [id], onDelete: Restrict)
+  variables         EggVariable[]
+  servers           Server[]
+
+  @@index([nestId])
+  @@map("eggs")
+}
+
+model EggVariable {
+  id           String           @id
+  eggId        String
+  name         String
+  description  String           @default("")
+  envVariable  String
+  defaultValue String           @default("")
+  userViewable Boolean          @default(true)
+  userEditable Boolean          @default(true)
+  rules        String           @default("nullable|string")
+  sort         Int              @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  egg          Egg              @relation(fields: [eggId], references: [id], onDelete: Cascade)
+  values       ServerVariable[]
+
+  @@unique([eggId, envVariable])
+  @@map("egg_variables")
+}
+
+model ServerVariable {
+  id         String      @id
+  serverId   String
+  variableId String
+  value      String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  server     Server      @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  variable   EggVariable @relation(fields: [variableId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, variableId])
+  @@map("server_variables")
+}
+
+model Plan {
+  id              String         @id
+  name            String         @unique
+  description     String?
+  memory          Int
+  disk            Int
+  cpu             Int
+  swap            Int            @default(0)
+  io              Int            @default(500)
+  backupLimit     Int            @default(2)
+  allocationLimit Int            @default(1)
+  priceMonthCents Int?
+  paypalPlanId    String?
+  locationId      String?
+  active          Boolean        @default(true)
+  sort            Int            @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  location        Location?      @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  servers         Server[]
+  subscriptions   Subscription[]
+
+  @@map("plans")
+}
+
+model Server {
+  id              String           @id
+  uuid            String           @unique
+  userId          String
+  name            String
+  description     String?
+  status          ServerStatus?
+  nodeId          String?
+  eggId           String?
+  planId          String?
+  externalId      String?          @unique
+  allocationId    String?          @unique
+  memory          Int
+  swap            Int              @default(0)
+  disk            Int
+  io              Int              @default(500)
+  cpu             Int
+  threads         String?
+  oomDisabled     Boolean          @default(true)
+  backupLimit     Int              @default(0)
+  allocationLimit Int              @default(1)
+  startup         String
+  image           String
+  skipScripts     Boolean          @default(false)
+  installedAt     DateTime?
+  errorReason     String?
+  lastSuspendedAt DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  node            Node?            @relation(fields: [nodeId], references: [id], onDelete: Restrict)
+  egg             Egg?             @relation(fields: [eggId], references: [id], onDelete: Restrict)
+  plan            Plan?            @relation(fields: [planId], references: [id], onDelete: SetNull)
+  allocation      Allocation?      @relation("ServerPrimaryAllocation", fields: [allocationId], references: [id], onDelete: SetNull)
+  allocations     Allocation[]     @relation("ServerAllocations")
+  variables       ServerVariable[]
+  backups         Backup[]
+  activityEvents  ActivityEvent[]
+  members         ServerMember[]
+  subscription    Subscription?
+  invites         ServerInvite[]
+
+  @@index([userId])
+  @@index([nodeId])
+  @@map("servers")
+}
+
+model Backup {
+  id           String    @id
+  uuid         String    @unique
+  serverId     String
+  name         String
+  ignoredFiles String    @default("")
+  isSuccessful Boolean   @default(false)
+  isLocked     Boolean   @default(false)
+  checksum     String?
+  bytes        BigInt    @default(0)
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+  server       Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId])
+  @@map("backups")
+}
+
+model ServerMember {
+  id          String           @id
+  serverId    String
+  userId      String
+  role        ServerMemberRole @default(member)
+  invitedById String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  server      Server           @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  user        User             @relation("MemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy   User?            @relation("MemberInviteBy", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@unique([serverId, userId])
+  @@index([userId])
+  @@index([serverId])
+  @@map("server_members")
+}
+
+model ServerInvite {
+  id          String           @id
+  serverId    String
+  email       String
+  role        ServerMemberRole @default(member)
+  token       String           @unique
+  invitedById String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  server      Server           @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  invitedBy   User             @relation("InviteBy", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([token])
+  @@map("server_invites")
+}
+
+model ActivityEvent {
+  id         String   @id
+  serverId   String
+  seq        Int
+  phase      String
+  message    String
+  metadata   Json?
+  occurredAt DateTime @default(now())
+  source     String   @default("server")
+  actorId    String?
+  ip         String?
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, seq])
+  @@index([serverId, occurredAt])
+  @@map("activity_events")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorEmail String?
+  action     String
+  targetId   String?
+  targetType String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([action])
+  @@index([targetId, targetType])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+enum BillingProvider {
+  bytepay
+  whmcs
+  blesta
+  paymenter
+  builtin
+}
+
+model PanelSettings {
+  id                String          @id @default("default")
+  panelName         String          @default("BytePanel")
+  logoUrl           String?
+  logoImage         Bytes?
+  logoMime          String?
+  websiteUrl        String?
+  supportUrl        String?
+  storeUrl          String?
+  billingProvider   BillingProvider @default(bytepay)
+  currency          String          @default("GBP")
+  billingApiKeyHash String?
+  billingApiKeyHint String?
+  updatedAt         DateTime        @updatedAt
+
+  @@map("panel_settings")
+}
+
+enum PaymentProvider {
+  stripe
+  paypal
+}
+
+enum SubscriptionStatus {
+  pending
+  active
+  past_due
+  canceled
+}
+
+enum PaymentStatus {
+  paid
+  failed
+  refunded
+}
+
+model Subscription {
+  id                     String             @id
+  userId                 String
+  planId                 String?
+  serverId               String?            @unique
+  provider               PaymentProvider
+  providerSubscriptionId String?            @unique
+  providerCustomerId     String?
+  status                 SubscriptionStatus @default(pending)
+  priceMonthCents        Int
+  currency               String
+  order                  Json
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  suspendedAt            DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                   Plan?              @relation(fields: [planId], references: [id], onDelete: SetNull)
+  server                 Server?            @relation(fields: [serverId], references: [id], onDelete: SetNull)
+  payments               Payment[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model Payment {
+  id                String        @id
+  subscriptionId    String
+  providerPaymentId String        @unique
+  amountCents       Int
+  currency          String
+  status            PaymentStatus
+  receiptUrl        String?
+  createdAt         DateTime      @default(now())
+  subscription      Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@map("payments")
+}
