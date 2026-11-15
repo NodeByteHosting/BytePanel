@@ -1,6 +1,6 @@
 {
   "name": "bytepanel",
-  "version": "0.1.0",
+  "version": "1.0.0-beta1",
   "private": true,
   "description": "BytePanel is our custom game server management platform.",
   "license": "AGPL-3.0-only",
