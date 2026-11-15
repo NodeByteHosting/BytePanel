@@ -1,6 +1,6 @@
 {
   "name": "@bytepanel/web",
-  "version": "0.1.0",
+  "version": "1.0.0-beta1",
   "private": true,
   "description": "The BytePanel panel.",
   "license": "AGPL-3.0-only",
