@@ -1,0 +1,3 @@
+[submodule "apps/site"]
+	path = apps/site
+	url = https://github.com/NodeByteHosting/BytePanelSite.git
