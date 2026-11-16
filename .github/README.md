@@ -21,7 +21,7 @@ A [Turborepo](https://turbo.build) monorepo using Bun workspaces:
 
 Prerequisites:
 
-- Bun 1.3.13+
+- Bun 1.4.4+
 - Node.js 24+
 - PostgreSQL
 - Redis
