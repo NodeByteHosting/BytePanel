@@ -6,14 +6,17 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "workspaces": [
-    "apps/*",
+    "apps/web",
+    "apps/agent",
     "packages/*"
   ],
   "scripts": {
     "dev": "turbo run dev --filter=@bytepanel/web",
     "dev:agent": "turbo run dev --filter=@bytepanel/agent",
+    "dev:site": "bun --cwd apps/site run dev",
     "build": "turbo run build --filter=@bytepanel/web",
     "build:agent": "turbo run build --filter=@bytepanel/agent",
+    "build:site": "bun --cwd apps/site run build",
     "start": "bun --filter @bytepanel/web start",
     "check": "turbo run lint",
     "fix": "turbo run fix",
