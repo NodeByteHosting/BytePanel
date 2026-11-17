@@ -63,6 +63,9 @@ export const validateEnvironment = async (
   }
   for (const variable of variables) {
     const supplied = rows.find((r) => r.variableId === variable.id)?.value;
+    if (supplied === undefined && variable.defaultValue === RANDOM_DEFAULT) {
+      continue;
+    }
     const effective = supplied ?? variable.defaultValue;
     const error = validateVariable(effective, variable.rules, variable.name);
     if (error) {

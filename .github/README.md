@@ -1,5 +1,8 @@
 # BytePanel
 
+> [!WARNING]
+> BytePanel is currently in beta with all releases coming out as pre-release. We highly recommend you use BytePanel in a non production environment.
+
 BytePanel is the web control plane for provisioning, configuring, and operating dedicated game servers.
 
 It includes:
@@ -21,7 +24,7 @@ A [Turborepo](https://turbo.build) monorepo using Bun workspaces:
 
 Prerequisites:
 
-- Bun 1.3.13+
+- Bun 1.4.4+
 - Node.js 24+
 - PostgreSQL
 - Redis

@@ -84,11 +84,11 @@ export const env = createEnv({
     UPDATE_CHECK_AGENT_REPO: z
       .string()
       .regex(/^[\w.-]+\/[\w.-]+$/u)
-      .default("NodeByteHosting/GSM"),
+      .default("NodeByteHosting/BytePanel"),
     UPDATE_CHECK_PANEL_REPO: z
       .string()
       .regex(/^[\w.-]+\/[\w.-]+$/u)
-      .default("NodeByteHosting/GSM"),
+      .default("NodeByteHosting/BytePanel"),
   },
 });
 
