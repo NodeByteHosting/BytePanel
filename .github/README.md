@@ -1,5 +1,8 @@
 # BytePanel
 
+> [!WARNING]
+> BytePanel is currently in beta with all releases coming out as pre-release. We highly recommend you use BytePanel in a non production environment.
+
 BytePanel is the web control plane for provisioning, configuring, and operating dedicated game servers.
 
 It includes:
