@@ -1,8 +1,9 @@
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { getSession } from "@/lib/session";
 
 import { AppContainer } from "./components/app-container";
 import { AppSidebar } from "./components/app-sidebar";
@@ -32,13 +33,17 @@ const healthOf = (server: {
 };
 
 const DashboardLayout = async ({ children }: { children: ReactNode }) => {
-  const user = await requireUser();
+  const session = await getSession();
+  if (!session?.user) {
+    redirect("/sign-in");
+  }
+  const { user } = session;
 
   const role = (user as { role?: string }).role ?? "user";
   const superAdmin = (user as { superAdmin?: boolean }).superAdmin ?? false;
-  const impersonatedBy =
-    (user as { impersonatedBy?: { email?: string; name?: string } | null })
-      .impersonatedBy ?? null;
+  const impersonatorId =
+    (session.session as { impersonatedBy?: string | null }).impersonatedBy ??
+    null;
 
   const ownedServers = await prisma.server.findMany({
     orderBy: { createdAt: "desc" },
@@ -84,7 +89,7 @@ const DashboardLayout = async ({ children }: { children: ReactNode }) => {
         }}
       />
       <AppContainer>
-        {impersonatedBy && (
+        {impersonatorId && (
           <ImpersonationBanner
             impersonatedEmail={user.email}
             impersonatedName={user.name ?? null}
