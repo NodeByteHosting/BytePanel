@@ -10,7 +10,12 @@ import { buildNodeDaemonConfig } from "@/lib/daemon/configuration";
 import { prisma } from "@/lib/db";
 import { API_URL } from "@/lib/env";
 import { requireAdmin } from "@/lib/session";
-import { getLatestRelease, shortSha, updateStatus } from "@/lib/version";
+import {
+  getLatestRelease,
+  getUpdateBeta,
+  shortSha,
+  updateStatus,
+} from "@/lib/version";
 
 import {
   PageBody,
@@ -32,7 +37,9 @@ const fetchSystem = async (node: Node) => {
 };
 
 const fetchAgentStatus = async (info: SystemInfo) => {
-  const latest = await getLatestRelease("agent");
+  const latest = await getLatestRelease("agent", {
+    beta: await getUpdateBeta(),
+  });
   if (!latest.ok) {
     return "unknown";
   }

@@ -5,7 +5,12 @@ import { cache } from "react";
 
 import { DaemonClient } from "@/lib/daemon/client";
 import { prisma } from "@/lib/db";
-import { getLatestRelease, PANEL_BUILD, updateStatus } from "@/lib/version";
+import {
+  getLatestRelease,
+  getUpdateBeta,
+  PANEL_BUILD,
+  updateStatus,
+} from "@/lib/version";
 
 const fetchAgent = async (node: Node) => {
   try {
@@ -16,9 +21,10 @@ const fetchAgent = async (node: Node) => {
 };
 
 export const getUpdateOverview = cache(async () => {
+  const beta = await getUpdateBeta();
   const [panelLatest, agentLatest, nodes] = await Promise.all([
-    getLatestRelease("panel"),
-    getLatestRelease("agent"),
+    getLatestRelease("panel", { beta }),
+    getLatestRelease("agent", { beta }),
     prisma.node.findMany({ orderBy: { name: "asc" } }),
   ]);
   const agents = await Promise.all(nodes.map((node) => fetchAgent(node)));
@@ -36,6 +42,7 @@ export const getUpdateOverview = cache(async () => {
         };
       }),
     },
+    beta,
     panel: {
       latest: panelLatest,
       status: updateStatus(
