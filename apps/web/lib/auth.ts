@@ -6,7 +6,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { hashPassword, verifyPassword } from "better-auth/crypto";
 import { nextCookies } from "better-auth/next-js";
-import { admin, genericOAuth } from "better-auth/plugins";
+import { admin, genericOAuth, twoFactor } from "better-auth/plugins";
 
 import { bytepayEnabled, env } from "@/lib/env";
 import { loginLinks } from "@/lib/login-link-plugin";
@@ -171,6 +171,7 @@ export const auth = betterAuth({
   },
   plugins: [
     passkey({ rpName: "BytePanel" }),
+    twoFactor({ issuer: "BytePanel" }),
     loginLinks(),
     admin({
       defaultRole: "user",

@@ -8,11 +8,11 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const TABS = [
   { href: "/dashboard/account", label: "Profile", value: "profile" },
   { href: "/dashboard/account/password", label: "Password", value: "password" },
-  { href: "/dashboard/account/passkeys", label: "Passkeys", value: "passkeys" },
+  { href: "/dashboard/account/security", label: "Security", value: "security" },
   { href: "/dashboard/account/billing", label: "Billing", value: "billing" },
 ] as const;
 
-const SECURITY_TABS = new Set<string>(["password", "passkeys"]);
+const SECURITY_TABS = new Set<string>(["password", "security"]);
 
 export const AccountTabs = ({ showSecurity }: { showSecurity: boolean }) => {
   const tabs = TABS.filter(

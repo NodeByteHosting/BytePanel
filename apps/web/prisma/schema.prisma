@@ -38,11 +38,13 @@ model User {
   banned            Boolean        @default(false)
   banReason         String?
   banExpires        DateTime?
+  twoFactorEnabled  Boolean        @default(false)
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   sessions          Session[]
   accounts          Account[]
   passkeys          Passkey[]
+  twoFactors        TwoFactor[]
   servers           Server[]
   serverMemberships ServerMember[] @relation("MemberUser")
   sentInvites       ServerInvite[] @relation("InviteBy")
@@ -120,6 +122,21 @@ model Passkey {
   @@index([userId])
   @@index([credentialID])
   @@map("passkeys")
+}
+
+model TwoFactor {
+  id                      String    @id
+  secret                  String
+  backupCodes             String
+  userId                  String
+  verified                Boolean   @default(true)
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([secret])
+  @@index([userId])
+  @@map("two_factors")
 }
 
 enum ServerStatus {
