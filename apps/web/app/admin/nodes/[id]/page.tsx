@@ -132,21 +132,8 @@ const AdminNodePage = async ({
             <PanelCard className="flex flex-col gap-3 text-sm">
               <ol className="ml-4 list-decimal space-y-1.5">
                 <li>
-                  Install Docker and unzip on the node and open the daemon port
-                  ({node.daemonListen}), the SFTP port ({node.daemonSftp}) and
-                  your allocation ports.
-                </li>
-                <li>
-                  Build the daemon with <code>bun run build:agent</code> and
-                  copy <code>apps/agent/dist/bytepanel-daemon</code> to{" "}
-                  <code>/usr/local/bin/</code>, with{" "}
-                  <code>apps/agent/install/bytepanel-daemon.service</code> in{" "}
-                  <code>/etc/systemd/system/</code>.
-                </li>
-                <li>
-                  {node.scheme === "https" && !node.behindProxy
-                    ? `Issue a certificate: certbot certonly --standalone -d ${node.fqdn}`
-                    : "No certificate needed for this node's scheme."}
+                  Follow our installation guide on the agent:
+                  https://bytepanel.nodebyte.co.uk/docs/nodes/
                 </li>
                 <li>Configure and start it:</li>
               </ol>
