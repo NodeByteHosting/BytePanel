@@ -69,15 +69,20 @@ const SignInPage = () => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     setPending(true);
-    const { error } = await signIn.email({
+    const { data, error } = await signIn.email({
       email: String(form.get("email")),
       password: String(form.get("password")),
     });
-    setPending(false);
     if (error) {
+      setPending(false);
       toast.error(error.message ?? "Sign in failed");
       return;
     }
+    // The two-factor client plugin is already sending us to /two-factor.
+    if (data && "twoFactorRedirect" in data && data.twoFactorRedirect) {
+      return;
+    }
+    setPending(false);
     router.push(nextPath());
     router.refresh();
   };
