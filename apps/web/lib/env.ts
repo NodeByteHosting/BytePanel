@@ -5,6 +5,7 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_SENTRY_DSN: z.string().min(1).url().optional(),
   },
+  emptyStringAsUndefined: true,
   runtimeEnv: {
     ANALYZE: process.env.ANALYZE,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
