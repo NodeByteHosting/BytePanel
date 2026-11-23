@@ -1,5 +1,7 @@
 import "server-only";
+import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
+import { SETTINGS_ID } from "@/lib/settings";
 
 export const UPDATE_CHECK_TAG = "update-check";
 const REVALIDATE_SECONDS = 60 * 60;
@@ -27,8 +29,17 @@ export interface LatestRelease {
   name: string;
   url: string;
   publishedAt: string | null;
+  prerelease: boolean;
   commit: CommitInfo;
 }
+
+export const getUpdateBeta = async (): Promise<boolean> => {
+  const row = await prisma.panelSettings.findUnique({
+    select: { updateBeta: true },
+    where: { id: SETTINGS_ID },
+  });
+  return row?.updateBeta ?? false;
+};
 
 export type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -70,42 +81,6 @@ const githubJson = async <T>(path: string): Promise<T> => {
 const toError = (error: unknown) =>
   error instanceof Error ? error.message : "update check failed";
 
-export const getLatestRelease = async (
-  component: Component
-): Promise<Result<LatestRelease>> => {
-  const repo = REPOS[component];
-  try {
-    const release = await githubJson<{
-      tag_name: string;
-      name: string | null;
-      html_url: string;
-      published_at: string | null;
-    }>(`/repos/${repo}/releases/latest`);
-    const commit = await githubJson<{
-      sha: string;
-      html_url: string;
-      commit: { message: string; committer?: { date?: string } };
-    }>(`/repos/${repo}/commits/${encodeURIComponent(release.tag_name)}`);
-    return {
-      data: {
-        commit: {
-          date: commit.commit.committer?.date ?? null,
-          message: commit.commit.message.split("\n")[0] ?? "",
-          sha: commit.sha,
-          url: commit.html_url,
-        },
-        name: release.name || release.tag_name,
-        publishedAt: release.published_at,
-        url: release.html_url,
-        version: release.tag_name.replace(/^v/u, ""),
-      },
-      ok: true,
-    };
-  } catch (error) {
-    return { error: toError(error), ok: false };
-  }
-};
-
 const parse = (v: string) => {
   const [core = "", pre] = v.trim().replace(/^v/u, "").split("-", 2);
   const nums = core.split(".").map((n) => Math.trunc(Number(n)) || 0);
@@ -135,6 +110,67 @@ export const compareVersions = (a: string, b: string) => {
     }
   }
   return Math.sign(comparePre(pa.pre, pb.pre));
+};
+
+interface GithubRelease {
+  tag_name: string;
+  name: string | null;
+  html_url: string;
+  published_at: string | null;
+  prerelease: boolean;
+  draft: boolean;
+}
+
+const fetchRelease = async (
+  repo: string,
+  beta: boolean
+): Promise<GithubRelease> => {
+  if (!beta) {
+    return githubJson<GithubRelease>(`/repos/${repo}/releases/latest`);
+  }
+  const releases = await githubJson<GithubRelease[]>(
+    `/repos/${repo}/releases?per_page=30`
+  );
+  const [newest] = releases
+    .filter((r) => !r.draft)
+    .toSorted((a, b) => compareVersions(b.tag_name, a.tag_name));
+  if (!newest) {
+    throw new Error("no published release found");
+  }
+  return newest;
+};
+
+export const getLatestRelease = async (
+  component: Component,
+  { beta = false }: { beta?: boolean } = {}
+): Promise<Result<LatestRelease>> => {
+  const repo = REPOS[component];
+  try {
+    const release = await fetchRelease(repo, beta);
+    const commit = await githubJson<{
+      sha: string;
+      html_url: string;
+      commit: { message: string; committer?: { date?: string } };
+    }>(`/repos/${repo}/commits/${encodeURIComponent(release.tag_name)}`);
+    return {
+      data: {
+        commit: {
+          date: commit.commit.committer?.date ?? null,
+          message: commit.commit.message.split("\n")[0] ?? "",
+          sha: commit.sha,
+          url: commit.html_url,
+        },
+        name: release.name || release.tag_name,
+        prerelease: release.prerelease,
+        publishedAt: release.published_at,
+        url: release.html_url,
+        version: release.tag_name.replace(/^v/u, ""),
+      },
+      ok: true,
+    };
+  } catch (error) {
+    return { error: toError(error), ok: false };
+  }
 };
 
 export const updateStatus = (

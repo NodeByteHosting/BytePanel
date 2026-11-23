@@ -9,6 +9,7 @@ import { commitUrl, PANEL_BUILD, REPOS, shortSha } from "@/lib/version";
 import type { Component, LatestRelease } from "@/lib/version";
 
 import { PageBody, PageHeader } from "../../dashboard/components/page-header";
+import { BetaToggle } from "./beta-toggle";
 import { CheckForUpdatesButton } from "./check-button";
 import { getUpdateOverview } from "./overview";
 import { StatusBadge } from "./status-badge";
@@ -57,6 +58,14 @@ const LatestRows = ({
       >
         {latest.name}
       </Link>
+      {latest.prerelease && (
+        <Badge
+          className="ml-2 border-violet-500/40 bg-violet-500/10 text-violet-600"
+          variant="outline"
+        >
+          Pre-release
+        </Badge>
+      )}
       {latest.publishedAt && (
         <span className="text-muted-foreground">
           {" "}
@@ -77,13 +86,21 @@ const LatestRows = ({
 
 const AdminUpdatesPage = async () => {
   await requireAdmin();
-  const { agent, panel } = await getUpdateOverview();
+  const { agent, beta, panel } = await getUpdateOverview();
   const panelLatest = panel.latest;
   const agentLatest = agent.latest;
 
   return (
     <>
-      <PageHeader meta={<CheckForUpdatesButton />} title="Updates" />
+      <PageHeader
+        meta={
+          <div className="flex items-center gap-4">
+            <BetaToggle enabled={beta} />
+            <CheckForUpdatesButton />
+          </div>
+        }
+        title="Updates"
+      />
       <PageBody>
         <div className="flex flex-col gap-4">
           <Panel action={<StatusBadge status={panel.status} />} title="Panel">
