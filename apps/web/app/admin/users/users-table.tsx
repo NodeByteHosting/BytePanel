@@ -7,11 +7,13 @@ import {
   LogIn,
   MoreHorizontal,
   Search,
+  Settings,
   Shield,
   ShieldOff,
   UserCheck,
   UserX,
 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -304,9 +306,12 @@ export const UsersTable = () => {
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <span className="truncate text-sm font-medium">
+                    <Link
+                      className="truncate text-sm font-medium hover:underline"
+                      href={`/admin/users/${user.id}`}
+                    >
                       {user.name ?? user.email}
-                    </span>
+                    </Link>
                     <RoleBadge role={user.role} superAdmin={user.superAdmin} />
                     {user.banned && (
                       <Badge
@@ -344,6 +349,13 @@ export const UsersTable = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link href={`/admin/users/${user.id}`}>
+                        <Settings className="size-4" />
+                        Manage
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuLabel className="text-muted-foreground text-xs">
                       Role
                     </DropdownMenuLabel>
