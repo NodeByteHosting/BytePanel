@@ -5,7 +5,7 @@ import { Docker } from "./docker";
 import { createFetchHandler } from "./http/router";
 import type { SocketData } from "./http/websocket";
 import { websocketHandlers } from "./http/websocket";
-import { logger } from "./log";
+import { logger, debugEnabled, enableDebug } from "./log";
 import { ActivityBuffer, PanelClient } from "./panel";
 import { Backups } from "./server/backups";
 import { ServerManager } from "./server/manager";
@@ -38,10 +38,17 @@ const configure = async (args: string[]) => {
   console.log(`Configuration for node ${saved.uuid} written to ${values.config}`);
 };
 
-const run = async () => {
+const run = async (args: string[]) => {
+  const { values } = parseArgs({ args, options: { debug: { type: "boolean" } } });
+  if (values.debug) {
+    enableDebug();
+  }
   const config = await loadConfig();
   await ensureDirectories(config);
   log.info(`BytePanel daemon v${VERSION} starting for node ${config.uuid}`);
+  if (debugEnabled()) {
+    log.warn("debug mode on: logging every API call (headers, bodies and tokens are never logged)");
+  }
 
   const docker = new Docker(config.docker.socket);
   const dockerVersion = await docker.version();
@@ -108,7 +115,7 @@ try {
       break;
     }
     case "run": {
-      await run();
+      await run(rest);
       break;
     }
     default: {

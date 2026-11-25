@@ -16,7 +16,7 @@ import type {
   SftpAuthResponse,
 } from "@bytepanel/protocol";
 import type { Config } from "./config";
-import { logger } from "./log";
+import { logger, redactUrl, errorMessage } from "./log";
 
 const log = logger("panel");
 
@@ -41,6 +41,9 @@ export class PanelClient {
     const url = new URL(path, this.config.remote);
     let lastError: unknown;
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      const started = performance.now();
+      const tag = () =>
+        `${method} ${redactUrl(url)}${attempt > 1 ? ` (attempt ${attempt}/${attempts})` : ""}`;
       try {
         const res = await fetch(url, {
           body: body === undefined ? undefined : JSON.stringify(body),
@@ -53,6 +56,7 @@ export class PanelClient {
           method,
           signal: AbortSignal.timeout(30_000),
         });
+        log.debug(`${tag()} -> ${res.status} (${Math.round(performance.now() - started)}ms)`);
         if (res.status === 204) {
           return null;
         }
@@ -70,8 +74,12 @@ export class PanelClient {
           return text.length > 0 ? JSON.parse(text) : null;
         }
       } catch (error) {
-        if (error instanceof PanelError && error.status < 500) {
-          throw error;
+        if (error instanceof PanelError) {
+          if (error.status < 500) {
+            throw error;
+          }
+        } else {
+          log.debug(`${tag()} failed: ${errorMessage(error)}`);
         }
         lastError = error;
       }

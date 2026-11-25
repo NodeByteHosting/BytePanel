@@ -23,7 +23,7 @@ import type { DaemonServerDetails, SystemInfo } from "@bytepanel/protocol";
 import type { Config } from "../config";
 import { COMMIT, VERSION } from "../config";
 import type { Docker } from "../docker";
-import { errorMessage, logger } from "../log";
+import { errorMessage, logger, redactUrl, debugEnabled } from "../log";
 import type { Backups } from "../server/backups";
 import { FilesystemError } from "../server/filesystem";
 import type { ServerManager } from "../server/manager";
@@ -280,8 +280,7 @@ export const createFetchHandler = (deps: Deps) => {
     throw new HttpError(404, "route not found");
   };
 
-  return async (req: Request, bun: BunServer<SocketData>): Promise<Response | undefined> => {
-    const url = new URL(req.url);
+  const handle = async (req: Request, url: URL, bun: BunServer<SocketData>): Promise<Response | undefined> => {
     if (LONG_RUNNING.test(url.pathname)) {
       bun.timeout(req, 0);
     }
@@ -368,5 +367,18 @@ export const createFetchHandler = (deps: Deps) => {
       }
       return json({ error: errorMessage(error) }, status, cors(req));
     }
+  };
+
+  return async (req: Request, bun: BunServer<SocketData>): Promise<Response | undefined> => {
+    const url = new URL(req.url);
+    if (!debugEnabled()) {
+      return handle(req, url, bun);
+    }
+    const started = performance.now();
+    const res = await handle(req, url, bun);
+    const ip = bun.requestIP(req)?.address ?? "unknown";
+    const ms = Math.round(performance.now() - started);
+    log.debug(`${req.method} ${redactUrl(url)} -> ${res?.status ?? 101} (${ms}ms) from ${ip}`);
+    return res;
   };
 };
