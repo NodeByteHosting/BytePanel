@@ -2,9 +2,18 @@ type Level = "debug" | "info" | "warn" | "error";
 
 const LEVELS: Record<Level, number> = { debug: 10, error: 40, info: 20, warn: 30 };
 
-const threshold =
-  LEVELS[(process.env.BYTEPANEL_LOG_LEVEL as Level | undefined) ?? "info"] ??
-  LEVELS.info;
+const truthy = (value: string | undefined) => value === "1" || value?.toLowerCase() === "true";
+
+let debug = truthy(process.env.BYTEPANEL_DEBUG);
+
+let threshold = debug ? LEVELS.debug : (LEVELS[(process.env.BYTEPANEL_LOG_LEVEL as Level | undefined) ?? "info"] ?? LEVELS.info);
+
+export const enableDebug = () => {
+  debug = true;
+  threshold = LEVELS.debug;
+};
+
+export const debugEnabled = () => debug;
 
 const write = (level: Level, scope: string, message: string, extra?: unknown) => {
   if (LEVELS[level] < threshold) {
@@ -28,3 +37,15 @@ export const logger = (scope: string) => ({
 
 export const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
+
+const SENSITIVE_PARAM = /token|secret|password|key|signature|auth/iu;
+
+export const redactUrl = (url: URL): string => {
+  if (url.search === "") {
+    return url.pathname;
+  }
+  const params = [...url.searchParams].map(([name, value]) =>
+    `${name}=${SENSITIVE_PARAM.test(name) ? "[redacted]" : value}`,
+  );
+  return `${url.pathname}?${params.join("&")}`;
+};
