@@ -43,6 +43,8 @@ bun run test
 - Avoid committing secrets, tokens, and local env files.
 - Include screenshots or recordings for UI changes.
 - Call out schema, migration, and billing changes explicitly in the PR description.
+- All pull requests must target the main branch.
+- Branch names should use conventional prefixes such as feat/, fix/, refactor/, chore/, or test/, followed by a clear and descriptive name.
 
 ## Commit guidance
 
